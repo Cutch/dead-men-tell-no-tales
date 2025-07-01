@@ -33,7 +33,6 @@ export class Dice {
     this.dice.classList.add('show-' + args.roll);
     this.diceBase.style['left'] = '20%';
     this.diceBase.style['top'] = '20%';
-    //gameui.dice.roll({args:{roll:1, characterId: 'Mabe'}});
     if (args.characterId) {
       renderImage(args.characterId, $('dice-container-character'), {
         scale: 3,

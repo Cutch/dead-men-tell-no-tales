@@ -1,7 +1,7 @@
 <?php
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 
-use Bga\Games\DeadMenTaleNoTales\Game;
+use Bga\Games\DeadMenTellNoTales\Game;
 use BgaUserException;
 
 class DMTNT_RevengeDeckData

@@ -1,4 +1,4 @@
-import { getAllData } from '../assets';
+import { getAllData } from '../assets/index';
 import { addClickListener } from './clickable';
 import { getSpriteSize, renderImage } from './images';
 import { Tooltip } from './tooltip';

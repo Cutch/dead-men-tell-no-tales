@@ -2,7 +2,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * DeadMenTaleNoTales implementation : © Cutch <Your email address here>
+ * DeadMenTellNoTales implementation : © Cutch <Your email address here>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -16,7 +16,7 @@
  */
 declare(strict_types=1);
 
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\GameFramework\Actions\CheckAction;
 use Bga\GameFramework\Actions\Types\JsonParam;
@@ -48,7 +48,7 @@ class Game extends \Table
     public DMTNT_Actions $actions;
     private DMTNT_CharacterSelection $characterSelection;
     public DMTNT_Data $data;
-    // public DMTNT_RevengeDeck $decks;
+    public DMTNT_Decks $decks;
     public DMTNT_GameData $gameData;
     public DMTNT_Hooks $hooks;
     // public DMTNT_Encounter $encounter;
@@ -79,7 +79,7 @@ class Game extends \Table
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
         $this->data = new DMTNT_Data($this);
-        // $this->decks = new DMTNT_RevengeDeck($this);
+        $this->decks = new DMTNT_Decks($this);
         $this->character = new DMTNT_Character($this);
         $this->characterSelection = new DMTNT_CharacterSelection($this);
         $this->hooks = new DMTNT_Hooks($this);
@@ -189,7 +189,7 @@ class Game extends \Table
         ];
         $this->notify('cardDrawn', '', $result);
     }
-    public function rollFireDie(string $actionName, ?string $characterName = null): int
+    public function rollBattleDie(string $actionName, ?string $characterName = null): int
     {
         $this->markRandomness();
         $value = rand(1, 6);
@@ -199,7 +199,7 @@ class Game extends \Table
         ];
         $data['sendNotification'] = function () use ($value, $characterName, &$notificationSent, $actionName) {
             if ($characterName) {
-                $this->notify('rollFireDie', clienttranslate('${character_name} rolled a ${value} ${action_name}'), [
+                $this->notify('rollBattleDie', clienttranslate('${character_name} rolled a ${value} ${action_name}'), [
                     'value' => $value,
                     'character_name' => $this->getCharacterHTML($characterName),
                     'characterId' => $characterName,
@@ -207,7 +207,7 @@ class Game extends \Table
                     'action_name' => '(' . $actionName . ')',
                 ]);
             } else {
-                $this->notify('rollFireDie', clienttranslate('The fire die rolled a ${value} ${action_name}'), [
+                $this->notify('rollBattleDie', clienttranslate('The fire die rolled a ${value} ${action_name}'), [
                     'value' => $value,
                     'roll' => $value,
                     'action_name' => '(' . $actionName . ')',
@@ -286,31 +286,6 @@ class Game extends \Table
     public function actDestroyItem(int $itemId): void
     {
         $this->destroyItem($itemId);
-        // $this->completeAction();
-    }
-    public function actConfirmTradeItem(): void
-    {
-        $this->itemTrade->actConfirmTradeItem();
-        // $this->completeAction();
-    }
-    public function actCancelTrade(): void
-    {
-        $this->itemTrade->actCancelTrade();
-        // $this->completeAction();
-    }
-    public function actTradeDone(): void
-    {
-        $this->itemTrade->actTradeDone();
-        // $this->completeAction();
-    }
-    public function actTradeYield(): void
-    {
-        $this->itemTrade->actTradeYield();
-        // $this->completeAction();
-    }
-    public function actTradeItem(#[JsonParam] array $data): void
-    {
-        $this->itemTrade->actTradeItem($data);
         // $this->completeAction();
     }
     public function actUseSkill(string $skillId, ?string $skillSecondaryId = null): void
@@ -466,13 +441,6 @@ class Game extends \Table
         } elseif ($stateName == 'dinnerPhase') {
             $this->gamestate->unsetPrivateStateForAllPlayers();
             $this->nextState('nightPhase');
-        } elseif ($stateName == 'tradePhase') {
-            $privateState = $this->gamestate->getPrivateState($this->getCurrentPlayer());
-            if ($privateState && $privateState['name'] == 'waitTradePhase') {
-                $this->itemTrade->actCancelTrade();
-            } else {
-                $this->itemTrade->actForceSkip();
-            }
         }
     }
     #[CheckAction(false)]
@@ -482,8 +450,6 @@ class Game extends \Table
         $stateName = $this->gamestate->state(true, false, true)['name'];
         if ($stateName == 'characterSelect') {
             $this->characterSelection->actUnBack();
-        } elseif ($stateName == 'tradePhase') {
-            $this->itemTrade->actUnBack();
         }
     }
     public function actDone(): void
@@ -524,22 +490,22 @@ class Game extends \Table
         $this->getDecks($result);
         return $result;
     }
-    public function argPostEncounter()
-    {
-        return $this->encounter->argPostEncounter();
-    }
-    public function stPostEncounter()
-    {
-        $this->encounter->stPostEncounter();
-    }
-    public function stResolveEncounter()
-    {
-        $this->encounter->stResolveEncounter();
-    }
-    public function argResolveEncounter()
-    {
-        return $this->encounter->argResolveEncounter();
-    }
+    // public function argPostEncounter()
+    // {
+    //     return $this->encounter->argPostEncounter();
+    // }
+    // public function stPostEncounter()
+    // {
+    //     $this->encounter->stPostEncounter();
+    // }
+    // public function stResolveEncounter()
+    // {
+    //     $this->encounter->stResolveEncounter();
+    // }
+    // public function argResolveEncounter()
+    // {
+    //     return $this->encounter->argResolveEncounter();
+    // }
     public function actCancel(): void
     {
         $this->selectionStates->actCancel();
@@ -574,48 +540,8 @@ class Game extends \Table
                 $deck = $state['deck'];
                 $card = $state['card'];
                 $this->cardDrawEvent($card, $deck);
-                if ($card['deckType'] == 'resource') {
-                    $this->adjustResource($card['resourceType'], $card['count']);
-
-                    $this->eventLog(clienttranslate('${character_name} found ${count} ${name}(s) ${buttons}'), [
-                        ...$card,
-                        'buttons' => notifyButtons([
-                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'card'],
-                        ]),
-                    ]);
-                } elseif ($card['deckType'] == 'encounter') {
-                    // Change state and check for fatigue/damage modifications
-                    $this->eventLog(clienttranslate('${character_name} encountered a ${name} (${fatigue} fatigue, ${damage} damage)'), [
-                        ...$card,
-                        'name' => notifyTextButton([
-                            'name' => $card['name'],
-                            'dataId' => $card['id'],
-                            'dataType' => 'card',
-                        ]),
-                    ]);
-                } elseif ($card['deckType'] == 'nothing') {
-                    if (!$this->isValidExpansion('mini-expansion')) {
-                        $this->eventLog(clienttranslate('${character_name} did nothing ${buttons}'), [
-                            'buttons' => notifyButtons([
-                                ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'card'],
-                            ]),
-                        ]);
-                    }
-                } elseif ($card['deckType'] == 'physical-hindrance') {
-                    $this->eventLog(clienttranslate('${character_name} must draw a ${deck} ${buttons}'), [
-                        'deck' => clienttranslate('Physical Hindrance'),
-                        'buttons' => notifyButtons([
-                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'card'],
-                        ]),
-                    ]);
-                } elseif ($card['deckType'] == 'mental-hindrance') {
-                    $this->eventLog(clienttranslate('${character_name} must draw a ${deck} ${buttons}'), [
-                        'deck' => clienttranslate('Mental Hindrance'),
-                        'buttons' => notifyButtons([
-                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'card'],
-                        ]),
-                    ]);
-                } else {
+                if ($card['deckType'] == 'revenge') {
+                } elseif ($card['deckType'] == 'tile') {
                 }
                 return [...$state, 'discard' => false];
             },
@@ -624,27 +550,6 @@ class Game extends \Table
                 $card = $data['card'];
                 if ($data['discard']) {
                     $this->nextState('playerTurn');
-                } elseif ($card['deckType'] == 'resource') {
-                    $this->nextState('playerTurn');
-                } elseif ($card['deckType'] == 'encounter') {
-                    $this->nextState('resolveEncounter');
-                } elseif ($card['deckType'] == 'nothing') {
-                    if ($this->isValidExpansion('mini-expansion')) {
-                        $card = $this->decks->pickCard('day-event');
-                        $this->gameData->set('state', ['card' => $card, 'deck' => 'day-event']);
-                        $this->actions->addDayEvent($card['id']);
-                        $moveToDrawCardState = true;
-                    } else {
-                        $this->nextState('playerTurn');
-                    }
-                } elseif (
-                    $card['deck'] != $card['deckType'] &&
-                    ($card['deckType'] == 'physical-hindrance' || $card['deckType'] == 'mental-hindrance')
-                ) {
-                    $this->checkHindrance(true, $this->character->getSubmittingCharacterId());
-                    $this->nextState('playerTurn');
-                } elseif ($card['deckType'] == 'day-event') {
-                    $this->nextState('dayEvent');
                 } else {
                     $this->nextState('playerTurn');
                 }
@@ -717,16 +622,6 @@ class Game extends \Table
     {
         $result = ['actions' => []];
         $this->getAllPlayers($result);
-        return $result;
-    }
-    public function argStartHindrance(): array
-    {
-        $selectableUpgrades = array_keys(
-            array_filter($this->data->getBoards()['knowledge-tree-' . $this->getDifficulty()]['track'], function ($v) {
-                return !array_key_exists('upgradeType', $v);
-            })
-        );
-        $result = [...$this->getArgsData(), 'selectableUpgrades' => $selectableUpgrades];
         return $result;
     }
     public function log(...$args)
@@ -818,11 +713,11 @@ class Game extends \Table
             while (true) {
                 if ($this->character->isLastCharacter()) {
                     $this->nextState('dinnerPhase');
-                    $this->actions->clearDayEvent();
+                    resetPerDay($this);
                     break;
                 } else {
                     $this->character->activateNextCharacter();
-                    $this->actions->clearDayEvent();
+                    resetPerDay($this);
                     if ($this->character->getActiveFatigue() == 0) {
                         $this->notify('playerTurn', clienttranslate('${character_name} is incapacitated'), []);
                     } else {
@@ -853,109 +748,6 @@ class Game extends \Table
     {
         $this->DbQuery('UPDATE player SET player_score=0 WHERE 1=1');
         $this->nextState('endGame');
-    }
-    public function stMorningPhase()
-    {
-        $this->actInterrupt->interruptableFunction(
-            __FUNCTION__,
-            func_get_args(),
-            [$this->hooks, 'onMorning'],
-            function (Game $_this) {
-                $woodNeeded = $this->getFirewoodCost();
-                $day = $this->gameData->get('day');
-                $day += 1;
-                $this->gameData->set('day', $day);
-                $fireWood = $this->gameData->getResource('fireWood');
-                if (array_key_exists('allowFireWoodAddition', $this->gameData->get('morningState') ?? [])) {
-                    $this->gameData->set('morningState', [...$this->gameData->get('morningState') ?? [], 'allowFireWoodAddition' => false]);
-                    if ($fireWood < $woodNeeded + 1) {
-                        $missingWood = $woodNeeded + 1 - $fireWood;
-                        $wood = $this->gameData->getResource('wood');
-                        if ($wood >= $missingWood) {
-                            $this->gameData->setResource(
-                                'fireWood',
-                                min($fireWood + $missingWood, $this->gameData->getResourceMax('wood'))
-                            );
-                            $this->gameData->setResource('wood', max($wood - $missingWood, 0));
-                            $this->notify(
-                                'notify',
-                                clienttranslate('During the night the tribe quickly added ${woodNeeded} ${token_name} to the fire'),
-                                [
-                                    'woodNeeded' => $woodNeeded,
-                                    'token_name' => 'wood',
-                                ]
-                            );
-                        }
-                    }
-                }
-
-                $this->setStat($day, 'day_number');
-                resetPerDay($this);
-                if ($day == 14) {
-                    $this->lose();
-                }
-                $difficulty = $this->getTrackDifficulty();
-                $fatigue = -1;
-                if ($difficulty == 'hard') {
-                    $fatigue = -2;
-                }
-                return [
-                    'difficulty' => $difficulty,
-                    'fatigue' => $fatigue,
-                    'actions' => 0,
-                    'skipMorningDamage' => [],
-                    'woodNeeded' => $woodNeeded,
-                    'changeOrder' => true,
-                    'nextState' => 'tradePhase',
-                    'day' => $day,
-                ];
-            },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
-                // extract($data);
-                $fatigue = $data['fatigue'];
-                $actions = $data['actions'];
-                $skipMorningDamage = $data['skipMorningDamage'];
-                $woodNeeded = $data['woodNeeded'];
-                $this->character->updateAllCharacterData(function (&$data) use ($fatigue, $actions, $skipMorningDamage) {
-                    if (!in_array($data['id'], $skipMorningDamage)) {
-                        $prev = 0;
-                        $this->character->_adjustFatigue($data, $fatigue, $prev, $data['id']);
-                    }
-                    if ($data['incapacitated'] && $data['recovering']) {
-                        $data['incapacitated'] = false;
-                    }
-
-                    if (!$data['incapacitated']) {
-                        $data['actions'] = $data['maxActions'];
-                        $data['actions'] = clamp($data['actions'] + $actions, 0, $data['maxActions']);
-                    }
-                });
-                if ($fatigue != 0) {
-                    $this->notify('morningPhase', clienttranslate('Everyone lost ${amount} ${character_resource}'), [
-                        'amount' => -$fatigue,
-                        'character_resource' => clienttranslate('fatigue'),
-                    ]);
-                }
-
-                $this->notify('morningPhase', clienttranslate('The fire pit used ${amount} wood'), [
-                    'amount' => $woodNeeded,
-                ]);
-                $this->adjustResource('fireWood', -$woodNeeded);
-                if ($this->gameData->getResource('fireWood') <= 0) {
-                    $this->lose();
-                }
-                $this->notify('morningPhase', clienttranslate('Morning has arrived (Day ${day})'), [
-                    'day' => $data['day'],
-                ]);
-                $this->hooks->onMorningAfter($data);
-                if ($data['changeOrder']) {
-                    $this->character->rotateTurnOrder();
-                }
-                if ($data['nextState'] != false) {
-                    $this->nextState('tradePhase');
-                }
-            }
-        );
     }
 
     /**
@@ -1001,68 +793,13 @@ class Game extends \Table
     }
     public function getItemData(&$result): void
     {
-        $result['builtEquipment'] = $this->getCraftedItems();
-        $result['buildings'] = $this->gameData->get('buildings');
-        $items = $this->gameData->getCreatedItems();
-        $result['campEquipmentCounts'] = array_count_values(
-            array_map(function ($d) use ($items) {
-                return $items[$d];
-            }, $this->gameData->get('campEquipment'))
-        );
-        $result['campEquipment'] = array_values(
-            array_map(function ($d) use ($items) {
-                return ['name' => $items[$d], 'itemId' => $d];
-            }, $this->gameData->get('campEquipment'))
-        );
-
-        $result['cookableFoods'] = $this->actions->getActionSelectable('actCook');
-
-        $result['eatableFoods'] = array_map(function ($eatable) {
-            $data = [...$eatable['actEat'], 'id' => $eatable['id'], 'characterId' => $this->character->getTurnCharacterId()];
-            $this->hooks->onGetEatData($data);
-            return $data;
-        }, $this->actions->getActionSelectable('actEat'));
-
-        $result['revivableFoods'] = array_map(function ($eatable) {
-            $data = [...$eatable['actRevive'], 'id' => $eatable['id']];
-            return $data;
-        }, $this->actions->getActionSelectable('actRevive'));
-        $selectable = $this->actions->getActionSelectable('actCraft');
-
-        $result['availableEquipment'] = array_combine(
-            toId($selectable),
-            array_map(function ($d) use ($result) {
-                return $d['count'] - (array_key_exists($d['id'], $result['builtEquipment']) ? $result['builtEquipment'][$d['id']] : 0);
-            }, $selectable)
-        );
-        $availableEquipment = array_keys($result['availableEquipment']);
-
-        $result['availableEquipmentWithCost'] = array_values(
-            array_filter($availableEquipment, function ($itemName) {
-                $item = $this->data->getItems()[$itemName];
-                return $this->hasResourceCost($item);
-            })
-        );
-
-        $craftingLevel = $this->gameData->get('craftingLevel');
-        $buildings = $this->gameData->get('buildings');
-        $allBuildableEquipment = array_values(
-            array_filter(
-                $this->data->getItems(),
-                function ($v, $k) use ($craftingLevel) {
-                    return $v['type'] == 'item' && in_array($v['craftingLevel'], $craftingLevel);
-                },
-                ARRAY_FILTER_USE_BOTH
-            )
-        );
-    }
-    public function getValidTokens(): array
-    {
-        return array_filter($this->data->getTokens(), function ($v) {
-            return $v['type'] == 'resource' &&
-                (!array_key_exists('requires', $v) || $v['requires']($this, $v)) &&
-                (!array_key_exists('expansion', $v) || $this->isValidExpansion($v['expansion']));
-        });
+        // $selectable = $this->actions->getActionSelectable('actCraft');
+        // $result['availableEquipment'] = array_combine(
+        //     toId($selectable),
+        //     array_map(function ($d) use ($result) {
+        //         return $d['count'] - (array_key_exists($d['id'], $result['builtEquipment']) ? $result['builtEquipment'][$d['id']] : 0);
+        //     }, $selectable)
+        // );
     }
     public function getGameData(&$result): void
     {
@@ -1131,33 +868,6 @@ class Game extends \Table
 
             $this->notify('updateCharacterData', '', ['gameData' => $result]);
         }
-        if ($this->changed['knowledge']) {
-            $selectableUpgrades = array_keys(
-                array_filter($this->data->getBoards()['knowledge-tree-' . $this->getDifficulty()]['track'], function ($v) {
-                    return !array_key_exists('upgradeType', $v);
-                })
-            );
-            $availableUnlocks = $this->data->getValidKnowledgeTree();
-            $result = [
-                'upgrades' => $this->gameData->get('upgrades'),
-                'unlocks' => $this->gameData->get('unlocks'),
-                'availableUnlocks' => array_map(function ($id) use ($availableUnlocks) {
-                    $knowledgeObj = $this->data->getKnowledgeTree()[$id];
-                    return [
-                        'id' => $id,
-                        'name' => $knowledgeObj['name'],
-                        'name_suffix' => array_key_exists('name_suffix', $knowledgeObj) ? $knowledgeObj['name_suffix'] : '',
-                        'unlockCost' => $availableUnlocks[$id]['unlockCost'],
-                    ];
-                }, array_keys($availableUnlocks)),
-                'selectableUpgrades' => $selectableUpgrades,
-            ];
-            $this->getItemData($result);
-
-            $result = [...$this->getArgsData(), 'selectableUpgrades' => $selectableUpgrades];
-
-            $this->notify('updateKnowledgeTree', '', ['gameData' => $result]);
-        }
         if (
             !in_array($this->gamestate->state(true, false, true)['name'], [
                 'characterSelect',
@@ -1166,9 +876,7 @@ class Game extends \Table
                 'dinnerPhase',
             ])
         ) {
-            $availableUnlocks = $this->data->getValidKnowledgeTree();
             $result = [
-                'tradeRatio' => $this->getTradeRatio(),
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'availableItemSkills' => $this->actions->getAvailableItemSkills(),
@@ -1177,12 +885,6 @@ class Game extends \Table
                 $result['canUndo'] = $this->undo->canUndo();
             }
             $this->notify('updateActionButtons', '', ['gameData' => $result]);
-        }
-        if (in_array($this->gamestate->state(true, false, true)['name'], ['dinnerPhasePrivate', 'dinnerPhase'])) {
-            foreach ($this->gamestate->getActivePlayerList() as $playerId) {
-                $result = $this->argDinnerPhase($playerId);
-                $this->notify_player((int) $playerId, 'updateActionButtons', '', ['gameData' => $result]);
-            }
         }
     }
 
@@ -1221,87 +923,11 @@ class Game extends \Table
      */
     public function getAllDatas(): array
     {
-        $stateName = $this->gamestate->state(true, false, true)['name'];
-        // TODO remove this check after initial games are no longer in progress
-        $turnOrder = $this->gameData->get('turnOrder');
-        if (sizeof(array_filter($turnOrder)) != 4) {
-            $players = $this->loadPlayersBasicInfos();
-
-            $characters = array_values(
-                $this->getCollectionFromDb('SELECT character_name, player_id FROM `character` order by character_name')
-            );
-            if (sizeof($characters) == 4) {
-                $players = array_orderby($players, 'player_no', SORT_ASC);
-                $turnOrder = [];
-                array_walk($players, function ($player) use (&$turnOrder, $characters) {
-                    $turnOrder = [
-                        ...$turnOrder,
-                        ...array_map(
-                            function ($d) {
-                                return $d['character_name'];
-                            },
-                            array_filter($characters, function ($char) use ($player) {
-                                return $char['player_id'] == $player['player_id'];
-                            })
-                        ),
-                    ];
-                });
-                $this->gameData->set('turnOrder', $turnOrder);
-                if ($stateName !== 'characterSelect') {
-                    $this->gameData->set('turnOrderStart', $this->gameData->get('turnOrder'));
-                }
-            }
-        }
-        if (
-            (!$this->gameData->get('turnOrderStart') || sizeof($this->gameData->get('turnOrderStart')) < 4) &&
-            $stateName !== 'characterSelect'
-        ) {
-            $players = $this->loadPlayersBasicInfos();
-
-            $characters = array_values(
-                $this->getCollectionFromDb('SELECT character_name, player_id FROM `character` order by character_name')
-            );
-            $players = array_orderby($players, 'player_no', SORT_ASC);
-            $turnOrder = [];
-            array_walk($players, function ($player) use (&$turnOrder, $characters) {
-                $turnOrder = [
-                    ...$turnOrder,
-                    ...array_map(
-                        function ($d) {
-                            return $d['character_name'];
-                        },
-                        array_filter($characters, function ($char) use ($player) {
-                            return $char['player_id'] == $player['player_id'];
-                        })
-                    ),
-                ];
-            });
-            $this->gameData->set('turnOrderStart', $turnOrder);
-        }
-        if ($stateName == 'characterSelect' && $this->gameData->get('turnOrderStart')) {
-            $this->gameData->set('turnOrderStart', null);
-        }
-        $equippedEquipment = array_merge(
-            [],
-            ...array_map(function ($data) {
-                return toId($data['equipment']);
-            }, $this->character->getAllCharacterData(false))
-        );
-        if (sizeof($this->gameData->get('lastItemOwners')) == 0 && sizeof($equippedEquipment) > 0) {
-            foreach ($this->character->getAllCharacterData(false) as $char) {
-                $ids = array_map(function ($d) {
-                    return $d['itemId'];
-                }, $char['equipment']);
-                $this->character->updateItemLastOwner($char['id'], $ids);
-            }
-        }
-
         $result = [
             'version' => $this->getVersion(),
             'expansionList' => self::$expansionList,
             'expansion' => $this->getExpansion(),
             'difficulty' => $this->getDifficulty(),
-            // 'isRealTime' => $this->isRealTime() || !$this->getIsTrusting(),
             ...$this->getArgsData(),
         ];
         $this->getAllPlayers($result);
@@ -1365,7 +991,7 @@ class Game extends \Table
 
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));
         $this->gameData->set('difficulty', $this->getGameStateValue('difficulty'));
-        $this->decks = new DMTNT_RevengeDeck($this);
+        $this->decks = new DMTNT_Decks($this);
         $this->decks->setup();
 
         // Activate first player once everything has been initialized and ready.
@@ -1467,26 +1093,6 @@ class Game extends \Table
     }
 
     // TEST FUNCTIONS START HERE
-    public function setNightCard()
-    {
-        $cards = array_values($this->decks->getDeck('night-event')->getCardsInLocation('deck'));
-        $firstCard = null;
-        $max = 0;
-        foreach ($cards as $k => $v) {
-            if ($max < $v['location_arg']) {
-                $max = max($max, $v['location_arg']);
-                $firstCard = $v;
-            }
-        }
-        foreach ($cards as $k => $v) {
-            if ($v['type_arg'] == 'night-event-7_15' && $firstCard['type_arg'] != 'night-event-7_15') {
-                $this->decks->getDeck('night-event')->moveCard($firstCard['id'], 'deck', $v['location_arg']);
-                $this->decks->getDeck('night-event')->moveCard($v['id'], 'deck', $max);
-            }
-        }
-        $this->gameData->setResources(['fireWood' => 1, 'wood' => 1]);
-        $this->completeAction();
-    }
     public function resetActions()
     {
         $this->character->updateCharacterData($this->character->getSubmittingCharacter()['id'], function (&$data) {
@@ -1526,11 +1132,6 @@ class Game extends \Table
     public function fatigueChar($character)
     {
         $this->character->adjustFatigue($character, -10);
-        $this->completeAction();
-    }
-    public function shuffle()
-    {
-        $this->decks->shuffleInDiscard('gather', true);
         $this->completeAction();
     }
 }

@@ -1,5 +1,5 @@
 <?php
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 
 use Exception;
 

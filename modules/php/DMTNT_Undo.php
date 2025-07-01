@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 
 use BgaUserException;
 use Error;
@@ -11,7 +11,7 @@ class DMTNT_Undo
 {
     private Game $game;
     private array $initialState;
-    private array $extraTablesList = ['stats', 'nightevent', 'dayevent', 'physicalhindrance', 'mentalhindrance'];
+    private array $extraTablesList = ['stats'];
     private ?int $savedMoveId = null;
     private bool $actionWasCleared = false;
     public function __construct(Game $game)

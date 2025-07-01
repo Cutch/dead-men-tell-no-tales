@@ -1,4 +1,4 @@
-import characters from './characters-data';
+import characters from './character-data';
 import revengeDeck from './revenge-deck-data';
 import tile from './tile-data';
 import token from './token-data';

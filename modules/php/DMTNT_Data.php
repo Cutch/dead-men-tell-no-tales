@@ -1,9 +1,8 @@
 <?php
 declare(strict_types=1);
 
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Utils.php';
-require_once dirname(__DIR__) . '/php/data-files/DMTNT_Boards.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Characters.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_RevengeDeck.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Items.php';
@@ -11,7 +10,7 @@ require_once dirname(__DIR__) . '/php/data-files/DMTNT_Tile.php';
 class DMTNT_Data
 {
     private Game $game;
-    private array $revengeDeck;
+    private array $decks;
     private array $characters;
     private array $tile;
     private array $items;
@@ -37,7 +36,7 @@ class DMTNT_Data
             $charactersData = (new DMTNT_CharactersData())->getData();
             $tileData = (new DMTNT_TileData())->getData();
             $itemsData = (new DMTNT_ItemsData())->getData();
-            $this->revengeDeck = addId($revengeDeckData);
+            $this->decks = array_merge(addId($revengeDeckData), addId($tileData));
             $this->characters = addId($charactersData);
             $this->tile = addId($tileData);
             $this->items = addId($itemsData);
@@ -45,9 +44,9 @@ class DMTNT_Data
 
         return array_filter($this->$name, [$this, 'expansionFilter']);
     }
-    public function getRevengeDeck()
+    public function getDecks()
     {
-        return $this->get('revengeDeck');
+        return $this->get('decks');
     }
     public function getCharacters()
     {

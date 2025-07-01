@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `character` (
     `item` int(10) unsigned NULL,
     `action` int(10) UNSIGNED DEFAULT 0,
     `fatigue` int(10) UNSIGNED DEFAULT 0,
+    `tempStrength` int(10) UNSIGNED DEFAULT 0,
     `confirmed` int(1) UNSIGNED DEFAULT 0,
     FOREIGN KEY (item) REFERENCES item(item_id),
     FOREIGN KEY (player_id) REFERENCES player(player_id),

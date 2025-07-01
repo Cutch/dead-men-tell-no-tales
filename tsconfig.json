@@ -17,6 +17,6 @@
       "noUncheckedIndexedAccess": true,
     },
     "files": [
-      "src/deadmentellnotales.js"
+      "dist/deadmentellnotales.js"
     ]
 }

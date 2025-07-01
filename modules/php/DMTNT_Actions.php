@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Bga\Games\DeadMenTaleNoTales;
+namespace Bga\Games\DeadMenTellNoTales;
 
 use BgaUserException;
 

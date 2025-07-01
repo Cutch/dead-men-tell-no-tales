@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * DeadMenTaleNoTales implementation : © <Your name here> <Your email address here>
+ * DeadMenTellNoTales implementation : © <Your name here> <Your email address here>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -9,21 +9,20 @@
  *
  * deadmentellnotales.js
  *
- * DeadMenTaleNoTales user interface script
+ * DeadMenTellNoTales user interface script
  *
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
  */
-/// <amd-module name="bgagame/deadmentellnotales"/>
 import dojo from 'dojo'; // Loads the dojo object using dojoConfig if needed
 import declare from 'dojo/_base/declare'; // Add 'declare' to dojo if needed
 import Gamegui from 'ebg/core/gamegui'; // Loads Gamegui class onto ebg.core.gamegui if needed
 import 'ebg/counter'; // Loads Counter class onto ebg.counter if needed
-import { getAllData } from './assets';
+import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
-import { DeckSelectionScreen } from './screens/deck-selection-screen';
-import { addClickListener, Deck, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
+import { addClickListener, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
+import Panzoom from '@panzoom/panzoom';
 
 declare('bgagame.deadmentellnotales', Gamegui, {
   constructor: function () {
@@ -38,7 +37,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.clickListeners = [];
     this.cardSelectionScreen = new CardSelectionScreen(this);
     this.characterSelectionScreen = new CharacterSelectionScreen(this);
-    this.deckSelectionScreen = new DeckSelectionScreen(this);
     this.currentResources = { prevResources: {}, resources: {} };
     this.animations = [];
   },
@@ -413,29 +411,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   },
   setupBoard: function (gameData) {
     this.firstPlayer = Object.values(gameui.gamedatas.players).find((d) => d.player_no == 1).id;
-    const decks = [
-      { name: 'harvest', expansion: 'base' },
-      { name: 'hunt', expansion: 'base' },
-    ].filter((d) => this.expansions.includes(d.expansion));
     // Main board
-    document
-      .getElementById('game_play_area')
-      .insertAdjacentHTML(
-        'beforeend',
-        `<div id="board-track-wrapper"><div id="board-resource-wrapper"><div id="board-container" class="dmtnt__container"><div class="board"><div class="buildings"></div>${decks
-          .map((d) => `<div class="${d.name}"></div>`)
-          .join('')}</div></div></div></div>`,
-      );
+    document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `<div id="board-wrapper"></div>`);
+    const elem = document.getElementById('board-wrapper');
+    const panzoom = Panzoom(elem, {
+      maxScale: 5,
+    });
+    panzoom.pan(10, 10);
+    panzoom.zoom(2, { animate: true });
 
     renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
-    decks.forEach(({ name: deck }) => {
-      if (!this.decks[deck] && gameData.decks[deck]) {
-        this.decks[deck] = new Deck(this, deck, gameData.decks[deck], document.querySelector(`.board > .${deck}`), 2);
-        if (!this.decks[deck].isAnimating() && gameData.decksDiscards)
-          this.decks[deck].setDiscard(gameData.decksDiscards[deck]?.name ?? gameData.decksDiscards[deck]?.[0]);
-        this.decks[deck].updateMarker(gameData.decks[deck]);
-      }
-    });
   },
   setupCharacterSelections: function (gameData) {
     const playArea = $('game_play_area');
@@ -552,98 +537,11 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     );
     this.updatePlayers(gameData);
     // Setting up player boards
-    this.updateKnowledgeTree(gameData);
     this.updateItems(gameData);
 
     // Setup game notifications to handle (see "setupNotifications" method below)
     this.setupNotifications();
     this.firstRender = true;
-  },
-  updateKnowledgeTree(gameData) {
-    let knowledgeContainer = document.querySelector('#knowledge-container .unlocked-tokens');
-    if (!knowledgeContainer) {
-      const playArea = $('game_play_area');
-      playArea.insertAdjacentHTML(
-        'beforeend',
-        `<div id="knowledge-container" class="dmtnt__container"><div class="board"><div class="upgrade-selections"></div><div class="unlocked-tokens"></div></div></div>`,
-      );
-      renderImage(`knowledge-tree-${this.difficulty}`, document.querySelector('#knowledge-container .board'), {
-        pos: 'insert',
-        scale: 1.25,
-      });
-      knowledgeContainer = document.querySelector('#knowledge-container .unlocked-tokens');
-    }
-
-    const selections = document.querySelector(`#knowledge-container .upgrade-selections`);
-    const upgradeData = getAllData()[`knowledge-tree-${this.difficulty}`].upgrades;
-    selections.innerHTML = '';
-    // Hindrance show new discoveries
-    if (gameData.upgrades) {
-      Object.keys(gameData.upgrades).forEach((unlockId) => {
-        const unlockSpot = gameData.upgrades[unlockId].replace;
-        if (unlockSpot) {
-          const { x, y } = upgradeData[unlockSpot];
-          selections.insertAdjacentHTML(
-            'beforeend',
-            `<div class="discovery-spot ${unlockSpot}" style="position: absolute;top: ${(y - 7) * 1.2}px; left: ${
-              (x - 103) * 1.2
-            }px;"></div>`,
-          );
-          const elem = selections.querySelector(`.discovery-spot.${unlockSpot}`);
-          renderImage(unlockId, elem, { scale: 1.7 / 1.2 });
-          addClickListener(document.querySelector(`#knowledge-container *[name="${unlockId}"]`), 'Unlocks', () => {
-            this.tooltip.show();
-            renderImage(unlockId, this.tooltip.renderByElement(), { withText: true, pos: 'insert', type: 'tooltip-unlock' });
-          });
-        }
-      });
-    }
-
-    knowledgeContainer.innerHTML = '';
-    gameData.unlocks.forEach((unlockName) => {
-      const unlockSpot = gameData.upgrades[unlockName]?.replace ?? unlockName;
-      const { x, y } = upgradeData[unlockSpot];
-      knowledgeContainer.insertAdjacentHTML(
-        'beforeend',
-        `<div id="knowledge-${unlockSpot}" class="fkp" style="top: ${y * 1.2}px; left: ${x * 1.2}px;"></div>`,
-      );
-      renderImage(`fkp-unlocked`, $(`knowledge-${unlockSpot}`), { scale: 2 / 1.2, extraCss: 'fkp-unlocked' });
-    });
-
-    gameData.allUnlocks.forEach((unlockId) => {
-      if (gameData.upgrades[unlockId]) return;
-      const { x, y } = upgradeData[unlockId];
-      selections.insertAdjacentHTML(
-        'beforeend',
-        `<div class="fkp-spot ${unlockId}" style="top: ${(y - 7) * 1.2}px; left: ${(x - 103) * 1.2}px;"></div>`,
-      );
-      const elem = selections.querySelector(`.fkp-spot.${unlockId}`);
-
-      addClickListener(elem, 'Select', () => {
-        this.tooltip.show();
-        renderImage(unlockId, this.tooltip.renderByElement(), { textOnly: true, pos: 'insert', type: 'tooltip-unlock' });
-      });
-    });
-
-    // Sort the nodes in the selection for tab indexing
-    const items = selections.children;
-    const itemsArr = [];
-    for (const i in items) {
-      if (items[i].nodeType == 1) {
-        itemsArr.push(items[i]);
-      }
-    }
-
-    itemsArr.sort((a, b) => {
-      const dx = Math.round((parseInt(a.style?.left ?? 0, 10) - parseInt(b.style?.left ?? 0, 10)) / 10);
-      const dy = Math.round((parseInt(a.style?.top ?? 0, 10) - parseInt(b.style?.top ?? 0, 10)) / 10);
-      if (dy !== 0) return dy;
-      else return dx;
-    });
-
-    for (const i = 0; i < itemsArr.length; ++i) {
-      selections.appendChild(itemsArr[i]);
-    }
   },
   updateGameDatas: function (gameData) {
     if (gameData?.version && this.gamedatas.version < gameData?.version && !this.reloadShown) {
@@ -689,9 +587,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'startHindrance':
         this.upgradeSelectionScreen.show(this.player_id == args.active_player, args.args);
         break;
-      case 'deckSelection':
-        if (isActive) this.deckSelectionScreen.show(args.args);
-        break;
       case 'resourceSelection':
         if (isActive) this.tokenScreen.show(args.args);
         break;
@@ -717,7 +612,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
-        this.updateKnowledgeTree(args.args);
 
         if (this.leftTradePhase) {
           this.leftTradePhase = false;
@@ -768,9 +662,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         break;
       case 'startHindrance':
         this.upgradeSelectionScreen.hide();
-        break;
-      case 'deckSelection':
-        this.deckSelectionScreen.hide();
         break;
       case 'eatSelection':
         this.eatScreen.hide();
@@ -1124,19 +1015,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             this.bgaPerformAction('actDone');
           });
           break;
-        case 'deckSelection':
-          this.statusBar.addActionButton(
-            args.deckSelection?.title
-              ? _(args.deckSelection.title)
-              : args.selectionState?.title
-                ? _(args.selectionState.title)
-                : _('Select Deck'),
-            () => {
-              this.bgaPerformAction('actSelectDeck', { deckName: this.deckSelectionScreen.getSelectedId() });
-            },
-          );
-          addSelectionCancelButton();
-          break;
         case 'eatSelection':
           this.statusBar.addActionButton(args.selectionState?.title ? _(args.selectionState.title) : _('Eat'), () => {
             this.bgaPerformAction('actSelectEat', {
@@ -1411,7 +1289,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     // dojo.subscribe('startSelection', this, 'notif_startSelection');
     dojo.subscribe('characterClicked', this, 'notif_characterClicked');
     dojo.subscribe('updateCharacterData', this, 'notif_updateCharacterData');
-    dojo.subscribe('updateKnowledgeTree', this, 'notif_updateKnowledgeTree');
     dojo.subscribe('updateActionButtons', this, 'notif_updateActionButtons');
     dojo.subscribe('notify', this, 'notif_actionNotification');
 
@@ -1429,10 +1306,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     dojo.subscribe('tokenUsed', this, 'notif_tokenUsed');
     dojo.subscribe('shuffle', this, 'notif_shuffle');
     dojo.subscribe('cardDrawn', this, 'notif_cardDrawn');
-    dojo.subscribe('rollFireDie', this, 'notif_rollFireDie');
+    dojo.subscribe('rollBattleDie', this, 'notif_rollBattleDie');
     dojo.subscribe('resetNotifications', this, 'notif_resetNotifications');
     this.notifqueue.setSynchronous('cardDrawn', 1000);
-    this.notifqueue.setSynchronous('rollFireDie', 3250);
+    this.notifqueue.setSynchronous('rollBattleDie', 3250);
     this.notifqueue.setSynchronous('shuffle', 1500);
     this.notifqueue.setSynchronous('tokenUsed', 300);
   },
@@ -1483,9 +1360,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       }
     }
   },
-  notif_rollFireDie: async function (notification) {
+  notif_rollBattleDie: async function (notification) {
     if (await this.notificationWrapper(notification)) return;
-    if (isStudio()) console.log('notif_rollFireDie', notification);
+    if (isStudio()) console.log('notif_rollBattleDie', notification);
     return this.dice.roll(notification.args);
   },
   notif_cardDrawn: async function (notification) {
@@ -1528,13 +1405,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (isStudio()) console.log('notif_updateActionButtons', notification);
     await this.notificationWrapper(notification);
     await this.onUpdateActionButtons(notification.args.gamestate.name, notification.args.gameData);
-  },
-  notif_updateKnowledgeTree: async function (notification) {
-    await this.notificationWrapper(notification);
-    if (isStudio()) console.log('notif_updateKnowledgeTree', notification);
-    this.updateItems(notification.args.gameData);
-    this.updateKnowledgeTree(notification.args.gameData);
-    if (notification.args?.gamestate?.name == 'startHindrance') this.upgradeSelectionScreen.update(notification.args.gameData);
   },
 
   notif_characterClicked: async function (notification) {

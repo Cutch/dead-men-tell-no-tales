@@ -1,4 +1,4 @@
-import { getAllData } from '../assets';
+import { getAllData } from '../assets/index';
 export const getSpriteSize = (name, scale = 2) => {
   const {
     frame: { w, h },

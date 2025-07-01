@@ -59,7 +59,6 @@ $itemSelection = 19;
 $resolveEncounter = 20;
 $postEncounter = 21;
 $interrupt = 22;
-$waitTradePhase = 63;
 $undo = 96;
 $changeZombiePlayer = 97;
 $gameEnd = 99;
@@ -90,7 +89,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionCount',
         'possibleactions' => ['actChooseCharacters', 'actCharacterClicked', 'actUnBack'],
-        'transitions' => ['playerTurn' => $playerTurn, 'startHindrance' => $startHindrance],
+        'transitions' => ['playerTurn' => $playerTurn],
         'action' => 'stSelectCharacter',
     ],
     $playerTurn => [
@@ -126,7 +125,6 @@ $machinestates = [
             'resolveEncounter' => $resolveEncounter,
             'playerTurn' => $playerTurn,
             'drawCard' => $drawCard,
-            'dayEvent' => $dayEvent,
         ],
     ],
     $nextCharacter => [
@@ -135,7 +133,7 @@ $machinestates = [
         'type' => 'game',
         'action' => 'stNextCharacter',
         'updateGameProgression' => true,
-        'transitions' => ['endGame' => $gameEnd, 'playerTurn' => $playerTurn, 'dinnerPhase' => $dinnerPhase],
+        'transitions' => ['endGame' => $gameEnd, 'playerTurn' => $playerTurn],
     ],
     $characterSelection => [
         'name' => 'characterSelection',
@@ -146,8 +144,6 @@ $machinestates = [
         'possibleactions' => ['actSelectCharacter', 'actCancel'],
         'transitions' => [
             'playerTurn' => $playerTurn,
-            'tradePhase' => $tradePhase,
-            'morningPhase' => $morningPhase,
         ],
     ],
     $cardSelection => [
@@ -157,7 +153,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectCard', 'actCancel'],
-        'transitions' => ['playerTurn' => $playerTurn, 'morningPhase' => $morningPhase],
+        'transitions' => ['playerTurn' => $playerTurn],
     ],
     $itemSelection => [
         'name' => 'itemSelection',
@@ -166,7 +162,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectItem', 'actCancel'],
-        'transitions' => ['playerTurn' => $playerTurn, 'nightPhase' => $nightPhase],
+        'transitions' => ['playerTurn' => $playerTurn],
     ],
     $resolveEncounter => [
         'name' => 'resolveEncounter',
@@ -179,7 +175,6 @@ $machinestates = [
         'transitions' => [
             'endGame' => $gameEnd,
             'postEncounter' => $postEncounter,
-            'whichWeapon' => $whichWeapon,
         ],
     ],
     $postEncounter => [
@@ -238,17 +233,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [
-    $dayEvent,
-    $resolveEncounter,
-    $postEncounter,
-    $nightPhase,
-    $nightDrawCard,
-    $morningPhase,
-    $drawCard,
-    $playerTurn,
-    $tradePhase,
-];
+$interruptableScreens = [$resolveEncounter, $postEncounter, $drawCard, $playerTurn];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];
