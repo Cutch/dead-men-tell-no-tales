@@ -1,0 +1,167 @@
+<?php
+declare(strict_types=1);
+
+namespace Bga\Games\DeadMenTaleNoTales;
+
+use Bga\GameFramework\Actions\Types\JsonParam;
+use BgaUserException;
+use Exception;
+
+class DMTNT_SelectionStates
+{
+    private Game $game;
+    private bool $stateChanged = false;
+    public function __construct(Game $game)
+    {
+        $this->game = $game;
+    }
+
+    public function completeSelectionState(array $data): void
+    {
+        $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
+
+        if ($data['nextState']) {
+            $this->game->character->setSubmittingCharacterById(null);
+            $this->game->nextState($data['nextState']);
+        }
+        if ($isInterrupt) {
+            $this->game->actInterrupt->completeInterrupt();
+        }
+        $this->initiatePendingState();
+    }
+    public function actSelectItem(?string $itemId = null, ?string $characterId = null): void
+    {
+        if (!$itemId) {
+            throw new BgaUserException(clienttranslate('Select an item'));
+        }
+        $stateData = $this->getState(null);
+        $stateData['selectedItemId'] = $itemId;
+        $stateData['selectedCharacterId'] = $characterId;
+        $this->setState(null, $stateData);
+        $data = [
+            'itemId' => $itemId,
+            'characterId' => $characterId,
+            'nextState' => $stateData['nextState'],
+            'isInterrupt' => $stateData['isInterrupt'],
+        ];
+        $this->game->hooks->onItemSelection($data);
+        $this->completeSelectionState($data);
+    }
+    public function cancelState(?string $stateName): void
+    {
+        if ($stateName) {
+            $state = $this->game->gameData->get($stateName);
+            if (array_key_exists('cancellable', $state) && !$state['cancellable']) {
+                throw new BgaUserException(clienttranslate('This action cannot be cancelled'));
+            }
+            $this->game->gameData->set($stateName, [...$state, 'cancelled' => true]);
+        }
+
+        if (!$this->game->actInterrupt->onInterruptCancel()) {
+            $this->game->nextState('playerTurn');
+        }
+        $this->initiatePendingState();
+    }
+    public function stateToStateNameMapping(?string $stateName = null): ?string
+    {
+        $stateName = $stateName ?? $this->game->gamestate->state(true, false, true)['name'];
+        if ($stateName == 'itemSelection') {
+            return 'itemSelectionState'; // Check
+        }
+        return null;
+    }
+    public function argSelectionState(): array
+    {
+        $stateName = $this->stateToStateNameMapping();
+        $state = $this->getState();
+        $result = [
+            'actions' => [],
+            'selectionState' => $this->game->gameData->get($stateName),
+            'character_name' => $this->game->getCharacterHTML($state['characterId']),
+            'activeTurnPlayerId' => 0,
+        ];
+        // TODO this fixes the bug with day event selections, can be removed later
+        if (
+            array_key_exists('selectableCharacters', $result['selectionState']) &&
+            sizeof($result['selectionState']['selectableCharacters']) > 0 &&
+            gettype($result['selectionState']['selectableCharacters'][0]) == 'array'
+        ) {
+            $temp = $this->game->gameData->get($stateName);
+            $temp['selectableCharacters'] = toId($temp['selectableCharacters']);
+            $this->game->gameData->set($stateName, $temp);
+            $result['selectionState'] = $temp;
+        }
+
+        $this->game->getGameData($result);
+        if ($stateName === 'deckSelectionState') {
+            $this->game->getDecks($result);
+        }
+        if ($stateName === 'eatSelection') {
+            $this->game->getItemData($result);
+        }
+        return $result;
+    }
+    public function actCancel(): void
+    {
+        $stateName = $this->stateToStateNameMapping();
+        $this->cancelState($stateName);
+    }
+    public function getState(?string $stateName = null): array
+    {
+        $stateNameState = $this->stateToStateNameMapping($stateName);
+        return $this->game->gameData->get($stateNameState);
+    }
+    public function setState(?string $stateName, ?array $data): void
+    {
+        $stateNameState = $this->stateToStateNameMapping($stateName);
+        $this->game->gameData->set($stateNameState, $data);
+    }
+    public function initiatePendingState(): void
+    {
+        $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+        if (sizeof($pendingStates) > 0) {
+            $this->initiateState(...$pendingStates[0]);
+            array_shift($pendingStates);
+            $this->game->gameData->set('pendingStates', $pendingStates);
+        }
+        $this->game->completeAction();
+    }
+    public function initiateState(
+        string $stateName,
+        array $state,
+        string $characterId,
+        bool $cancellable = true,
+        string $nextState = 'playerTurn',
+        ?string $title = null,
+        bool $isInterrupt = false,
+        bool $isPendingState = false
+    ): void {
+        if ($this->stateChanged || $this->stateToStateNameMapping() != null) {
+            $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+            // WARNING: Update if args change
+            $args = [$stateName, $state, $characterId, $cancellable, $nextState, $title, $isInterrupt, $isPendingState];
+            $args[sizeof($args) - 1] = true;
+            array_push($pendingStates, $args);
+            $this->game->gameData->set('pendingStates', $pendingStates);
+        } else {
+            $this->stateChanged = true;
+            $stateNameState = $this->stateToStateNameMapping($stateName);
+
+            $playerId = $this->game->getCurrentPlayer();
+            $newState = [
+                'cancellable' => $cancellable,
+                'title' => $title,
+                'currentPlayerId' => $playerId,
+                'characterId' => $characterId,
+                'nextState' => $nextState,
+                'isInterrupt' => $isInterrupt,
+                'isPendingState' => $isPendingState,
+                ...$state,
+            ];
+            $this->game->gameData->addMultiActiveCharacter($characterId, true);
+
+            $this->game->gameData->set($stateNameState, $newState);
+            $this->game->nextState($stateName);
+        }
+    }
+}

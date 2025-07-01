@@ -1,0 +1,59 @@
+.image {
+  background-repeat: repeat;
+  position: relative;
+}
+.card {
+  border-radius: 10px;
+  border: 1px solid #000;
+  &.skull {
+    border: none;
+    border-radius: 0;
+  }
+}
+.card-rotator {
+  /* margin: 0 auto 1em; */
+  position: relative;
+  place-self: anchor-center;
+  pointer-events: none;
+}
+/* #players-container .card-rotator {
+    margin: 0;
+} */
+.boards-card {
+  background-image: url(img/boards-spritesheet.png);
+  position: relative;
+}
+.characters-card {
+  background-image: url(img/characters-spritesheet.png);
+}
+.revenge-card {
+  background-image: url(img/decks-spritesheet.png);
+}
+.tile-card {
+  background-image: url(img/items-spritesheet.png);
+}
+.token-card {
+  background-image: url(img/token-spritesheet.png);
+  border-radius: 50%;
+}
+
+.tooltip-text {
+  background-color: rgba($color: #fff, $alpha: 0.8);
+  font-size: 1.15rem;
+  padding: 1rem;
+  width: 350px;
+  border-radius: 10px;
+  .tooltip-line:not(:last-child) {
+    margin-bottom: 0.5rem;
+  }
+  .tooltip-title {
+    font-size: 1.25rem;
+  }
+}
+.tooltip-image-and-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  flex-flow: column;
+}

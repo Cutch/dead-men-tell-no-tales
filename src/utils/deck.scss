@@ -1,0 +1,160 @@
+.deck {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  .card {
+    position: relative;
+  }
+}
+.shuffle {
+  position: absolute;
+  transition: transform 0.8s;
+  top: 0;
+  left: 0;
+  display: none;
+  &.enable {
+    display: unset;
+  }
+}
+.shuffle-1 {
+  animation: 0.75s 2 alternate dld_slide-1;
+}
+.shuffle-2 {
+  animation: 0.75s 2 alternate dld_slide-2;
+}
+@keyframes dld_slide-1 {
+  0% {
+    transform: translateX(0%);
+    z-index: 1;
+    display: block;
+  }
+  20% {
+    transform: translateX(-20%);
+    z-index: 2;
+  }
+  40% {
+    transform: translateX(-10%);
+  }
+  50% {
+    transform: translateX(-20%);
+    z-index: 1;
+  }
+  60% {
+    transform: translateX(-10%);
+  }
+  70% {
+    transform: translateX(-20%);
+    z-index: 2;
+  }
+
+  100% {
+    transform: translateX(0%);
+    z-index: 1;
+    display: none;
+  }
+}
+@keyframes dld_slide-2 {
+  0% {
+    transform: translateX(0%);
+    z-index: 2;
+    display: block !important;
+  }
+  20% {
+    transform: translateX(20%);
+    z-index: 1;
+  }
+  40% {
+    transform: translateX(10%);
+  }
+  50% {
+    transform: translateX(20%);
+    z-index: 2;
+  }
+  60% {
+    transform: translateX(10%);
+  }
+  70% {
+    transform: translateX(20%);
+    z-index: 1;
+  }
+
+  100% {
+    transform: translateX(0%);
+    z-index: 2;
+    display: none;
+  }
+}
+.deck.horizontal {
+  flex-direction: row;
+}
+.deck.vertical {
+  flex-direction: column;
+}
+.flip-card {
+  background-color: transparent;
+  perspective: 1000px; /* Remove this if you don't want the 3D effect */
+  position: absolute;
+  transition: transform 0.8s;
+  top: 0;
+  left: 0;
+}
+.deck.horizontal .discard {
+  transform: translateX(calc(100% + 1rem));
+}
+.deck.vertical .discard {
+  transform: translateY(calc(100% + 1rem));
+}
+.flipped-card {
+  background-color: transparent;
+  position: relative;
+}
+.empty-discard {
+  border-radius: 10px;
+  background-color: #83838357;
+  box-shadow: inset 0px 0px 0px 2px #838383;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-shadow: 0 0 4px black;
+  font-size: 18px;
+}
+.deck-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.flip-card {
+  pointer-events: none;
+  &.partial {
+    pointer-events: unset;
+  }
+}
+/* This container is needed to position the front and back side */
+.flip-card-inner {
+  text-align: center;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+}
+/* Do an horizontal flip when you move the mouse over the flip box container */
+.flip .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front,
+.flip-card-back {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.flip-card-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+/* Style the back side */
+.flip-card-back {
+  transform: rotateY(180deg);
+}

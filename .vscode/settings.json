@@ -1,0 +1,22 @@
+{
+  // linter - eslint
+  "eslint.workingDirectories": ["."],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "explicit"
+  },
+  "files.eol": "\n",
+  "cSpell.words": [
+    "clienttranslate",
+    "dmtnt",
+    "gamestate",
+    "gameui",
+    "interruptable",
+    "spritesheet",
+    "tweening"
+  ],
+  "prettier.documentSelectors": [
+    "**/*.{js,jsx,ts,tsx,vue,html,css,scss,less,json,md,mdx,graphql,yaml,yml,php}"
+  ],
+}

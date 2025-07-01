@@ -1,0 +1,22 @@
+{
+    "rootDir": ".", 
+    "compilerOptions": {
+      "target": "es5",
+      "module": "amd",
+      "lib": ["dom", "esnext"],  
+      "esModuleInterop": true,
+      "sourceMap": true,
+      "allowJs": true,
+      "typeRoots": ["src/types", "./types", "./node_modules/@types"],
+      "outFile": "deadmentellnotales.js",
+      "moduleResolution": "node10",
+      "noImplicitOverride": true,
+      "noImplicitReturns": true,
+      "noPropertyAccessFromIndexSignature": true,
+      "noFallthroughCasesInSwitch": true,
+      "noUncheckedIndexedAccess": true,
+    },
+    "files": [
+      "src/deadmentellnotales.js"
+    ]
+}

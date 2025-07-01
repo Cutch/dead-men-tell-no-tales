@@ -1,0 +1,11 @@
+.dmtnt__clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.dmtnt__clickable.disabled {
+  cursor: unset;
+}
+.dmtnt__clickable-padding:not(#\9):not(#\9):not(#\9) {
+  padding: 5px;
+  margin: -5px;
+}

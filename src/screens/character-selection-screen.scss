@@ -1,0 +1,23 @@
+#character-selection-screen {
+  margin-top: 1rem;
+  overflow: hidden;
+  padding: 1rem;
+  .cards {
+    gap: 1em;
+    margin: 1em;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+  }
+  .data {
+    background: #fff;
+    padding: 0.25rem 1rem;
+    border-radius: 10px;
+    box-shadow: 0 0 2px black;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-weight: 500;
+    user-select: none;
+  }
+}

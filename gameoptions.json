@@ -1,0 +1,45 @@
+{
+    "100": {
+        "name": "Expansion",
+        "values": {
+            "0": {
+                "name": "Base",
+                "description": "Base game"
+            }
+        },
+        "default": 0
+    },
+    "101": {
+        "name": "Difficulty",
+        "values": {
+            "0": {
+                "name": "Scurvy Dog",
+                "firstgameonly": true,
+                "description": "Easy"
+            },
+            "1": {
+                "name": "Buccaneer",
+                "description": "Medium"
+            },
+            "2": {
+                "name": "Admiral",
+                "description": "Hard"
+            }
+        },
+        "default": 0
+    },
+    "102": {
+        "name": "Captain Fromm",
+        "values": {
+            "0": {
+                "name": "Yes",
+                "description": "Play with Captain Fromm"
+            },
+            "1": {
+                "name": "No",
+                "description": "Play without Captain Fromm"
+            }
+        },
+        "default": 1
+    }
+}

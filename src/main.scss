@@ -1,0 +1,77 @@
+/**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * DeadMenTaleNoTales implementation : © Cutch <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * deadmentellnotales.css
+ *
+ * DeadMenTaleNoTales stylesheet
+ *
+ */
+
+#game_play_area {
+  padding: 1em;
+}
+#game_play_area.hide {
+  display: none;
+}
+/* Character Start */
+#character-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem auto auto;
+  flex-flow: row wrap;
+  justify-content: center;
+}
+#character-selector .characters-card {
+  border: 1px solid #000;
+  margin: 4px;
+}
+#character-selector .characters-card.selected {
+  border: 5px solid var(--player-color);
+  margin: 0;
+}
+.dld-warning {
+  animation: red-color-transition 2s infinite;
+}
+/* Character Card Stop */
+
+h3 {
+  background: #fff;
+  padding: 0.25rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 0 2px black;
+  margin-bottom: 1rem;
+}
+
+/* character Container Start */
+// #character-container {
+//   display: flex;
+//   gap: 1rem;
+//   margin: auto;
+//   flex-flow: row wrap;
+//   justify-content: center;
+// }
+/* Character Container Stop */
+@keyframes red-color-transition {
+  0% {
+    color: #000;
+  }
+
+  70% {
+    color: red;
+  }
+
+  to {
+    color: #000;
+  }
+}
+
+.arrow {
+  position: relative;
+  color: #fff;
+}

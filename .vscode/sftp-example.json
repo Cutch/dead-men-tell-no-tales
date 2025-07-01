@@ -1,0 +1,34 @@
+{
+    "name": "BGA",
+    "host": "1.studio.boardgamearena.com",
+    "protocol": "sftp",
+    "port": 2022,
+    "username": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "remotePath": "/deadmentellnotales/",
+    "uploadOnSave": true,
+    "ignore": [
+        ".vscode",
+        ".prettierrc",
+        "eslint.config.js",
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        ".git",
+        ".gitignore",
+        ".DS_Store",
+        "src",
+        "node_modules",
+        "_ide_helper.php",
+        "upload.js"
+    ],
+    "syncOption": {
+        "skipCreate": false,
+        "delete": true
+    },
+    "watcher": {
+        "files": "**/*.{js,css}",
+        "autoUpload": true,
+        "autoDelete": true
+    }
+}

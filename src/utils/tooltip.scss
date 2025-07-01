@@ -1,0 +1,46 @@
+.tooltip-overlay {
+  position: fixed;
+  top: 0px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #00000088;
+  box-shadow: inset 0 0 60px #000;
+  z-index: 10500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .scroll-overlay {
+    overflow: auto;
+    height: calc(100vh / var(--bga-game-zoom, 1));
+  }
+  .inner {
+    position: relative;
+    margin: 100px 1rem 60px;
+  }
+  .body {
+    display: flex;
+    gap: 1rem;
+    flex-flow: wrap;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    border-radius: 50%;
+    border: 1px solid black;
+    background-color: white;
+    z-index: 1;
+    width: 4rem;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto auto 1rem;
+    // position: absolute;
+    // top: -1.5rem;
+    // right: -1.5rem;
+  }
+}

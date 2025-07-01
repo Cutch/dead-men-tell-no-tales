@@ -1,0 +1,156 @@
+.dice-container {
+  z-index: 110;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 7px;
+  visibility: hidden;
+}
+#dice-container-character {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  width: 100%;
+
+  & > div {
+    border-radius: 50%;
+    border: 1px solid #000;
+    background-color: #fff;
+    width: 7rem;
+    height: 7rem;
+  }
+}
+.dice-mover {
+  transition:
+    left 1s,
+    top 1s;
+  position: relative;
+  top: 80%;
+  left: 80%;
+  width: 10em;
+  height: 10em;
+}
+.dice-base {
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 30px 16px black;
+  background-color: #000000bf;
+  border-radius: 50%;
+  border-radius: 50%;
+  width: 10em;
+  height: 10em;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.dice {
+  width: 10em;
+  height: 10em;
+  transform-style: preserve-3d;
+  transform: translate3d(-50%, -50%, 2rem) rotateX(0) rotateZ(0);
+  // transition: transform 1s;
+  position: relative;
+
+  &.show-1 {
+    transform: translate3d(-50%, -50%, 2rem) rotateX(720deg) rotateZ(-720deg);
+  }
+
+  &.show-6 {
+    transform: translate3d(-50%, -50%, 2rem) rotateX(-990deg) rotateZ(810deg);
+  }
+
+  &.show-3 {
+    transform: translate3d(-50%, -50%, 2rem) rotateY(-900deg) rotateZ(-1440deg);
+  }
+
+  &.show-4 {
+    transform: translate3d(-50%, -50%, 2rem) rotateX(-810deg) rotateZ(-1080deg);
+  }
+
+  &.show-5 {
+    transform: translate3d(-50%, -50%, 2rem) rotateY(810deg) rotateZ(810deg);
+  }
+
+  &.show-2 {
+    transform: translate3d(-50%, -50%, 2rem) rotateX(900deg) rotateZ(-900deg);
+  }
+
+  .side-wrapper {
+    position: absolute;
+    background-color: #9d674b;
+    width: 10em;
+    height: 10em;
+    line-height: 2em;
+    transform-style: preserve-3d;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    box-shadow: inset 0px 0px 10px 0px #ffffff61;
+  }
+
+  .side {
+    padding: 1em;
+    background-color: #ca9163;
+    box-shadow: inset 0px 0px 10px 2px #512d11;
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .image {
+    background-image: url(img/dice-spritesheet.png);
+    width: 50px;
+    height: 50px;
+  }
+  .side-wrapper.one {
+    transform: translateZ(4.8em);
+    .image {
+      background-image: unset;
+    }
+  }
+  .side-wrapper.two {
+    transform: rotateY(-180deg) translateZ(4.8em);
+    .image {
+      background-position: -100px 0px;
+      background-size: 150px 50px;
+      // background-position: -20em 0px;
+    }
+  }
+  .side-wrapper.three {
+    transform: rotateY(-90deg) translateZ(4.8em);
+    .image {
+      background-position: -100px 0px;
+      background-size: 150px 50px;
+    }
+  }
+  .side-wrapper.four {
+    transform: rotateX(90deg) translateZ(4.8em);
+    .image {
+      background-position: -100px 0px;
+      background-size: 150px 50px;
+    }
+  }
+  .side-wrapper.five {
+    transform: rotateX(-90deg) translateZ(4.8em);
+    .image {
+      background-position: 0px 0px;
+      background-size: 150px 50px;
+    }
+  }
+  .side-wrapper.six {
+    transform: rotateY(90deg) translateZ(4.8em);
+    .image {
+      background-position: -200px 0px;
+      background-size: 150px 50px;
+    }
+  }
+  // .corner {
+  //   transform: rotateX(45deg) rotateY(45deg);
+  //   background-color: #fff;
+  // }
+}

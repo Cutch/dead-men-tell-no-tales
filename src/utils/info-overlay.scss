@@ -1,0 +1,52 @@
+.info-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0000;
+  z-index: 50;
+  pointer-events: none;
+
+  .body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+  .messages {
+    display: flex;
+    flex-flow: column;
+    margin: 0.5rem;
+    gap: 0.5rem;
+    align-items: flex-start;
+    transition: 1s all;
+    .message {
+      padding: 0.5rem;
+      background: #ffffffd7;
+      border-radius: 10px;
+      transition: 1s opacity;
+      opacity: 0;
+      &.spawn {
+        opacity: 1;
+      }
+    }
+  }
+  .turn-order {
+    display: flex;
+    padding: 0.5rem;
+    margin: 0.5rem;
+    background: #ffffffd7;
+    border-radius: 10px;
+    width: min-content;
+  }
+  .turn-character {
+    color: var(--color);
+    font-weight: bold;
+    &.active {
+      text-decoration: underline;
+    }
+    &.incapacitated {
+      text-decoration: line-through;
+    }
+  }
+}

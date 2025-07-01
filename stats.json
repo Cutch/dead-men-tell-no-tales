@@ -1,0 +1,51 @@
+{
+    "table": {
+        "turn_count": {
+            "id": 10,
+            "name": "Turns Taken",
+            "type": "int"
+        },
+        "explosions": {
+            "id": 11,
+            "name": "Explosions",
+            "type": "int"
+        },
+        "rooms_lost": {
+            "id": 12,
+            "name": "Rooms Lost",
+            "type": "int"
+        },
+        "treasure_recovered": {
+            "id": 13,
+            "name": "Treasure Recovered",
+            "type": "int"
+        }
+    },
+    "player": {
+        "actions_used": {
+            "id": 10,
+            "name": "Actions Used",
+            "type": "int"
+        },
+        "fatigue_gained": {
+            "id": 11,
+            "name": "Fatigue Gained",
+            "type": "int"
+        },
+        "deckhands_eliminated": {
+            "id": 12,
+            "name": "Deckhands Eliminated",
+            "type": "int"
+        },
+        "treasure_recovered": {
+            "id": 13,
+            "name": "Treasure Recovered",
+            "type": "int"
+        },
+        "crew_eliminated": {
+            "id": 14,
+            "name": "Crew Eliminated",
+            "type": "int"
+        }
+    }
+}
