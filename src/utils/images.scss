@@ -23,14 +23,21 @@
   background-image: url(img/boards-spritesheet.png);
   position: relative;
 }
-.characters-card {
-  background-image: url(img/characters-spritesheet.png);
+.character-card {
+  background-image: url(img/character-spritesheet.png);
+}
+.character-token-card {
+  background-image: url(img/character-token-spritesheet.png);
+  border-radius: 50%;
 }
 .revenge-card {
-  background-image: url(img/decks-spritesheet.png);
+  background-image: url(img/revenge-spritesheet.png);
 }
 .ocean-card {
   background-image: url(img/ocean.png);
+}
+.tracker-card {
+  background-image: url(img/tracker.png);
 }
 .player-board-card {
   background-image: url(img/player-board.png);
@@ -40,6 +47,9 @@
 }
 .tile-card {
   background-image: url(img/tile-spritesheet.png);
+}
+.item-card {
+  background-image: url(img/item-spritesheet.png);
 }
 .token-card {
   background-image: url(img/token-spritesheet.png);

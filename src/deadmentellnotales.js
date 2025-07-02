@@ -456,7 +456,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       .sort((a, b) => this.mySelectedCharacters.indexOf(a) - this.mySelectedCharacters.indexOf(b));
     this.mySelectedCharacters = myCharacters;
     const characterLookup = this.selectedCharacters.reduce((acc, d) => ({ ...acc, [d.name]: d }), {});
-    elem.querySelectorAll('.characters-card').forEach((card) => {
+    elem.querySelectorAll('.character-card').forEach((card) => {
       const character = characterLookup[card.getAttribute('name')];
       if (character) {
         card.style.setProperty('--player-color', '#' + character.playerColor);
