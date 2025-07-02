@@ -2,6 +2,7 @@
 
 @include meta.load-css('utils/clickable');
 .dmtnt {
+  @include meta.load-css('utils/board');
   @include meta.load-css('utils/deck');
   @include meta.load-css('utils/dice');
   @include meta.load-css('utils/images');

@@ -94,8 +94,8 @@ $machinestates = [
     ],
     $playerTurn => [
         'name' => 'playerTurn',
-        'description' => clienttranslate('${character_name} is playing'),
-        'descriptionmyturn' => clienttranslate('${character_name} can'),
+        'description' => clienttranslate('${character_id} is playing'),
+        'descriptionmyturn' => clienttranslate('${character_id} can'),
         'type' => 'activeplayer',
         'args' => 'argPlayerState',
         'action' => 'stPlayerTurn',
@@ -137,8 +137,8 @@ $machinestates = [
     ],
     $characterSelection => [
         'name' => 'characterSelection',
-        'description' => clienttranslate('${character_name} is selecting a character'),
-        'descriptionmyturn' => clienttranslate('${character_name} Select a character'),
+        'description' => clienttranslate('${character_id} is selecting a character'),
+        'descriptionmyturn' => clienttranslate('${character_id} Select a character'),
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectCharacter', 'actCancel'],
@@ -148,8 +148,8 @@ $machinestates = [
     ],
     $cardSelection => [
         'name' => 'cardSelection',
-        'description' => clienttranslate('${character_name} is selecting a card'),
-        'descriptionmyturn' => clienttranslate('${character_name} Select a card'),
+        'description' => clienttranslate('${character_id} is selecting a card'),
+        'descriptionmyturn' => clienttranslate('${character_id} Select a card'),
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectCard', 'actCancel'],
@@ -157,8 +157,8 @@ $machinestates = [
     ],
     $itemSelection => [
         'name' => 'itemSelection',
-        'description' => clienttranslate('${character_name} is selecting an item'),
-        'descriptionmyturn' => clienttranslate('${character_name} Select an item'),
+        'description' => clienttranslate('${character_id} is selecting an item'),
+        'descriptionmyturn' => clienttranslate('${character_id} Select an item'),
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectItem', 'actCancel'],

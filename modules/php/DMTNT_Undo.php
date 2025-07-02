@@ -31,7 +31,7 @@ class DMTNT_Undo
         $undoState = $this->game->getFromDB(
             'SELECT * FROM `undoState` a INNER JOIN (SELECT max(undo_id) max_last_id FROM `undoState`) b WHERE b.max_last_id = a.undo_id'
         );
-        $storedCharacterId = $undoState['character_name'];
+        $storedCharacterId = $undoState['character_id'];
         if ($char != $storedCharacterId) {
             throw new BgaUserException(clienttranslate('Can\'t undo another player\'s action'));
         }
@@ -129,7 +129,7 @@ class DMTNT_Undo
                 $pending = 'true';
             }
             $this->game::DbQuery(
-                'INSERT INTO `undoState` (`character_name`, `gamelog_move_id`, `pending`, `itemTable`, `characterTable`, `globalsTable`, `extraTables`) VALUES ' .
+                'INSERT INTO `undoState` (`character_id`, `gamelog_move_id`, `pending`, `itemTable`, `characterTable`, `globalsTable`, `extraTables`) VALUES ' .
                     "('$char', $moveId, $pending, '$itemsData', '$characterData', '$globalsData', '$extraTables')"
             );
         }

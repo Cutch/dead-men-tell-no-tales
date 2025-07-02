@@ -15,7 +15,7 @@ class DMTNT_Hooks
     }
     private function getHook(): array
     {
-        $tokens = $this->game->getValidTokens();
+        // $tokens = $this->game->getValidTokens();
         // $actions = $this->game->actions->getActions();
         $characters = $this->game->character->getAllCharacterData(true);
         $equipment = array_merge(
@@ -43,30 +43,11 @@ class DMTNT_Hooks
                 if (array_key_exists('skills', $c)) {
                     $skills = $c['skills'];
                 }
-                array_walk($c['dayEvent'], function ($item) use (&$skills, $c) {
-                    if (array_key_exists('skills', $item)) {
-                        array_push(
-                            $skills,
-                            ...array_values(
-                                array_map(
-                                    function ($skill) use ($c) {
-                                        $skill['characterId'] = $c['id'];
-                                        return $skill;
-                                    },
-                                    array_filter($item['skills'], function ($item) {
-                                        return $item['type'] == 'item-skill';
-                                    })
-                                )
-                            )
-                        );
-                    }
-                });
                 return $skills;
             }, $characters)
         );
         return [
             // ...$actions,
-            ...$tokens,
             ...$characters,
             ...$skills,
             ...$equipment,
@@ -97,9 +78,6 @@ class DMTNT_Hooks
             }
             // Normal
             foreach ($hooks as $object) {
-                if ($functionName == 'onUseHerb') {
-                    $this->game->log('hooks', array_key_exists($functionName, $object), $object);
-                }
                 if (array_key_exists($functionName, $object)) {
                     $object[$functionName]($this->game, [...$object, ...$args], $data1, $data2, $data3, $data4);
                 }
@@ -343,11 +321,6 @@ class DMTNT_Hooks
         return $data;
     }
     function onMaxHindrance(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onGetUnlockCost(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

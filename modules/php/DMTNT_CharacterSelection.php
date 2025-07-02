@@ -39,7 +39,7 @@ class DMTNT_CharacterSelection
             sizeof(
                 array_values(
                     $this->game->getCollectionFromDb(
-                        "SELECT 1 FROM `character` WHERE player_id != $playerId AND character_name in (" . $escapedCharacterList . ')'
+                        "SELECT 1 FROM `character` WHERE player_id != $playerId AND character_id in (" . $escapedCharacterList . ')'
                     )
                 )
             ) > 0
@@ -58,7 +58,7 @@ class DMTNT_CharacterSelection
                     return "('$char', $playerId, $stamina, $health)";
                 }, $characters)
             );
-            $this->game::DbQuery("INSERT INTO `character` (`character_name`, `player_id`, `stamina`, `health`) VALUES $values");
+            $this->game::DbQuery("INSERT INTO `character` (`character_id`, `player_id`, `stamina`, `health`) VALUES $values");
         }
         $characterIds = $this->game->character->getAllCharacterIds();
         if (in_array('Atouk', $characterIds) && in_array('Yurt', $characterIds)) {
@@ -132,9 +132,9 @@ class DMTNT_CharacterSelection
     {
         $playerId = $this->game->getCurrentPlayer();
         $selectedCharacters = array_map(function ($char) {
-            return $char['character_name'];
-        }, array_values($this->game->getCollectionFromDb("SELECT character_name FROM `character` WHERE `player_id` = '$playerId'")));
-        $selectedCharacters = array_orderby($selectedCharacters, 'character_name', SORT_ASC);
+            return $char['character_id'];
+        }, array_values($this->game->getCollectionFromDb("SELECT character_id FROM `character` WHERE `player_id` = '$playerId'")));
+        $selectedCharacters = array_orderby($selectedCharacters, 'character_id', SORT_ASC);
 
         $this->validateCharacterCount(true, $selectedCharacters);
 
@@ -200,14 +200,14 @@ class DMTNT_CharacterSelection
         $oldChar = $this->game->character->getTurnCharacterId();
         $playerId = $this->game->getCurrentPlayer();
         // Remove player's previous selected
-        $this->game::DbQuery('DELETE FROM `character` WHERE character_name = "' . $oldChar . '"');
+        $this->game::DbQuery('DELETE FROM `character` WHERE character_id = "' . $oldChar . '"');
         // Add player's current selected
         $data = $this->game->data->getCharacters()[$character];
         $health = $data['health'];
         $stamina = $data['stamina'];
         $char = $this->game::escapeStringForDB($character);
         $this->game::DbQuery(
-            "INSERT INTO `character` (`character_name`, `player_id`, `stamina`, `health`) VALUES ('$char', $playerId, $stamina, $health)"
+            "INSERT INTO `character` (`character_id`, `player_id`, `stamina`, `health`) VALUES ('$char', $playerId, $stamina, $health)"
         );
         $turnOrder = $this->game->gameData->get('turnOrder');
         $this->game->gameData->set(

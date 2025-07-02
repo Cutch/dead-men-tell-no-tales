@@ -14,7 +14,7 @@
 -- Note: The database schema is created from this file when the game starts. If you modify this file,
 --       you have to restart a game to see your changes in database.
 -- Example 1: create a standard "card" table to be used with the "Deck" tools (see example game "hearts"):
-CREATE TABLE IF NOT EXISTS `tiles` (
+CREATE TABLE IF NOT EXISTS `tile` (
     `card_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
     `card_type` varchar(20) NOT NULL,
     `card_type_arg` varchar(20) NOT NULL,
@@ -30,13 +30,26 @@ CREATE TABLE IF NOT EXISTS `revenge` (
     `card_location_arg` int(11) NOT NULL,
     PRIMARY KEY (`card_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
+CREATE TABLE IF NOT EXISTS `map` (
+    `map_id` varchar(10) NOT NULL,
+    `x` int(10) NOT NULL,
+    `y` int(10) NOT NULL,
+    `rotate` int(10) NOT NULL,
+    `fire` int(10) DEFAULT 0,
+    `fire_color` varchar(10) NOT NULL,
+    `has_trapdoor` int(1) DEFAULT 0,
+    `deckhand` int(10) DEFAULT 0,
+    `explosion` int(10) DEFAULT NULL,
+    `destroyed` int(1) DEFAULT 0,
+    PRIMARY KEY (`map_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `item` (
     `item_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
     `item_name` varchar(20) NOT NULL,
     PRIMARY KEY (`item_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `character` (
-    `character_name` varchar(10) NOT NULL,
+    `character_id` varchar(10) NOT NULL,
     `player_id` int(10) unsigned NOT NULL,
     `necromancer_player_id` int(10) unsigned NULL,
     `order` int(10) UNSIGNED DEFAULT 0,
@@ -48,11 +61,11 @@ CREATE TABLE IF NOT EXISTS `character` (
     FOREIGN KEY (item) REFERENCES item(item_id),
     FOREIGN KEY (player_id) REFERENCES player(player_id),
     FOREIGN KEY (necromancer_player_id) REFERENCES player(player_id),
-    PRIMARY KEY (`character_name`)
+    PRIMARY KEY (`character_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `undoState` (
     `undo_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-    `character_name` varchar(10) NOT NULL,
+    `character_id` varchar(10) NOT NULL,
     `gamelog_move_id` int(10) unsigned NULL,
     `pending` int(1) UNSIGNED DEFAULT 0,
     `itemTable` text DEFAULT '',

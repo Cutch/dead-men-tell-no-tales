@@ -13,6 +13,11 @@ class DMTNT_CharactersData
                 'actions' => '6',
                 'name' => 'LySia Lamore',
             ],
+            'garrett' => [
+                'type' => 'character',
+                'actions' => '5',
+                'name' => 'Black Gus Garrett',
+            ],
         ];
     }
 }

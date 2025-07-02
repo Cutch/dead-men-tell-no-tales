@@ -44,13 +44,13 @@ export class InfoOverlay {
       });
   }
   addMessage(args) {
-    const { usedActionId, usedActionName, character_name } = args;
+    const { usedActionId, usedActionName, character_id } = args;
     const translatedActionName = this.game.getActionMappings()[usedActionId];
     if (!translatedActionName) return;
     this.messageId++;
     const id = `message_${this.messageId}`;
-    const text = dojo.string.substitute(_('${character_name} used ${action}'), {
-      character_name,
+    const text = dojo.string.substitute(_('${character_id} used ${action}'), {
+      character_id,
       action: usedActionName ? _(usedActionName) : translatedActionName,
     });
     this.infoOverlayMessages.insertAdjacentHTML('beforeend', `<div class="message" id="${id}">${text}</div>`);

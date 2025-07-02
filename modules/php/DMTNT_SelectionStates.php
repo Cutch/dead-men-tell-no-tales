@@ -77,7 +77,7 @@ class DMTNT_SelectionStates
         $result = [
             'actions' => [],
             'selectionState' => $this->game->gameData->get($stateName),
-            'character_name' => $this->game->getCharacterHTML($state['characterId']),
+            'character_id' => $this->game->getCharacterHTML($state['characterId']),
             'activeTurnPlayerId' => 0,
         ];
         // TODO this fixes the bug with day event selections, can be removed later

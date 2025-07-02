@@ -12,7 +12,7 @@ class DMTNT_Character
     private ?string $submittingCharacter = null;
     private array $cachedData = [];
     private static array $characterColumns = [
-        'character_name',
+        'character_id',
         'player_id',
         'necromancer_player_id',
         'item',
@@ -59,7 +59,7 @@ class DMTNT_Character
             }
         }
         $values = implode(',', $values);
-        $this->game::DbQuery("UPDATE `character` SET {$values} WHERE character_name = '$name'");
+        $this->game::DbQuery("UPDATE `character` SET {$values} WHERE character_id = '$name'");
         $this->game->markChanged('player');
 
         if (
@@ -127,7 +127,7 @@ class DMTNT_Character
     {
         extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
         $turnOrder = array_values(array_filter($turnOrder));
-        $characterName = $characterData['character_name'];
+        $characterName = $characterData['character_id'];
         $isActive = $turnOrder[$turnNo ?? 0] == $characterName;
         $characterData['isActive'] = $isActive;
         $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterName;
@@ -137,7 +137,7 @@ class DMTNT_Character
         $characterData['maxFatigue'] = $underlyingCharacterData['fatigue'] + $characterData['modifiedMaxFatigue'];
 
         array_walk($underlyingCharacterData, function ($v, $k) use (&$characterData) {
-            if (str_starts_with($k, 'on') || in_array($k, ['slots', 'skills']) || $k == 'getPerDayKey' || $k == 'characterSkillName') {
+            if (str_starts_with($k, 'on') || in_array($k, ['slots', 'skills']) || $k == 'getPerTurnKey' || $k == 'characterSkillName') {
                 $characterData[$k] = $v;
             }
         });
@@ -166,7 +166,7 @@ class DMTNT_Character
                 'isActive' => $isActive,
                 ...$this->game->data->getItems()[$itemName],
                 'skills' => $skills,
-                'character_name' => $characterName,
+                'character_id' => $characterName,
                 'characterId' => $characterName,
             ];
         }, array_values(array_filter([$characterData['item_1'], $characterData['item_2'], $characterData['item_3']])));
@@ -197,84 +197,9 @@ class DMTNT_Character
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
         } else {
             $this->cachedData[$name] = $this->game->getCollectionFromDb(
-                "SELECT c.*, player_color, player_zombie FROM `character` c INNER JOIN `player` p ON p.player_id = c.player_id WHERE character_name = '$name'"
+                "SELECT c.*, player_color, player_zombie FROM `character` c INNER JOIN `player` p ON p.player_id = c.player_id WHERE character_id = '$name'"
             )[$name];
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
-        }
-    }
-    public function getItemValidations(int $itemId, array $character, ?int $removingItemId = null)
-    {
-        $items = $this->game->gameData->getCreatedItems();
-        $item = $items[$itemId];
-        $itemName = $this->game->data->getItems()[$item]['id'];
-        $itemType = $this->game->data->getItems()[$item]['itemType'];
-        $this->game->hooks->onGetSlots($character);
-        $result = [
-            'character' => $character,
-            'item' => $this->game->data->getItems()[$item],
-            'canEquip' => true,
-        ];
-        $this->game->hooks->onGetItemValidation($result);
-        $slotsAllowed = $character['slots'];
-        $equipment = array_values(
-            array_filter($character['equipment'], function ($d) use ($removingItemId) {
-                return $d['itemId'] != $removingItemId;
-            })
-        );
-        $slotsUsed = array_count_values(
-            array_map(function ($d) {
-                return $d['itemType'];
-            }, $equipment)
-        );
-        $hasOpenSlots =
-            (array_key_exists($itemType, $slotsAllowed) ? $slotsAllowed[$itemType] : 0) -
-                (array_key_exists($itemType, $slotsUsed) ? $slotsUsed[$itemType] : 0) >
-            0;
-        $hasDuplicateTool =
-            sizeof(
-                array_filter($equipment, function ($d) use ($itemName) {
-                    return $d['id'] == $itemName;
-                })
-            ) > 0;
-        return ['hasOpenSlots' => $hasOpenSlots, 'hasDuplicateTool' => $hasDuplicateTool, 'canEquip' => $result['canEquip']];
-    }
-    public function equipAndValidateEquipment(string $characterId, int $itemId)
-    {
-        $character = $this->getCharacterData($characterId);
-        $itemsLookup = $this->game->gameData->getCreatedItems();
-        $itemName = $itemsLookup[$itemId];
-        $itemObj = $this->game->data->getItems()[$itemName];
-        $itemType = $itemObj['itemType'];
-
-        $result = $this->getItemValidations((int) $itemId, $character);
-        $canEquip = $result['canEquip'];
-        $hasOpenSlots = $result['hasOpenSlots'];
-        $hasDuplicateTool = $result['hasDuplicateTool'];
-        if ($hasOpenSlots && !$hasDuplicateTool && $canEquip) {
-            $this->equipEquipment($character['id'], [$itemId]);
-        } else {
-            $existingItems = array_map(
-                function ($d) {
-                    return ['name' => $d['id'], 'itemId' => $d['itemId']];
-                },
-                array_filter($character['equipment'], function ($d) use ($itemType, $hasDuplicateTool, $itemName) {
-                    if ($hasDuplicateTool) {
-                        return $d['id'] == $itemName;
-                    } else {
-                        return $d['itemType'] == $itemType;
-                    }
-                })
-            );
-            $this->game->selectionStates->initiateState(
-                'tooManyItems',
-                [
-                    'characterId' => $character['id'],
-                    'itemType' => $itemType,
-                    'items' => [...$existingItems, ['name' => $itemName, 'itemId' => $itemId]],
-                ],
-                $character['id'],
-                false
-            );
         }
     }
     public function equipEquipment(string $characterName, array $items): void
@@ -491,7 +416,7 @@ class DMTNT_Character
     }
     public function adjustActiveActions(int $actions): int
     {
-        $characterName = $this->getSubmittingCharacter()['character_name'];
+        $characterName = $this->getSubmittingCharacter()['character_id'];
         return $this->adjustActions($characterName, $actions);
     }
     public function getActiveFatigue(): int
@@ -526,8 +451,8 @@ class DMTNT_Character
         }
 
         if ($data['fatigue'] == 0 && !$data['incapacitated']) {
-            $this->game->eventLog(clienttranslate('${character_name} is incapacitated'), [
-                'character_name' => $this->game->getCharacterHTML($characterName),
+            $this->game->eventLog(clienttranslate('${character_id} is incapacitated'), [
+                'character_id' => $this->game->getCharacterHTML($characterName),
             ]);
             $data['incapacitated'] = true;
             $data['becameIncapacitated'] = true;
@@ -558,7 +483,7 @@ class DMTNT_Character
     }
     public function adjustActiveFatigue(int $fatigue): int
     {
-        $characterName = $this->getSubmittingCharacter()['character_name'];
+        $characterName = $this->getSubmittingCharacter()['character_id'];
         return $this->adjustFatigue($characterName, $fatigue);
     }
     public function getMarshallCharacters()
@@ -572,7 +497,7 @@ class DMTNT_Character
                 }, $char['equipment'])
             );
             return [
-                'name' => $char['character_name'],
+                'name' => $char['character_id'],
                 'isFirst' => $char['isFirst'],
                 'isActive' => $char['isActive'],
                 'equipment' => $char['equipment'],

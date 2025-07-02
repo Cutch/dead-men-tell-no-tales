@@ -54,7 +54,7 @@ class DMTNT_Data
     }
     public function getTile()
     {
-        return $this->tile;
+        return $this->get('tile');
     }
     public function getItems()
     {

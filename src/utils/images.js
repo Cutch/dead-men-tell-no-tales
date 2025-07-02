@@ -37,6 +37,7 @@ export const renderImage = (
     centered = false,
     withText = false,
     textOnly = false,
+    styles = {},
   } = {},
 ) => {
   if (scaleLookups[type]) scale = scaleLookups[type];
@@ -65,7 +66,9 @@ export const renderImage = (
       scaledHeight = scaledHeight * Math.abs(overridePos.h - overridePos.y);
     }
     if (rotate || rotateAPI)
-      html = `<div class="tooltip-image-and-text ${extraBaseCss}"><div class="card-rotator" style="transform: rotate(${rotate || rotateAPI}deg) ${
+      html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
+        .map((key) => `${key}:${styles[key]}`)
+        .join(';')}"><div class="card-rotator" style="transform: rotate(${rotate || rotateAPI}deg) ${
         centered ? ';transform-origin: center;' : `translate(${scaledWidth + 3}px, ${-scaledHeight / 2}px);transform-origin:top;`
       }height: ${scaledWidth}px;width: ${scaledHeight}px;">
     <div name="${name}-${rotate || rotateAPI}" data-scale="${scale}" class="image card ${css} ${extraCss} ${
@@ -75,7 +78,9 @@ export const renderImage = (
     }px;"></div>
     </div>`;
     else
-      html = `<div class="tooltip-image-and-text ${extraBaseCss}"><div name="${name}" data-scale="${scale}" class="image ${css} ${extraCss} ${
+      html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
+        .map((key) => `${key}:${styles[key]}`)
+        .join(';')}"><div name="${name}" data-scale="${scale}" class="image ${css} ${extraCss} ${
         card ? 'card' : ''
       } ${name}" style="background-size: ${scaledSpriteWidth}px ${scaledSpriteHeight}px;background-position: -${scaledX}px -${scaledY}px;width: ${scaledWidth}px;height: ${scaledHeight}px;"></div>`;
   }

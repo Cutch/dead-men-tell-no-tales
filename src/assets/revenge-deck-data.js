@@ -9,7 +9,7 @@ export default {
           h: 480,
         },
       },
-      tile001: {
+      revenge001: {
         frame: {
           x: 344,
           y: 0,
@@ -17,7 +17,7 @@ export default {
           h: 480,
         },
       },
-      tile002: {
+      revenge002: {
         frame: {
           x: 688,
           y: 0,
@@ -25,7 +25,7 @@ export default {
           h: 480,
         },
       },
-      tile003: {
+      revenge003: {
         frame: {
           x: 1032,
           y: 0,
@@ -33,7 +33,7 @@ export default {
           h: 480,
         },
       },
-      tile004: {
+      revenge004: {
         frame: {
           x: 1376,
           y: 0,
@@ -41,7 +41,7 @@ export default {
           h: 480,
         },
       },
-      tile005: {
+      revenge005: {
         frame: {
           x: 0,
           y: 480,
@@ -49,7 +49,7 @@ export default {
           h: 480,
         },
       },
-      tile006: {
+      revenge006: {
         frame: {
           x: 344,
           y: 480,
@@ -57,7 +57,7 @@ export default {
           h: 480,
         },
       },
-      tile007: {
+      revenge007: {
         frame: {
           x: 688,
           y: 480,
@@ -65,7 +65,7 @@ export default {
           h: 480,
         },
       },
-      tile008: {
+      revenge008: {
         frame: {
           x: 1032,
           y: 480,
@@ -73,7 +73,7 @@ export default {
           h: 480,
         },
       },
-      tile009: {
+      revenge009: {
         frame: {
           x: 1376,
           y: 480,
@@ -81,7 +81,7 @@ export default {
           h: 480,
         },
       },
-      tile010: {
+      revenge010: {
         frame: {
           x: 0,
           y: 960,
@@ -89,7 +89,7 @@ export default {
           h: 480,
         },
       },
-      tile011: {
+      revenge011: {
         frame: {
           x: 344,
           y: 960,
@@ -97,7 +97,7 @@ export default {
           h: 480,
         },
       },
-      tile012: {
+      revenge012: {
         frame: {
           x: 688,
           y: 960,
@@ -105,7 +105,7 @@ export default {
           h: 480,
         },
       },
-      tile013: {
+      revenge013: {
         frame: {
           x: 1032,
           y: 960,
@@ -113,7 +113,7 @@ export default {
           h: 480,
         },
       },
-      tile014: {
+      revenge014: {
         frame: {
           x: 1376,
           y: 960,
@@ -121,7 +121,7 @@ export default {
           h: 480,
         },
       },
-      tile015: {
+      revenge015: {
         frame: {
           x: 1720,
           y: 0,
@@ -129,7 +129,7 @@ export default {
           h: 480,
         },
       },
-      tile016: {
+      revenge016: {
         frame: {
           x: 1720,
           y: 480,
@@ -137,7 +137,7 @@ export default {
           h: 480,
         },
       },
-      tile017: {
+      revenge017: {
         frame: {
           x: 1720,
           y: 960,
@@ -145,7 +145,7 @@ export default {
           h: 480,
         },
       },
-      tile018: {
+      revenge018: {
         frame: {
           x: 0,
           y: 1440,
@@ -153,7 +153,7 @@ export default {
           h: 480,
         },
       },
-      tile019: {
+      revenge019: {
         frame: {
           x: 344,
           y: 1440,

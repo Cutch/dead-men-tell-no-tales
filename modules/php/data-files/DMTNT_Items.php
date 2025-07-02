@@ -4,19 +4,19 @@ namespace Bga\Games\DeadMenTellNoTales;
 use Bga\Games\DeadMenTellNoTales\Game;
 use BgaUserException;
 
-if (!function_exists('getUsePerDay')) {
-    function getUsePerDay(string $itemId, Game $game)
+if (!function_exists('getUsePerTurn')) {
+    function getUsePerTurn(string $itemId, Game $game)
     {
         $dailyUseItems = $game->gameData->get('dailyUseItems');
         return array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] : 0;
     }
-    function usePerDay(string $itemId, Game $game)
+    function usePerTurn(string $itemId, Game $game)
     {
         $dailyUseItems = $game->gameData->get('dailyUseItems');
         $dailyUseItems[$itemId] = array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] + 1 : 1;
         $game->gameData->set('dailyUseItems', $dailyUseItems);
     }
-    function subtractPerDay(string $itemId, Game $game)
+    function subtractPerTurn(string $itemId, Game $game)
     {
         $dailyUseItems = $game->gameData->get('dailyUseItems');
         $dailyUseItems[$itemId] = array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] - 1 : 0;
@@ -24,28 +24,11 @@ if (!function_exists('getUsePerDay')) {
         $game->markChanged('token');
         $game->markChanged('player');
     }
-    function resetPerDay(Game $game)
+    function resetPerTurn(Game $game)
     {
         $game->gameData->set('dailyUseItems', []);
         $game->markChanged('token');
         $game->markChanged('player');
-    }
-    function array_orderby()
-    {
-        $args = func_get_args();
-        $data = array_shift($args);
-        foreach ($args as $n => $field) {
-            if (is_string($field)) {
-                $tmp = [];
-                foreach ($data as $key => $row) {
-                    $tmp[$key] = $row[$field] ?? '0';
-                }
-                $args[$n] = $tmp;
-            }
-        }
-        $args[] = &$data;
-        call_user_func_array('array_multisort', $args);
-        return array_pop($args);
     }
     function clearItemSkills(&$skills, $itemId)
     {

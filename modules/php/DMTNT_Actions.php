@@ -61,6 +61,14 @@ class DMTNT_Actions
                     return true;
                 },
             ],
+            'actDrop' => [
+                'state' => ['playerTurn'],
+                'actions' => 0,
+                'type' => 'action',
+                'requires' => function (Game $game, $action) {
+                    return true;
+                },
+            ],
             'actIncreaseBattleStrength' => [
                 'state' => ['playerTurn'],
                 'actions' => 1,
@@ -212,8 +220,7 @@ class DMTNT_Actions
             'subAction' => $subAction ?? (array_key_exists('id', $skill) ? $skill['id'] : null),
             'actions' => array_key_exists('actions', $skill) ? $skill['actions'] : null,
             'fatigue' => array_key_exists('fatigue', $skill) ? $skill['fatigue'] : null,
-            'perDay' => array_key_exists('perDay', $skill) ? $skill['perDay'] : null,
-            'perForever' => array_key_exists('perForever', $skill) ? $skill['perForever'] : null,
+            'perTurn' => array_key_exists('perTurn', $skill) ? $skill['perTurn'] : null,
             'name' => array_key_exists('name', $skill) ? $skill['name'] : null,
             'random' => array_key_exists('random', $skill) ? $skill['random'] : null,
             'characterId' => $characterId ?? $this->game->character->getSubmittingCharacterId(),
@@ -227,11 +234,8 @@ class DMTNT_Actions
         if (array_key_exists('fatigue', $actionCost)) {
             $skill['fatigue'] = $actionCost['fatigue'];
         }
-        if (array_key_exists('perDay', $actionCost)) {
-            $skill['perDay'] = $actionCost['perDay'];
-        }
-        if (array_key_exists('perForever', $actionCost)) {
-            $skill['perForever'] = $actionCost['perForever'];
+        if (array_key_exists('perTurn', $actionCost)) {
+            $skill['perTurn'] = $actionCost['perTurn'];
         }
         if (array_key_exists('random', $actionCost)) {
             $skill['random'] = $actionCost['random'];

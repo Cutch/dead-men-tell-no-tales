@@ -22,7 +22,7 @@ import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
 import { addClickListener, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
-import Panzoom from '@panzoom/panzoom';
+import { Board } from './utils/board';
 
 declare('bgagame.deadmentellnotales', Gamegui, {
   constructor: function () {
@@ -383,44 +383,30 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (!availableElem) {
       $('game_play_area').insertAdjacentHTML(
         'beforeend',
-        `<div id="items-container" class="dmtnt__container"><h3>${_('Craftable Items')}</h3><div class="items"></div></div>`,
+        `<div id="items-container" class="dmtnt__container"><h3>${_('Items')}</h3><div class="items"></div></div>`,
       );
       availableElem = document.querySelector(`#items-container .items`);
     }
     availableElem.innerHTML = '';
-    const keys = Object.keys(gameData.availableEquipmentCount);
-    keys.forEach((name) => this.updateItem(name, availableElem, gameData.availableEquipmentCount?.[name] ?? 0));
-    if (keys.length === 0) {
+    gameData.availableItems?.forEach((name) => this.updateItem(name, availableElem));
+    if (!gameData.availableItems?.length) {
       availableElem.innerHTML = `<b>${_('None')}</b>`;
     }
   },
-  updateItem: function (name, elem, count) {
+  updateItem: function (name, elem) {
     elem.insertAdjacentHTML('beforeend', `<div class="token ${name}"></div>`);
-    renderImage(name, elem.querySelector(`.token.${name}`), { scale: 2, pos: 'insert', css: count === 0 ? 'cannot-build' : '' });
-    if (count != null)
-      elem.querySelector(`.token.${name} .image`).insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${count}</div>`);
+    renderImage(name, elem.querySelector(`.token.${name}`), { scale: 2, pos: 'insert' });
     addClickListener(elem.querySelector(`.token.${name}`), name, () => {
       this.tooltip.show();
       renderImage(name, this.tooltip.renderByElement(), { withText: true, pos: 'insert', type: 'tooltip-item' });
-      if (count != null)
-        this.tooltip
-          .renderByElement()
-          .querySelector(`.image`)
-          .insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${count}</div>`);
     });
   },
   setupBoard: function (gameData) {
     this.firstPlayer = Object.values(gameui.gamedatas.players).find((d) => d.player_no == 1).id;
     // Main board
-    document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `<div id="board-wrapper"></div>`);
-    const elem = document.getElementById('board-wrapper');
-    const panzoom = Panzoom(elem, {
-      maxScale: 5,
-    });
-    panzoom.pan(10, 10);
-    panzoom.zoom(2, { animate: true });
 
-    renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
+    this.board = new Board(this, gameData.tiles ?? []);
+    // renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
   },
   setupCharacterSelections: function (gameData) {
     const playArea = $('game_play_area');
@@ -527,7 +513,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.infoOverlay = new InfoOverlay(this, $('game_play_area_wrap'));
     this.setupCharacterSelections(gameData);
     this.setupBoard(gameData);
-    this.dice = new Dice(this, $('board-container'));
+    this.dice = new Dice(this, this.board.container);
     window.dice = this.dice;
     // this.dice.roll(5);
     // renderImage(`board`, playArea);
@@ -608,6 +594,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'characterSelect':
         this.selectedCharacters = args.args.characters ?? [];
         this.updateCharacterSelections(args.args);
+        dojo.style('character-selector', 'display', 'none');
+        dojo.style('game_play_area', 'display', '');
         break;
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
@@ -719,13 +707,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
     if (action['actions'] != null) suffix += ` <i class="fa fa-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa fa-heart dmtnt__health"></i> ${action['fatigue']}`;
-    if (action['unlockCost'] != null) suffix += ` <i class="fa fa-graduation-cap dmtnt__fkp"></i> ${action['unlockCost']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
-    if (action['perDay'] != null)
-      suffix += ` <i class="fa fa-sun-o dmtnt__sun"></i> ` + _('${remaining} left').replace(/\$\{remaining\}/, action['perDay']);
-    if (action['perForever'] != null)
-      suffix +=
-        ` <i class="fa fa-circle-o-notch dmtnt__forever"></i> ` + _('${remaining} left').replace(/\$\{remaining\}/, action['perForever']);
+    if (action['perTurn'] != null)
+      suffix += ` <i class="fa fa-sun-o dmtnt__sun"></i> ` + _('${remaining} left').replace(/\$\{remaining\}/, action['perTurn']);
     return suffix;
   },
   clearActionButtons: function () {
@@ -830,20 +814,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             return this.statusBar.addActionButton(
               `${this.getActionMappings()[actionId]}${suffix}`,
               () => {
-                if (actionId === 'actSpendFKP') {
-                  this.clearActionButtons();
-                  Object.values(this.gamedatas.availableUnlocks).forEach((unlock) => {
-                    const suffix = this.getActionSuffixHTML(unlock);
-                    this.statusBar.addActionButton(
-                      `${_(unlock.name)}${suffix}`,
-                      () => {
-                        return this.bgaPerformAction(actionId, { knowledgeId: unlock.id });
-                      },
-                      { disabled: unlock.unlockCost > this.gamedatas.resources.fkp },
-                    );
-                  });
-                  this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
-                } else if (actionId === 'actUseSkill' || actionId === 'actUseItem') {
+                if (actionId === 'actUseSkill' || actionId === 'actUseItem') {
                   this.clearActionButtons();
                   Object.values(actionId === 'actUseSkill' ? this.gamedatas.availableSkills : this.gamedatas.availableItemSkills).forEach(
                     (skill) => {
