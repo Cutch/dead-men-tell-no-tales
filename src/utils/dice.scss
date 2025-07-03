@@ -51,7 +51,7 @@
   height: 10em;
   transform-style: preserve-3d;
   transform: translate3d(-50%, -50%, 2rem) rotateX(0) rotateZ(0);
-  transition: transform 1s;
+  // transition: transform 1s;
   position: relative;
 
   &.show-1 {
@@ -80,73 +80,75 @@
 
   .side-wrapper {
     position: absolute;
-    background-color: #343434;
     width: 10em;
     height: 10em;
     line-height: 2em;
     transform-style: preserve-3d;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    box-shadow: inset 0px 0px 10px 0px #ffffff61;
   }
 
+  .black .side {
+    background: #0d0d0d;
+    background: radial-gradient(circle, rgba(13, 13, 13, 1) 0%, rgba(46, 45, 45, 1) 50%, rgba(3, 2, 2, 1) 100%);
+  }
+  .red .side {
+    background: #9d2124;
+    background: radial-gradient(circle, rgba(157, 33, 36, 1) 0%, rgba(122, 34, 36, 1) 50%, rgba(74, 7, 7, 1) 100%);
+  }
+  .yellow .side {
+    background: #eea92e;
+    background: radial-gradient(circle, rgba(238, 169, 46, 1) 0%, rgba(250, 171, 0, 1) 30%, rgba(61, 44, 13, 1) 100%);
+  }
   .side {
-    padding: 1em;
-    background-color: #343434;
-    box-shadow: inset 0px 0px 10px 2px #0d0d0d;
-    border-radius: 50%;
     width: 100%;
     height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
   .image {
     background-image: url(img/dice-spritesheet.png);
-    width: 100px;
-    height: 100px;
+    width: 10em;
+    height: 10em;
   }
   .side-wrapper.one {
     transform: translateZ(4.8em);
     .image {
       background-position: 0px 0px;
-      background-size: 600px 100px;
+      background-size: 60em 10em;
     }
   }
   .side-wrapper.two {
     transform: rotateY(-180deg) translateZ(4.8em);
     .image {
-      background-position: -100px 0px;
-      background-size: 600px 100px;
+      background-position: -10em 0px;
+      background-size: 60em 10em;
     }
   }
   .side-wrapper.three {
     transform: rotateY(-90deg) translateZ(4.8em);
     .image {
-      background-position: -200px 0px;
-      background-size: 600px 100px;
+      background-position: -20em 0px;
+      background-size: 60em 10em;
     }
   }
   .side-wrapper.four {
     transform: rotateX(90deg) translateZ(4.8em);
     .image {
-      background-position: -300px 0px;
-      background-size: 600px 100px;
+      background-position: -30em 0px;
+      background-size: 60em 10em;
     }
   }
   .side-wrapper.five {
     transform: rotateX(-90deg) translateZ(4.8em);
     .image {
-      background-position: -400px 0px;
-      background-size: 600px 100px;
+      background-position: -40em 0px;
+      background-size: 60em 10em;
     }
   }
   .side-wrapper.six {
     transform: rotateY(90deg) translateZ(4.8em);
     .image {
-      background-position: -500px 0px;
-      background-size: 600px 100px;
+      background-position: -50em 0px;
+      background-size: 60em 10em;
     }
   }
   // .corner {

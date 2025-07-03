@@ -1,12 +1,15 @@
 const sideNames = ['one', 'two', 'three', 'four', 'five', 'six'];
 import dojo from 'dojo';
 export class Dice {
-  constructor(game, div) {
+  constructor(game, div, color = 'black') {
     this.game = game;
     this.div = div;
     this.queue = [];
     this.isRolling = false;
-    let html = `<div class="dice-container"><div class="dice-mover"><div class="dice-base"></div><div class="dice">`;
+    // if (color === 'black') color = '#0d0d0d';
+    // else if (color === 'yellow') color = '#eea92e';
+    // else if (color === 'red') color = '#9d2124';
+    let html = `<div class="dice-container ${color}"><div class="dice-mover"><div class="dice-base"></div><div class="dice">`;
     for (let i = 1; i <= 6; i++) {
       html += `<div class="side-wrapper ${sideNames[i - 1]}"><div class="side">`;
       html += `<div class="image"></div>`;
@@ -38,11 +41,9 @@ export class Dice {
       duration: 750,
       onEnd: () => {
         this.dice.style['transition'] = 'unset';
-        for (let i = 1; i <= 6; i++) {
-          this.dice.classList.remove('show-' + i);
-        }
       },
     });
+    console.log(roll);
 
     this.game.bgaPlayDojoAnimation(animation);
   }

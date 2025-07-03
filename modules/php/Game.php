@@ -76,6 +76,9 @@ class Game extends \Table
             'expansion' => 100,
             'difficulty' => 101,
             'captainFromm' => 102,
+            'random' => 103,
+            'soloCount' => 104,
+            'doubleCount' => 105,
         ]);
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
@@ -122,6 +125,9 @@ class Game extends \Table
     }
     public function getVersion(): int
     {
+        if (!array_key_exists(300, $this->gamestate->table_globals)) {
+            $this->gamestate->reloadState();
+        }
         return intval($this->gamestate->table_globals[300]);
     }
     protected function initTable(): void
@@ -620,9 +626,7 @@ class Game extends \Table
 
     public function argSelectionCount(): array
     {
-        $result = ['actions' => []];
-        $this->getAllPlayers($result);
-        return $result;
+        return $this->characterSelection->argSelectionCount();
     }
     public function log(...$args)
     {
@@ -692,6 +696,15 @@ class Game extends \Table
         $this->hooks->onEndTurn($data);
         $this->nextState('endTurn');
         $this->undo->clearUndoHistory();
+    }
+    public function stGameStart(): void
+    {
+        if ($this->gameData->get('randomSelection')) {
+            $this->characterSelection->randomCharacters();
+            $this->nextState('playerTurn');
+        } else {
+            $this->nextState('characterSelect');
+        }
     }
     /**
      * The action method of state `nextCharacter` is called every time the current game state is set to `nextCharacter`.
@@ -815,7 +828,7 @@ class Game extends \Table
     }
     public function getDifficulty()
     {
-        $difficultyMapping = ['easy', 'normal', 'normal+', 'hard'];
+        $difficultyMapping = ['normal', 'challenge', 'hard'];
         return $difficultyMapping[$this->gameData->get('difficulty')];
     }
     private array $changed = ['token' => false, 'player' => false, 'knowledge' => false, 'actions' => false];
@@ -852,14 +865,7 @@ class Game extends \Table
 
             $this->notify('updateCharacterData', '', ['gameData' => $result]);
         }
-        if (
-            !in_array($this->gamestate->state(true, false, true)['name'], [
-                'characterSelect',
-                'interrupt',
-                'dinnerPhasePrivate',
-                'dinnerPhase',
-            ])
-        ) {
+        if (!in_array($this->gamestate->state(true, false, true)['name'], ['characterSelect', 'interrupt'])) {
             $result = [
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
@@ -972,10 +978,20 @@ class Game extends \Table
         $this->initStat('player', 'treasure_recovered', 0);
         $this->initStat('player', 'crew_eliminated', 0);
         $this->reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
-        $this->reloadPlayersBasicInfos();
+        $players = $this->loadPlayersBasicInfos();
 
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));
         $this->gameData->set('difficulty', $this->getGameStateValue('difficulty'));
+        $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm'));
+        $this->gameData->set(
+            'characterCount',
+            sizeof($players) === 1
+                ? $this->getGameStateValue('soloCount')
+                : (sizeof($players) === 2
+                    ? $this->getGameStateValue('doubleCount')
+                    : 1)
+        );
+        $this->gameData->set('randomSelection', $this->getGameStateValue('random'));
         $this->decks = new DMTNT_Decks($this);
         $this->decks->setup();
         $this->map = new DMTNT_Map($this);

@@ -25,7 +25,7 @@ export const renderImage = (
     css: extraCss = '',
     baseCss: extraBaseCss = '',
     overridePos = null,
-    rotate: rotateAPI = 0,
+    rotate = 0,
     centered = false,
     withText = false,
     textOnly = false,
@@ -43,7 +43,6 @@ export const renderImage = (
         size: { w: spriteWidth, h: spriteHeight },
       },
       frame: { x, y, w, h },
-      rotate,
     } = getAllData()[name];
     let scaledX = Math.round(x / scale);
     let scaledY = Math.round(y / scale);
@@ -57,24 +56,11 @@ export const renderImage = (
       scaledWidth = scaledWidth * Math.abs(overridePos.w - overridePos.x);
       scaledHeight = scaledHeight * Math.abs(overridePos.h - overridePos.y);
     }
-    if (rotate || rotateAPI)
-      html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
-        .map((key) => `${key}:${styles[key]}`)
-        .join(';')}"><div class="card-rotator" style="transform: rotate(${rotate || rotateAPI}deg) ${
-        centered ? ';transform-origin: center;' : `translate(${scaledWidth + 3}px, ${-scaledHeight / 2}px);transform-origin:top;`
-      }height: ${scaledWidth}px;width: ${scaledHeight}px;">
-    <div name="${name}-${rotate || rotateAPI}" data-scale="${scale}" class="image card ${css} ${extraCss} ${
+    html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
+      .map((key) => `${key}:${styles[key]}`)
+      .join(';')}"><div name="${name}" data-scale="${scale}" class="image ${css} ${extraCss} ${
       card ? 'card' : ''
-    } ${name}" style="background-size: ${scaledSpriteWidth}px ${scaledSpriteHeight}px;background-position: -${scaledX}px -${scaledY}px;width: ${scaledWidth}px;height: ${
-      scaledHeight - 1
-    }px;"></div>
-    </div>`;
-    else
-      html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
-        .map((key) => `${key}:${styles[key]}`)
-        .join(';')}"><div name="${name}" data-scale="${scale}" class="image ${css} ${extraCss} ${
-        card ? 'card' : ''
-      } ${name}" style="background-size: ${scaledSpriteWidth}px ${scaledSpriteHeight}px;background-position: -${scaledX}px -${scaledY}px;width: ${scaledWidth}px;height: ${scaledHeight}px;"></div>`;
+    } ${name}" style="transform: rotate(${rotate}deg);background-size: ${scaledSpriteWidth}px ${scaledSpriteHeight}px;background-position: -${scaledX}px -${scaledY}px;width: ${scaledWidth}px;height: ${scaledHeight}px;"></div>`;
   }
   if (withText || textOnly) {
     html += renderText({ name });

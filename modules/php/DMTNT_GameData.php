@@ -30,7 +30,6 @@ class DMTNT_GameData
     private static $defaults = [
         'expansion' => 0,
         'difficulty' => 0,
-        'trackDifficulty' => 0,
         'turnUseItems' => [],
         'pendingStates' => [],
         'state' => [],

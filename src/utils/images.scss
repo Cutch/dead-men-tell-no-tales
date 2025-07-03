@@ -10,12 +10,12 @@
     border-radius: 0;
   }
 }
-.card-rotator {
-  /* margin: 0 auto 1em; */
-  position: relative;
-  place-self: anchor-center;
-  pointer-events: none;
-}
+// .card-rotator {
+/* margin: 0 auto 1em; */
+// position: relative;
+// place-self: anchor-center;
+// pointer-events: none;
+// }
 /* #players-container .card-rotator {
     margin: 0;
 } */
@@ -36,10 +36,6 @@
 .revenge-card {
   background-image: url(img/revenge-spritesheet.png);
 }
-.ocean-card {
-  background-image: url(img/ocean.png);
-  box-shadow: 0px 0px 0px 1px #222222;
-}
 .dial-card {
   background-image: url(img/dial.png);
 }
@@ -49,11 +45,11 @@
 .player-board-card {
   background-image: url(img/player-board.png);
 }
-.dinghy-card {
-  background-image: url(img/dinghy.png);
-}
 .tile-card {
   background-image: url(img/tile-spritesheet.png);
+  &.ocean {
+    box-shadow: 0px 0px 0px 1px #222222;
+  }
 }
 .item-card {
   background-image: url(img/item-spritesheet.png);

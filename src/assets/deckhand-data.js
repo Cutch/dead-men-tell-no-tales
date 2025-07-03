@@ -2,21 +2,21 @@ import dojo from 'dojo';
 export default {
   getData: () => ({
     sprites: {
-      ocean: {
+      deckhand: {
         frame: {
           x: 0,
           y: 0,
-          w: 300,
+          w: 150,
           h: 300,
         },
       },
     },
     meta: {
       version: '1.0',
-      image: 'ocean.png',
-      css: 'ocean-card',
+      image: 'deckhand.png',
+      css: 'deckhand-card',
       size: {
-        w: 300,
+        w: 150,
         h: 300,
       },
       scale: '1',

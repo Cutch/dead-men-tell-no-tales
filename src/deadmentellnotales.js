@@ -144,13 +144,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           container.insertAdjacentHTML(
             'beforeend',
             `<div id="player-${character.id}" class="player-card">
-                <div class="card"></div>
-                <div class="character"></div>
-                <div class="extra-token"></div>
-                <div class="fatigue-dial"></div>
-                <div class="actions-marker"></div>
-                <div class="strength-marker"></div>
-                <div class="item"></div>
+                <div class="card-container">
+                  <div class="character"></div>
+                  <div class="item"></div>
+                </div>
+                <div class="card">
+                  <div class="extra-token"></div>
+                  <div class="fatigue-dial"></div>
+                  <div class="actions-marker"></div>
+                  <div class="strength-marker"></div>
+                </div>
               </div>`,
           );
           renderImage(`character-board`, document.querySelector(`#player-${character.id} > .card`), { scale, pos: 'insert' });
@@ -186,7 +189,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           styles: { '--color': character.characterColor },
         });
         document.querySelector(`#player-${character.id} .strength-marker`).style = `left: ${(character.strength ?? 0) * 62 + 18}px;`;
-        const characterElem = document.querySelector(`#player-${character.id} > .character`);
+        const characterElem = document.querySelector(`#player-${character.id} .character`);
         renderImage(character.id, characterElem, { scale, pos: 'replace' });
         addClickListener(characterElem, character.id, () => {
           this.tooltip.show();
@@ -194,16 +197,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         });
 
         if (item) {
-          renderImage(item.id, document.querySelector(`#player-${character.id} > .item`), {
+          renderImage(item.id, document.querySelector(`#player-${character.id} .item`), {
             scale: scale,
             pos: 'replace',
           });
-          addClickListener(document.querySelector(`#player-${character.id} > .item`), _(item.id), () => {
+          addClickListener(document.querySelector(`#player-${character.id} .item`), _(item.id), () => {
             this.tooltip.show();
             renderImage(item.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
           });
         } else {
-          document.querySelector(`#player-${character.id} > .item`).innerHTML = '';
+          document.querySelector(`#player-${character.id} .item`).innerHTML = '';
         }
       }
     });
@@ -864,16 +867,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           this.statusBar.addActionButton(_('Done'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
           break;
         case 'characterSelect':
-          const playerCount = Object.keys(args.players).length;
-          if (playerCount === 3) {
-            this.selectCharacterCount = gameui.player_id == this.firstPlayer ? 2 : 1;
-          } else if (playerCount === 1) {
-            this.selectCharacterCount = 4;
-          } else if (playerCount === 2) {
-            this.selectCharacterCount = 2;
-          } else if (playerCount === 4) {
-            this.selectCharacterCount = 1;
-          }
+          this.selectCharacterCount = args.selectionCount;
           this.statusBar.addActionButton(_('Confirm ${x} character(s)').replace('${x}', this.selectCharacterCount), () =>
             this.bgaPerformAction('actChooseCharacters'),
           );

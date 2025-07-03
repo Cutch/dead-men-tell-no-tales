@@ -256,11 +256,7 @@ class DMTNT_Character
     public function getTurnCharacterId(): ?string
     {
         extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
-        if (sizeof($turnOrder) == 4) {
-            return $turnOrder[$turnNo ?? 0];
-        } else {
-            return null;
-        }
+        return $turnOrder[$turnNo ?? 0];
     }
     public function getTurnCharacter(bool $_skipHooks = false): array
     {

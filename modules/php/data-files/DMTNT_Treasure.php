@@ -74,7 +74,7 @@ class DMTNT_TreasureData
             'token-action' => [
                 'count' => 1,
             ],
-            'trap-door' => [
+            'trapdoor' => [
                 'count' => 6,
             ],
             'treasure' => [

@@ -202,13 +202,29 @@ export default {
           h: 300,
         },
       },
+      ocean: {
+        frame: {
+          x: 1500,
+          y: 0,
+          w: 300,
+          h: 300,
+        },
+      },
+      dinghy: {
+        frame: {
+          x: 1500,
+          y: 300,
+          w: 300,
+          h: 215,
+        },
+      },
     },
     meta: {
       version: '1.0',
       image: 'tile-spritesheet.png',
       css: 'tile-card',
       size: {
-        w: 1500,
+        w: 1800,
         h: 1500,
       },
       scale: '1',

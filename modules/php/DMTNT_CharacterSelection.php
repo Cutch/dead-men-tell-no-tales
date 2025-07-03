@@ -77,19 +77,7 @@ class DMTNT_CharacterSelection
             }
         }
         // Check how many characters the player can select
-        $playerId = $this->game->getCurrentPlayer();
-        $players = $this->game->loadPlayersBasicInfos();
-        $playerCount = sizeof($players);
-        $count = 0;
-        if ($playerCount == 3) {
-            $count = ((string) $players[$playerId]['player_no']) == '1' ? 2 : 1;
-        } elseif ($playerCount == 1) {
-            $count = 4;
-        } elseif ($playerCount == 2) {
-            $count = 2;
-        } elseif ($playerCount == 4) {
-            $count = 1;
-        }
+        $count = $this->game->gameData->get('characterCount');
         if (sizeof(array_filter($characters)) > $count) {
             throw new BgaUserException(clienttranslate('Too many characters selected'));
         }
@@ -104,27 +92,42 @@ class DMTNT_CharacterSelection
         $players = $this->game->loadPlayersBasicInfos();
         $playerNo = ((int) $players[$playerId]['player_no']) - 1;
         $playerCount = sizeof($players);
-        if ($playerCount == 3) {
-            for ($i = 0; $i < ($playerNo == 0 ? 2 : 1); $i++) {
-                $turnOrder[$playerNo + $i + ($playerNo > 0 ? 1 : 0)] = array_key_exists($i, $selectedCharacters)
-                    ? $selectedCharacters[$i]
-                    : null;
+        $characterCount = $this->game->gameData->get('characterCount');
+        if ($playerCount <= 2) {
+            for ($i = 0; $i < $characterCount; $i++) {
+                $turnOrder[$playerNo * $characterCount + $i] = array_key_exists($i, $selectedCharacters) ? $selectedCharacters[$i] : null;
             }
-        } elseif ($playerCount == 1) {
-            for ($i = 0; $i < 4; $i++) {
-                $turnOrder[$playerNo + $i] = array_key_exists($i, $selectedCharacters) ? $selectedCharacters[$i] : null;
-            }
-        } elseif ($playerCount == 2) {
-            for ($i = 0; $i < 2; $i++) {
-                $turnOrder[$playerNo * 2 + $i] = array_key_exists($i, $selectedCharacters) ? $selectedCharacters[$i] : null;
-            }
-        } elseif ($playerCount == 4) {
-            for ($i = 0; $i < 1; $i++) {
-                $turnOrder[$playerNo + $i] = array_key_exists($i, $selectedCharacters) ? $selectedCharacters[$i] : null;
-            }
+        } else {
+            $turnOrder[$playerNo] = array_key_exists(0, $selectedCharacters) ? $selectedCharacters[0] : null;
         }
         // var_dump($turnOrder);
         $this->game->gameData->set('turnOrder', $turnOrder);
+    }
+    public function randomCharacters(): void
+    {
+        $players = $this->game->getCollectionFromDb('SELECT `player_id` `id`, player_no FROM `player`');
+        $characterCount = $this->game->gameData->get('characterCount');
+        $characters = [...$this->game->data->getCharacters()];
+        $items = [...$this->game->data->getItems()];
+        shuffle($characters);
+        shuffle($items);
+        $selectedI = 0;
+        $queries = [];
+        array_walk($players, function ($v, $player) use ($characterCount, $characters, $items, &$selectedI, &$queries) {
+            $selectedCharacters = [];
+            for ($i = 0; $i < $characterCount; $i++) {
+                $char = $characters[$selectedI];
+                array_push($selectedCharacters, $char['id']);
+                $name = $this->game::escapeStringForDB($char['id']);
+                $actions = $char['actions'];
+                $item = $this->game::escapeStringForDB($items[$selectedI]['id']);
+                array_push($queries, "('$name', $player, $actions, '$item', 1)");
+                $selectedI++;
+            }
+            $this->setTurnOrder($player, $selectedCharacters);
+        });
+        $values = join(', ', $queries);
+        $this->game::DbQuery("INSERT INTO `character` (`character_id`, `player_id`, `actions`, `item`, `confirmed`) VALUES $values");
     }
     public function actChooseCharacters(): void
     {
@@ -183,6 +186,12 @@ class DMTNT_CharacterSelection
 
         // Deactivate player, and move to next state if none are active
         $this->game->gamestate->setPlayerNonMultiactive($playerId, 'playerTurn');
+    }
+    public function argSelectionCount(): array
+    {
+        $result = ['actions' => [], 'selectionCount' => $this->game->gameData->get('characterCount')];
+        $this->game->getAllPlayers($result);
+        return $result;
     }
     public function actUnBack(): void
     {

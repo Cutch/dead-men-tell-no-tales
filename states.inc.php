@@ -49,7 +49,8 @@
 
 //    !! It is not a good idea to modify this file when a game is running !!
 $gameSetup = 1;
-$characterSelect = 2;
+$gameStart = 2;
+$characterSelect = 3;
 $playerTurn = 10;
 $drawCard = 11;
 $nextCharacter = 15;
@@ -80,7 +81,14 @@ $machinestates = [
         'description' => '',
         'type' => 'manager',
         'action' => 'stGameSetup',
-        'transitions' => ['' => $characterSelect],
+        'transitions' => ['' => $gameStart],
+    ],
+    $gameStart => [
+        'name' => 'gameStart',
+        'descriptionmyturn' => clienttranslate('Welcome'),
+        'type' => 'game',
+        'action' => 'stGameStart',
+        'transitions' => ['characterSelect' => $characterSelect, 'playerTurn' => $playerTurn],
     ],
     $characterSelect => [
         'name' => 'characterSelect',

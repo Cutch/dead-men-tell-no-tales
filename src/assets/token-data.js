@@ -113,7 +113,7 @@ export default {
           h: 150,
         },
       },
-      'trap-door': {
+      trapdoor: {
         frame: {
           x: 300,
           y: 450,
