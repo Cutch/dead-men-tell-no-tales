@@ -7,26 +7,26 @@ use BgaUserException;
 if (!function_exists('getUsePerTurn')) {
     function getUsePerTurn(string $itemId, Game $game)
     {
-        $dailyUseItems = $game->gameData->get('dailyUseItems');
-        return array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] : 0;
+        $turnUseItems = $game->gameData->get('turnUseItems');
+        return array_key_exists($itemId, $turnUseItems) ? $turnUseItems[$itemId] : 0;
     }
     function usePerTurn(string $itemId, Game $game)
     {
-        $dailyUseItems = $game->gameData->get('dailyUseItems');
-        $dailyUseItems[$itemId] = array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] + 1 : 1;
-        $game->gameData->set('dailyUseItems', $dailyUseItems);
+        $turnUseItems = $game->gameData->get('turnUseItems');
+        $turnUseItems[$itemId] = array_key_exists($itemId, $turnUseItems) ? $turnUseItems[$itemId] + 1 : 1;
+        $game->gameData->set('turnUseItems', $turnUseItems);
     }
     function subtractPerTurn(string $itemId, Game $game)
     {
-        $dailyUseItems = $game->gameData->get('dailyUseItems');
-        $dailyUseItems[$itemId] = array_key_exists($itemId, $dailyUseItems) ? $dailyUseItems[$itemId] - 1 : 0;
-        $game->gameData->set('dailyUseItems', $dailyUseItems);
+        $turnUseItems = $game->gameData->get('turnUseItems');
+        $turnUseItems[$itemId] = array_key_exists($itemId, $turnUseItems) ? $turnUseItems[$itemId] - 1 : 0;
+        $game->gameData->set('turnUseItems', $turnUseItems);
         $game->markChanged('token');
         $game->markChanged('player');
     }
     function resetPerTurn(Game $game)
     {
-        $game->gameData->set('dailyUseItems', []);
+        $game->gameData->set('turnUseItems', []);
         $game->markChanged('token');
         $game->markChanged('player');
     }
@@ -56,6 +56,36 @@ class DMTNT_ItemsData
                         'perTurn' => 1,
                     ],
                 ],
+            ],
+            'blanket' => [
+                'type' => 'item',
+                'name' => clienttranslate('Blanket'),
+                'actions' => 1,
+            ],
+            'compass' => [
+                'type' => 'item',
+                'name' => clienttranslate('Compass'),
+                'actions' => 0,
+            ],
+            'dagger' => [
+                'type' => 'item',
+                'name' => clienttranslate('Dagger'),
+                'actions' => 1,
+            ],
+            'pistol' => [
+                'type' => 'item',
+                'name' => clienttranslate('Pistol'),
+                'actions' => 1,
+            ],
+            'rum' => [
+                'type' => 'item',
+                'name' => clienttranslate('Rum'),
+                'actions' => 0,
+            ],
+            'sword' => [
+                'type' => 'item',
+                'name' => clienttranslate('Sword'),
+                'actions' => 0,
             ],
         ];
         return $data;

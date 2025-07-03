@@ -4,6 +4,7 @@ import { getSpriteSize, renderImage } from './images';
 import { Tooltip } from './tooltip';
 export class Deck {
   constructor(game, deck, countData, div, scale = 4, style = 'vertical') {
+    // style: vertical, horizontal, noDiscard
     this.game = game;
     this.countData = countData;
     this.div = div;
@@ -27,13 +28,17 @@ export class Deck {
       );
     this.drawing = [];
     this.partialDrawCard = null;
-    this.topDiscard = null;
-    this.setDiscard(this.topDiscard);
+    if (this.style != 'noDiscard') {
+      this.topDiscard = null;
+      this.setDiscard(this.topDiscard);
+    }
   }
   async shuffle(args) {
     return new Promise((resolve) => {
-      this.topDiscard = null;
-      this.setDiscard(this.game.gamedatas.decksDiscards?.[args.deck]?.name ?? this.game.gamedatas.decksDiscards[args.deck]?.[0]);
+      if (this.style != 'noDiscard') {
+        this.topDiscard = null;
+        this.setDiscard(this.game.gamedatas.decksDiscards?.[args.deck]?.name ?? this.game.gamedatas.decksDiscards[args.deck]?.[0]);
+      }
       this.div.querySelector(`.shuffle-1`).classList.add('enable');
       this.div.querySelector(`.shuffle-2`).classList.add('enable');
       if (this.partialCleanup) {
@@ -51,7 +56,7 @@ export class Deck {
   updateDeckCounts(countData) {
     this.countData = countData;
     this.div.querySelector(`.deck-counter`).innerHTML = this.countData.count;
-    this.div.querySelector(`.discard-counter`).innerHTML = this.countData.discardCount;
+    if (this.style != 'noDiscard') this.div.querySelector(`.discard-counter`).innerHTML = this.countData.discardCount;
   }
   setDiscard(cardId) {
     if (this.cleanup) {
@@ -60,9 +65,10 @@ export class Deck {
     }
     if (!cardId) {
       const { width, height } = getSpriteSize(`${this.deck}-back`, this.scale);
-      this.div.querySelector(`.flipped-card`).innerHTML = `<div class="empty-discard" style="width: ${width}px;height: ${height}px;">${_(
-        'Discard',
-      )}</div>`;
+      if (this.style != 'noDiscard')
+        this.div.querySelector(`.flipped-card`).innerHTML = `<div class="empty-discard" style="width: ${width}px;height: ${height}px;">${_(
+          'Discard',
+        )}</div>`;
     } else {
       renderImage(cardId, this.div.querySelector(`.flipped-card`), { scale: this.scale, pos: 'replace' });
       this.cleanup = addClickListener(this.div.querySelector(`.flipped-card`), cardId, this.discardTooltip(cardId));

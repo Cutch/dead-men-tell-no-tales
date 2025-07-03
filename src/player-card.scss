@@ -4,133 +4,49 @@
   justify-content: center;
   align-items: flex-start;
   gap: 1em;
-}
-#players-container .inner-container {
-  display: flex;
-  flex-flow: wrap;
-  justify-content: center;
-  gap: 1em;
-}
-.player-card {
-  position: relative;
-  .card {
+  .player-card {
     position: relative;
-  }
-  &.has-card-extra-container {
-    margin-bottom: 42px;
-  }
-  .card-extra-container {
-    display: flex;
-    justify-content: space-evenly;
-    position: absolute;
-    bottom: -42px;
-    width: 100%;
-    > div {
-      padding: 18px 1rem 0.5rem;
-      font-weight: bold;
-      background-color: #51578e;
-      color: white;
-      width: 100%;
-      text-align: center;
-      border-radius: 0 0 10px 10px;
-      border: 2px solid #fff;
-      border-top: 0;
+    margin-left: 100px;
+    .card {
+      position: relative;
     }
-  }
-  .color-marker {
-    position: absolute;
-    top: -0.5em;
-    left: -0.5em;
-    width: 1em;
-    height: 1em;
-    border-radius: 50%;
-    border: 1px solid;
-  }
-  .first-player-marker {
-    position: absolute;
-    bottom: -1rem;
-    left: -1rem;
-    z-index: 5;
-  }
-  .extra-token {
-    position: absolute;
-    bottom: -1rem;
-    right: -1rem;
-    z-index: 5;
-  }
-  .first-player-marker > .image {
-    border-radius: unset;
-    border: unset;
-  }
-  .character {
-    position: absolute;
-    top: 14px;
-    left: 13px;
-    .cover {
+    .character {
       position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      color: #fff;
-      text-shadow: 0 0 10px black;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 500;
-      border-radius: 10px;
+      top: 1rem;
+      left: -90px;
     }
-    .cover.incapacitated {
-      background-color: #8006;
-    }
-    .cover.healing {
-      background-color: #0006;
+    .item {
+      position: absolute;
     }
   }
-  .weapon {
-    position: absolute;
-  }
-  .tool {
-    position: absolute;
-  }
-  .slot3 {
-    position: absolute;
-  }
-  .max-marker {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    transition:
-      top 1s linear,
-      left 1s linear,
-      transform 1s linear;
-    border: 3px solid #cdcdcd;
-    background-color: #9c9c9c;
-    border-radius: 50%;
-  }
-  .marker {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    transition:
-      top 1s linear,
-      left 1s linear,
-      transform 1s linear;
-    border-radius: 50%;
+  .inner-container {
     display: flex;
-    align-items: center;
+    flex-flow: wrap;
     justify-content: center;
-    padding: 1px;
-    box-shadow: inset 0px 0px 0px 1px #000;
+    gap: 1em;
   }
-  // .fatigue {
-  //   top: 13px;
-  //   left: 127px;
-  // }
-  // .actions {
-  //   position: absolute;
-  //   top: 38px;
-  //   left: 127px;
-  // }
+  .fatigue-dial {
+    position: absolute;
+    top: 43px;
+    left: 137px;
+    > .dial-base {
+      transform: rotate(var(--rotate, 0deg));
+      transform-origin: 50% 82px;
+    }
+  }
+  .strength-marker {
+    position: absolute;
+    bottom: 20px;
+    > .tooltip-image-and-text {
+      border-radius: 50%;
+      box-shadow: 0px 0px 2px 4px var(--color);
+    }
+  }
+  .actions-marker {
+    position: absolute;
+    bottom: 83px;
+    right: 6px;
+    box-shadow: 0px 0px 10px 2px #000;
+    border-radius: 50%;
+  }
 }

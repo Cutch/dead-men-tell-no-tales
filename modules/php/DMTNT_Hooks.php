@@ -18,10 +18,12 @@ class DMTNT_Hooks
         // $tokens = $this->game->getValidTokens();
         // $actions = $this->game->actions->getActions();
         $characters = $this->game->character->getAllCharacterData(true);
-        $equipment = array_merge(
-            ...array_map(function ($c) {
-                return $c['equipment'];
-            }, $characters)
+        $items = array_values(
+            array_filter(
+                array_map(function ($c) {
+                    return $c['item'];
+                }, $characters)
+            )
         );
         $skills = array_merge(
             // ...array_values(
@@ -37,7 +39,7 @@ class DMTNT_Hooks
                     return $c['skills'];
                 }
                 return [];
-            }, $equipment),
+            }, $items),
             ...array_map(function ($c) {
                 $skills = [];
                 if (array_key_exists('skills', $c)) {
@@ -50,7 +52,7 @@ class DMTNT_Hooks
             // ...$actions,
             ...$characters,
             ...$skills,
-            ...$equipment,
+            ...$items,
         ];
     }
     private function callHooks($functionName, $args, &$data1, &$data2 = null, &$data3 = null, &$data4 = null)
@@ -300,7 +302,7 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onIncapacitation(&$data, array $args = [])
+    function onDeath(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

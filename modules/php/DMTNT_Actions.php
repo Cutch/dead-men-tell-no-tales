@@ -126,12 +126,7 @@ class DMTNT_Actions
     {
         $character = $this->game->character->getSubmittingCharacter();
         $skills = array_merge(
-            ...array_map(function ($item) {
-                if (!array_key_exists('skills', $item)) {
-                    return [];
-                }
-                return $item['skills'];
-            }, $character['equipment'])
+            ...$character['item'] !== null && array_key_exists('skills', $character['item']) ? $character['item']['skills'] : []
         );
         return $skills;
     }

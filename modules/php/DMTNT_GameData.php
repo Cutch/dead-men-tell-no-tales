@@ -26,95 +26,39 @@ use function PHPSTORM_META\type;
 class DMTNT_GameData
 {
     private Game $game;
-    private ?array $resourcesBeforeTransaction = null;
     private array $cachedGameData = [];
-    private array $cachedGameItems = [];
     private static $defaults = [
         'expansion' => 0,
         'difficulty' => 0,
         'trackDifficulty' => 0,
-        'dailyUseItems' => [],
+        'turnUseItems' => [],
         'pendingStates' => [],
-        'buildings' => [],
-        'lastAction' => null,
         'state' => [],
-        'unlocks' => [],
-        'upgrades' => [],
-        'campEquipment' => [],
-        'destroyedEquipment' => [],
-        'lastItemOwners' => [],
-        'tempLastItemOwners' => [],
-        'activeNightCards' => [],
-        'activeDayCards' => [],
-        'day' => 1,
-        'craftingLevel' => [0],
         'turnOrder' => [],
         'turnNo' => 0,
         'interruptState' => [],
         'activateCharacters' => [],
         'actInterruptState' => [],
-        'partials' => [],
-        'tokens' => [],
-        'skip' => [],
+        'playerPositions' => [],
+        'explosions' => 0,
     ];
     public function __construct(Game $game)
     {
         $this->game = $game;
         $this->reload();
-
-        $this->cachedGameItems = $this->game->getCollectionFromDb('SELECT item_id, item_name FROM `item`', true);
     }
     public function reload(): void
     {
         $this->cachedGameData = [...self::$defaults, ...$this->game->globals->getAll()];
-        if (!$this->resourcesBeforeTransaction && array_key_exists('resources', $this->cachedGameData)) {
-            $this->resourcesBeforeTransaction = $this->cachedGameData['resources'];
-        }
-    }
-    public function getPreviousResources(): array
-    {
-        $resourcesBeforeTransaction = $this->resourcesBeforeTransaction;
-        if (array_key_exists('resources', $this->cachedGameData)) {
-            $this->resourcesBeforeTransaction = $this->cachedGameData['resources'];
-        }
-        return $resourcesBeforeTransaction;
     }
     public function set($name, $value)
     {
         $this->game->globals->set($name, $value);
         $this->cachedGameData[$name] = $value;
     }
-    public function getCreatedItems(): array
-    {
-        return $this->cachedGameItems;
-    }
-    public function setItems($data): void
-    {
-        $newMax = 0;
-        if (sizeof($data) > 0) {
-            $newMax = max(array_keys($data));
-        }
-        // Only removing as this is used by the undo
-        $this->game::DbQuery("DELETE FROM item WHERE item_id > $newMax");
-        $this->cachedGameItems = $data;
-    }
-    public function createItem(string $itemName): int
-    {
-        $this->game::DbQuery("INSERT INTO item (item_name) VALUES ('$itemName')");
-        $this->cachedGameItems[$this->game::DbGetLastId()] = $itemName;
-        return $this->game::DbGetLastId();
-    }
     public function get(string $name): mixed
     {
         $value = array_key_exists($name, $this->cachedGameData) ? $this->cachedGameData[$name] : null;
-        if ($name == 'craftingLevel') {
-            if (is_numeric($value)) {
-                $value = $value == 0 ? [] : range(1, $value);
-                $this->set($name, $value);
-            } elseif (!in_array(0, $value)) {
-                $this->set($name, [0, ...$value]);
-            }
-        }
         return $value;
     }
     public function getAll(...$names): array

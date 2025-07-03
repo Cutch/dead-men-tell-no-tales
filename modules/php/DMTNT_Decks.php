@@ -132,12 +132,6 @@ class DMTNT_Decks
             $result['decks'] = array_merge($result['decks'], $deckData);
             $result['decksDiscards'] = array_merge($result['decksDiscards'], $discardData);
         }
-        $tokens = $this->game->gameData->get('tokens');
-        foreach ($result['decks'] as $deckName => &$data) {
-            if (array_key_exists($deckName, $tokens)) {
-                $data['tokens'] = $tokens[$deckName];
-            }
-        }
         return $result;
     }
     public function addBackToDeck(string $deck, string $cardName): void

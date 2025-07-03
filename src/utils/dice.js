@@ -1,27 +1,50 @@
 const sideNames = ['one', 'two', 'three', 'four', 'five', 'six'];
 import dojo from 'dojo';
-import { renderImage } from './images';
 export class Dice {
   constructor(game, div) {
     this.game = game;
     this.div = div;
     this.queue = [];
     this.isRolling = false;
-    let html = `<div id="dice-container" class="dice-container"><div id='dice-mover' class="dice-mover"><div id='dice-base' class="dice-base"></div><div id='dice' class="dice">`;
+    let html = `<div class="dice-container"><div class="dice-mover"><div class="dice-base"></div><div class="dice">`;
     for (let i = 1; i <= 6; i++) {
       html += `<div class="side-wrapper ${sideNames[i - 1]}"><div class="side">`;
       html += `<div class="image"></div>`;
       html += `</div></div>`;
     }
-    html += `</div></div><div id="dice-container-character"></div></div>`;
+    html += `</div></div></div>`;
     this.div.insertAdjacentHTML('beforeend', html);
-    this.container = $('dice-container');
-    this.diceBase = $('dice-mover');
-    this.dice = $('dice');
+    this.container = this.div.querySelector('.dice-container');
+    this.diceBase = this.div.querySelector('.dice-mover');
+    this.dice = this.div.querySelector('.dice');
     this.dice.addEventListener('animationEnd', () => {
       this.dice.style.animationPlayState = 'paused';
       this.diceBase.style.animationPlayState = 'paused';
     });
+  }
+  _show() {
+    this.container.style['visibility'] = 'unset';
+  }
+  _hide() {
+    this.container.style['visibility'] = 'hidden';
+  }
+  _set({ roll }) {
+    this.dice.style['transition'] = 'transform 0.75s';
+    this.dice.style.animationPlayState = 'running';
+    this.dice.classList.add('show-' + roll);
+
+    const animation = new dojo.Animation({
+      curve: [0, 1],
+      duration: 750,
+      onEnd: () => {
+        this.dice.style['transition'] = 'unset';
+        for (let i = 1; i <= 6; i++) {
+          this.dice.classList.remove('show-' + i);
+        }
+      },
+    });
+
+    this.game.bgaPlayDojoAnimation(animation);
   }
   _roll({ args, callback }) {
     this.isRolling = true;
@@ -33,25 +56,12 @@ export class Dice {
     this.dice.classList.add('show-' + args.roll);
     this.diceBase.style['left'] = '20%';
     this.diceBase.style['top'] = '20%';
-    if (args.characterId) {
-      renderImage(args.characterId, $('dice-container-character'), {
-        scale: 3,
-        pos: 'replace',
-        overridePos: {
-          x: 0.2,
-          y: 0.16,
-          w: 0.8,
-          h: 0.45,
-        },
-      });
-    }
 
     const animation = new dojo.Animation({
       curve: [0, 1],
       duration: 3000,
       onEnd: () => {
         this.container.style['visibility'] = 'hidden';
-        $('dice-container-character').innerHTML = '';
         this.dice.style['transition'] = 'unset';
         this.diceBase.style['transition'] = 'unset';
         this.diceBase.style['left'] = '80%';

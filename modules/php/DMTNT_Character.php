@@ -11,16 +11,7 @@ class DMTNT_Character
     private Game $game;
     private ?string $submittingCharacter = null;
     private array $cachedData = [];
-    private static array $characterColumns = [
-        'character_id',
-        'player_id',
-        'necromancer_player_id',
-        'item',
-        'actions',
-        'fatigue',
-        'modifiedMaxActions',
-        'modifiedMaxFatigue',
-    ];
+    private static array $characterColumns = ['character_id', 'player_id', 'necromancer_player_id', 'item', 'actions', 'fatigue'];
 
     public function __construct($game)
     {
@@ -38,15 +29,8 @@ class DMTNT_Character
     public function _updateCharacterData(string $name, array $data)
     {
         // Update db
-        for ($i = 0; $i < 3; $i++) {
-            $data['item_' . ($i + 1)] = array_key_exists($i, $data['equipment']) ? $data['equipment'][$i] : null;
-            if ($data['item_' . ($i + 1)]) {
-                $data['item_' . ($i + 1)] = is_array($data['item_' . ($i + 1)])
-                    ? (array_key_exists('itemId', $data['item_' . ($i + 1)])
-                        ? $data['item_' . ($i + 1)]['itemId']
-                        : null)
-                    : $data['item_' . ($i + 1)];
-            }
+        if (array_key_exists('item', $data)) {
+            $data['item'] = is_array($data['item']) ? $data['item']['id'] : $data['item'];
         }
         $data['fatigue'] = clamp($data['fatigue'], 0, $data['maxFatigue']);
         $data['actions'] = clamp($data['actions'], 0, $data['maxActions']);
@@ -97,8 +81,7 @@ class DMTNT_Character
     }
     public function getAllCharacterIds(): array
     {
-        $turnOrderStart = $this->game->gameData->get('turnOrderStart');
-        $turnOrder = sizeof(array_filter($turnOrderStart ?? [])) == 4 ? $turnOrderStart : $this->game->gameData->get('turnOrder');
+        $turnOrder = $this->game->gameData->get('turnOrder');
         return array_values(array_filter($turnOrder));
     }
     public function getAllCharacterData(bool $_skipHooks = false): array
@@ -127,59 +110,51 @@ class DMTNT_Character
     {
         extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
         $turnOrder = array_values(array_filter($turnOrder));
-        $characterName = $characterData['character_id'];
-        $isActive = $turnOrder[$turnNo ?? 0] == $characterName;
+        $characterId = $characterData['character_id'];
+        $isActive = $turnOrder[$turnNo ?? 0] == $characterId;
         $characterData['isActive'] = $isActive;
-        $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterName;
-        $characterData['id'] = $characterName;
+        $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterId;
+        $characterData['id'] = $characterId;
         $underlyingCharacterData = $this->game->data->getCharacters()[$characterData['id']];
-        $characterData['maxActions'] = $underlyingCharacterData['actions'] + $characterData['modifiedMaxActions'];
-        $characterData['maxFatigue'] = $underlyingCharacterData['fatigue'] + $characterData['modifiedMaxFatigue'];
+        $characterData['maxActions'] = $underlyingCharacterData['actions'];
+        $characterData['maxFatigue'] = 16;
 
         array_walk($underlyingCharacterData, function ($v, $k) use (&$characterData) {
-            if (str_starts_with($k, 'on') || in_array($k, ['slots', 'skills']) || $k == 'getPerTurnKey' || $k == 'characterSkillName') {
+            if (str_starts_with($k, 'on') || in_array($k, ['skills']) || $k == 'name' || $k == 'color') {
                 $characterData[$k] = $v;
             }
         });
-
-        $characterData['equipment'] = array_map(function ($itemId) use ($isActive, $characterName, $itemsLookup) {
-            $itemName = $itemsLookup[$itemId];
+        $itemId = $characterData['item'];
+        if ($itemId) {
             $skills = [];
-            if (array_key_exists('skills', $this->game->data->getItems()[$itemName])) {
-                array_walk($this->game->data->getItems()[$itemName]['skills'], function ($v, $k) use (
-                    $itemId,
-                    $itemName,
-                    $characterName,
-                    &$skills
-                ) {
+            if (array_key_exists('skills', $this->game->data->getItems()[$itemId])) {
+                array_walk($this->game->data->getItems()[$itemId]['skills'], function ($v, $k) use ($itemId, $characterId, &$skills) {
                     $skillId = $k . '_' . $itemId;
                     $v['id'] = $skillId;
                     $v['itemId'] = $itemId;
-                    $v['itemName'] = $itemName;
-                    $v['characterId'] = $characterName;
+                    $v['itemName'] = $this->game->data->getItems()[$itemId]['name'];
+                    $v['characterId'] = $characterId;
                     $skills[$skillId] = $v;
                 });
             }
 
-            return [
+            $characterData['item'] = [
                 'itemId' => $itemId,
                 'isActive' => $isActive,
-                ...$this->game->data->getItems()[$itemName],
+                ...$this->game->data->getItems()[$itemId],
                 'skills' => $skills,
-                'character_id' => $characterName,
-                'characterId' => $characterName,
+                'character_id' => $characterId,
+                'characterId' => $characterId,
             ];
-        }, array_values(array_filter([$characterData['item_1'], $characterData['item_2'], $characterData['item_3']])));
+        } else {
+            $characterData['item'] = null;
+        }
         if (!$_skipHooks) {
             $this->game->hooks->onGetCharacterData($characterData);
         }
-        $characterData['maxActions'] = clamp($characterData['maxActions'], 0, 10);
-        $characterData['maxFatigue'] = clamp($characterData['maxFatigue'], 0, 10);
         $characterData['fatigue'] = clamp($characterData['fatigue'], 0, $characterData['maxFatigue']);
         $characterData['actions'] = clamp($characterData['actions'], 0, $characterData['maxActions']);
         $characterData['playerId'] = $characterData['player_id'];
-        $characterData['incapacitated'] = !!$characterData['incapacitated'];
-        $characterData['recovering'] = $characterData['fatigue'] > 0 && $characterData['incapacitated'];
 
         if (
             $characterData['player_zombie'] &&
@@ -202,44 +177,34 @@ class DMTNT_Character
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
         }
     }
-    public function equipEquipment(string $characterName, array $items): void
+    public function equipItem(string $characterId, array $items): void
     {
-        $this->updateCharacterData($characterName, function (&$data) use ($items) {
+        $this->updateCharacterData($characterId, function (&$data) use ($items) {
             $equippedIds = array_map(function ($d) {
                 return $d['itemId'];
-            }, $data['equipment']);
-            $equipment = [...$equippedIds, ...$items];
-            $data['equipment'] = $equipment;
+            }, $data['item']);
+            $item = [...$equippedIds, ...$items];
+            $data['item'] = $item;
         });
-        $this->updateItemLastOwner($characterName, $items);
     }
-    public function unequipEquipment(string $characterName, array $items, bool $sendToCamp = false): void
+    public function unequipItem(string $characterId, array $items, bool $sendToCamp = false): void
     {
-        $this->updateCharacterData($characterName, function (&$data) use ($items, $sendToCamp) {
+        $this->updateCharacterData($characterId, function (&$data) use ($items, $sendToCamp) {
             $equippedIds = array_map(function ($d) {
                 return $d['itemId'];
-            }, $data['equipment']);
-            $equipment = array_diff($equippedIds, array_intersect($equippedIds, $items));
-            $data['equipment'] = $equipment;
+            }, $data['item']);
+            $item = array_diff($equippedIds, array_intersect($equippedIds, $items));
+            $data['item'] = $item;
             if ($sendToCamp) {
-                $this->game->gameData->set('campEquipment', [...$this->game->gameData->get('campEquipment'), ...$items]);
+                $this->game->gameData->set('campItem', [...$this->game->gameData->get('campItem'), ...$items]);
             }
         });
     }
-    public function setCharacterEquipment(string $characterName, array $equipment): void
+    public function setCharacterItem(string $characterId, array $item): void
     {
-        $this->updateCharacterData($characterName, function (&$data) use ($equipment) {
-            $data['equipment'] = $equipment;
+        $this->updateCharacterData($characterId, function (&$data) use ($item) {
+            $data['item'] = $item;
         });
-        $this->updateItemLastOwner($characterName, $equipment);
-    }
-    public function updateItemLastOwner(string $characterName, array $equipment): void
-    {
-        $lastItemOwners = $this->game->gameData->get('lastItemOwners');
-        foreach ($equipment as $id) {
-            $lastItemOwners[$id] = $characterName;
-        }
-        $this->game->gameData->set('lastItemOwners', $lastItemOwners);
     }
     public function setSubmittingCharacter(?string $actions, ?string $subActions = null): void
     {
@@ -269,7 +234,6 @@ class DMTNT_Character
     public function getSkill(string $skillId): ?array
     {
         $characters = $this->getAllCharacterData(true);
-        $currentCharacter = $this->getTurnCharacter(true);
         foreach ($characters as $k => $v) {
             if (array_key_exists('skills', $v)) {
                 if (array_key_exists($skillId, $v['skills'])) {
@@ -277,30 +241,8 @@ class DMTNT_Character
                 }
             }
         }
-        // foreach ($this->game->actions->getActionss() as $k => $actions) {
-        //     if (array_key_exists('skills', $actions)) {
-        //         if (array_key_exists($skillId, $actions['skills'])) {
-        //             return ['character' => $currentCharacter, 'skill' => $actions['skills'][$skillId]];
-        //         }
-        //     }
-        // }
         return null;
     }
-    // public function getItem($itemId): ?array
-    // {
-    //     $characters = $this->getAllCharacterData(true);
-    //     foreach ($characters as $k => $v) {
-    //         $array = array_values(
-    //             array_filter($v['equipment'], function ($item) use ($itemId) {
-    //                 return $item['itemId'] == $itemId;
-    //             })
-    //         );
-    //         if (sizeof($array) > 0) {
-    //             return ['character' => $v, 'item' => $$array[0]];
-    //         }
-    //     }
-    //     return null;
-    // }
     public function getSubmittingCharacterId(): ?string
     {
         return $this->submittingCharacter ? $this->submittingCharacter : $this->getTurnCharacterId();
@@ -324,24 +266,21 @@ class DMTNT_Character
     {
         return $this->getCharacterData($this->getTurnCharacterId(), $_skipHooks);
     }
-    public function getActiveEquipment(): array
+    public function getActiveItem(): array
     {
         $character = $this->getSubmittingCharacter();
-        return $character['equipment'];
+        return $character['item'];
     }
     public function activateNextCharacter(): void
     {
         // Making the assumption that the functions are checking isLastCharacter()
         extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
-        if ($turnNo !== null) {
-            $this->game->gameData->set('turnNo', $turnNo + 1);
-            $character = $turnOrder[$turnNo + 1];
-            $turnNo = $turnNo + 1;
-        } else {
-            $this->game->gameData->set('turnNo', 0);
-            $character = $turnOrder[0];
-            $turnNo = 0;
+        if ($turnNo === null) {
+            $turnNo = -1;
         }
+        $this->game->gameData->set('turnNo', ($turnNo + 1) % sizeof($turnOrder));
+        $character = $turnOrder[($turnNo + 1) % sizeof($turnOrder)];
+        $turnNo = ($turnNo + 1) % sizeof($turnOrder);
         $characterData = $this->getCharacterData($character);
 
         $playerId = (int) $this->game->getActivePlayerId();
@@ -351,47 +290,17 @@ class DMTNT_Character
         }
         $this->game->markChanged('player');
     }
-    public function getFirstCharacter(): string
-    {
-        $turnOrder = $this->game->gameData->get('turnOrder');
-        return $turnOrder[0];
-    }
-    public function isLastCharacter(): bool
-    {
-        extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
-        return sizeof($turnOrder) == ($turnNo ?? 0) + 1;
-    }
-    public function setFirstTurnOrder(string $characterId): void
-    {
-        $turnOrder = $this->game->gameData->get('turnOrder');
-        $i = array_search($characterId, $turnOrder);
-        $endArray = array_slice($turnOrder, 0, $i);
-        $startArray = array_slice($turnOrder, $i, sizeof($turnOrder) - $i);
-        $this->game->gameData->set('turnOrder', [...$startArray, ...$endArray]);
-        $this->game->gameData->set('turnNo', null);
-        $this->game->markChanged('player');
-    }
-    public function rotateTurnOrder(): void
-    {
-        $turnOrder = $this->game->gameData->get('turnOrder');
-        $temp = array_shift($turnOrder);
-        array_push($turnOrder, $temp);
-        $this->game->gameData->set('turnOrder', $turnOrder);
-        $this->game->gameData->set('turnNo', null);
-        $this->game->markChanged('player');
-    }
-
     public function getActiveActions(): int
     {
         return (int) $this->getSubmittingCharacter()['actions'];
     }
-    public function _adjustActions(array &$data, int $actionChange, &$prev, $characterName): bool
+    public function _adjustActions(array &$data, int $actionChange, &$prev, $characterId): bool
     {
         $prev = $data['actions'];
         $hookData = [
             'currentActions' => $prev,
             'change' => $actionChange,
-            'characterId' => $characterName,
+            'characterId' => $characterId,
             'maxActions' => $data['maxActions'],
         ];
         $this->game->hooks->onAdjustActions($hookData);
@@ -399,44 +308,31 @@ class DMTNT_Character
         $prev = $data['actions'] - $prev;
         return $prev == 0;
     }
-    public function adjustAllActions(int $actionChange): void
+    public function adjustActions(string $characterId, int $actionChange): int
     {
         $prev = 0;
-        $this->updateAllCharacterData(function (&$data) use ($actionChange, &$prev) {
-            return $this->_adjustActions($data, $actionChange, $prev, $data['id']);
-        });
-    }
-    public function adjustActions(string $characterName, int $actionChange): int
-    {
-        $prev = 0;
-        $this->updateCharacterData($characterName, function (&$data) use ($actionChange, &$prev, $characterName) {
-            return $this->_adjustActions($data, $actionChange, $prev, $characterName);
+        $this->updateCharacterData($characterId, function (&$data) use ($actionChange, &$prev, $characterId) {
+            return $this->_adjustActions($data, $actionChange, $prev, $characterId);
         });
         return $prev;
     }
     public function adjustActiveActions(int $actions): int
     {
-        $characterName = $this->getSubmittingCharacter()['character_id'];
-        return $this->adjustActions($characterName, $actions);
+        $characterId = $this->getSubmittingCharacter()['character_id'];
+        return $this->adjustActions($characterId, $actions);
     }
     public function getActiveFatigue(): int
     {
         return (int) $this->getSubmittingCharacter()['fatigue'];
     }
 
-    public function _adjustFatigue(array &$data, $fatigueChange, &$prev, $characterName): bool
+    public function _adjustFatigue(array &$data, $fatigueChange, &$prev, $characterId): bool
     {
-        if ($data['incapacitated'] && !$data['recovering'] && $fatigueChange > 0) {
-            return true;
-        }
-        if ($data['recovering'] && $fatigueChange < 0) {
-            return true;
-        }
         $prev = $data['fatigue'];
         $hookData = [
             'currentFatigue' => $prev,
             'change' => $fatigueChange,
-            'characterId' => $characterName,
+            'characterId' => $characterId,
             'maxFatigue' => $data['maxFatigue'],
         ];
         $this->game->hooks->onAdjustFatigue($hookData);
@@ -444,77 +340,55 @@ class DMTNT_Character
         $prev = $data['fatigue'] - $prev;
 
         if ($prev < 0) {
-            $this->game->incStat(-$prev, 'fatigue_lost', $this->getCharacterData($characterName)['playerId']);
+            $this->game->incStat(-$prev, 'fatigue_lost', $this->getCharacterData($characterId)['playerId']);
         }
         if ($prev > 0) {
-            $this->game->incStat($prev, 'fatigue_gained', $this->getCharacterData($characterName)['playerId']);
+            $this->game->incStat($prev, 'fatigue_gained', $this->getCharacterData($characterId)['playerId']);
         }
 
-        if ($data['fatigue'] == 0 && !$data['incapacitated']) {
-            $this->game->eventLog(clienttranslate('${character_id} is incapacitated'), [
-                'character_id' => $this->game->getCharacterHTML($characterName),
+        if ($data['fatigue'] == $data['maxFatigue']) {
+            $this->game->eventLog(clienttranslate('${character_name} has died'), [
+                'character_id' => $this->game->getCharacterHTML($characterId),
             ]);
-            $data['incapacitated'] = true;
-            $data['becameIncapacitated'] = true;
             $data['actions'] = 0;
             $hookData = [
-                'characterId' => $characterName,
+                'characterId' => $characterId,
             ];
-            $this->game->hooks->onIncapacitation($hookData);
+            $this->game->hooks->onDeath($hookData);
             return false;
         } else {
             return $prev == 0;
         }
     }
-    public function adjustAllFatigue(int $fatigueChange): void
+    public function adjustFatigue(string $characterId, int $fatigueChange): int
     {
         $prev = 0;
-        $this->updateAllCharacterData(function (&$data) use ($fatigueChange, &$prev) {
-            return $this->_adjustFatigue($data, $fatigueChange, $prev, $data['id']);
-        });
-    }
-    public function adjustFatigue(string $characterName, int $fatigueChange): int
-    {
-        $prev = 0;
-        $this->updateCharacterData($characterName, function (&$data) use ($fatigueChange, &$prev, $characterName) {
-            return $this->_adjustFatigue($data, $fatigueChange, $prev, $characterName);
+        $this->updateCharacterData($characterId, function (&$data) use ($fatigueChange, &$prev, $characterId) {
+            return $this->_adjustFatigue($data, $fatigueChange, $prev, $characterId);
         });
         return $prev;
     }
     public function adjustActiveFatigue(int $fatigue): int
     {
-        $characterName = $this->getSubmittingCharacter()['character_id'];
-        return $this->adjustFatigue($characterName, $fatigue);
+        $characterId = $this->getSubmittingCharacter()['character_id'];
+        return $this->adjustFatigue($characterId, $fatigue);
     }
     public function getMarshallCharacters()
     {
         return array_map(function ($char) {
-            $this->game->hooks->onGetSlots($char);
-            $slotsAllowed = $char['slots'];
-            $slotsUsed = array_count_values(
-                array_map(function ($d) {
-                    return $d['itemType'];
-                }, $char['equipment'])
-            );
             return [
-                'name' => $char['character_id'],
+                'id' => $char['character_id'],
                 'isFirst' => $char['isFirst'],
                 'isActive' => $char['isActive'],
-                'equipment' => $char['equipment'],
+                'item' => $char['item'],
                 'playerColor' => $char['player_color'],
+                'characterColor' => $char['color'],
                 'playerId' => $char['playerId'],
                 'actions' => $char['actions'],
                 'maxActions' => $char['maxActions'],
                 'maxFatigue' => $char['maxFatigue'],
-                'dayEvent' => $char['dayEvent'],
-                'mentalHindrance' => $char['mentalHindrance'],
-                'physicalHindrance' => $char['physicalHindrance'],
-                'necklaces' => $char['necklaces'],
                 'fatigue' => $char['fatigue'],
-                'incapacitated' => $char['incapacitated'],
-                'recovering' => $char['recovering'],
-                'slotsUsed' => $slotsUsed,
-                'slotsAllowed' => $slotsAllowed,
+                'tempStrength' => $char['tempStrength'],
             ];
         }, $this->getAllCharacterData());
     }

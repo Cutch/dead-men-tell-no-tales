@@ -42,6 +42,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   },
   getActionMappings() {
     return {
+      actMove: _('Move'),
+      actRun: _('Run'),
+      actFightFire: _('Fight Fire'),
+      actEliminateDeckhand: _('Eliminate Deckhand'),
+      actPickupToken: _('Pickup Token'),
+      actRest: _('Rest'),
+      actIncreaseBattleStrength: _('Increase Strength'),
+      actDrop: _('Drop'),
+      actSwapItem: _('Swap Item'),
       actSelectCharacter: _('Select Character'),
       actSelectCard: _('Select Card'),
       actUndo: _('Undo'),
@@ -65,7 +74,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     // If character selection, keep removing characters
     let characters = gameData?.characters
       ? Object.values(gameData?.characters)
-      : Object.values(this.selectedCharacters).sort((a, b) => a.name.localeCompare(b.name));
+      : Object.values(this.selectedCharacters).sort((a, b) => a.id.localeCompare(b.id));
     if (gameData.gamestate?.name === 'characterSelect' || this.refreshCharacters) {
       document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
       document.querySelectorAll('.player-card').forEach((el) => el.remove());
@@ -76,274 +85,125 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     characters.forEach((character, i) => {
       // Player side board
       const playerPanel = this.getPlayerPanelElement(character.playerId);
-      const equipments = character.equipment;
-      const hindrance = [...character.physicalHindrance, ...character.mentalHindrance];
-      const characterSideId = `player-side-${character.playerId}-${character.name}`;
+      const item = character.item;
+      const characterSideId = `player-side-${character.playerId}-${character.id}`;
       const playerSideContainer = $(characterSideId);
       if (!playerSideContainer) {
         playerPanel.insertAdjacentHTML(
           'beforeend',
           `<div id="${characterSideId}" class="character-side-container">
-            <div class="character-name">${character.name}<span class="first-player-marker"></span></div>
-            <div class="status line"></div>
-            <div class="fatigue line"><div class="fa fa-heart"></div><span class="label">${_(
-              'fatigue',
+            <div class="character-name">${this.data[character.id].options.name}</div>
+            <div class="fatigue line"><div class="fa6 fa6-solid fa6-person-running"></div><span class="label">${_(
+              'Fatigue',
             )}: </span><span class="value"></span></div>
-            <div class="actions line"><div class="fa fa-bolt"></div><span class="label">${_(
-              'actions',
+            <div class="actions line"><div class="fa6 fa6-solid fa6-bolt"></div><span class="label">${_(
+              'Actions',
             )}: </span><span class="value"></span></div>
-            <div class="equipment line"><div class="fa fa-cog"></div><span class="label">${_(
-              'Equipment',
-            )}: </span><span class="value"></span></div>
-            <div class="hindrance line" style="${
-              this.expansions.includes('hindrance') ? '' : 'display:none'
-            }"><div class="fa fa-ban"></div><span class="label">${_('Hindrance')}: </span><span class="value"></span></div>
-            <div class="character-image"><div class="cover"></div></div>
+            <div class="item line"><div class="fa6 fa6-solid fa6-toolbox"></div><span class="label">${_('Item')}: </span><span class="value"></span></div>
+            <div class="character-image"></div>
           </div>`,
         );
-        if (gameData.gamestate?.name !== 'characterSelect')
-          renderImage('skull', document.querySelector(`#${characterSideId} .first-player-marker`), {
-            scale: 20,
-            pos: 'replace',
-            card: false,
-            css: 'side-panel-skull',
-          });
         playerSideContainer = $(characterSideId);
-        addClickListener(playerSideContainer.querySelector(`.character-name`), character.name, () => {
+        addClickListener(playerSideContainer.querySelector(`.character-name`), character.id, () => {
           this.tooltip.show();
-          renderImage(character.name, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
         });
-        renderImage(character.name, playerSideContainer.querySelector(`.character-image`), {
-          scale: 3,
-          overridePos: {
-            x: 0.2,
-            y: 0.16,
-            w: 0.8,
-            h: 0.45,
-          },
+        renderImage(character.id + '-token', playerSideContainer.querySelector(`.character-image`), {
+          scale: 2,
+          pos: 'replace',
+          styles: { '--color': character.characterColor },
         });
-        addClickListener(playerSideContainer.querySelector(`.character-image`), character.name, () => {
+        addClickListener(playerSideContainer.querySelector(`.character-image`), character.id, () => {
           this.tooltip.show();
-          renderImage(character.name, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
         });
       }
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
-      const statusLine = playerSideContainer.querySelector(`.status`);
-      if (character.incapacitated) {
-        if (character.recovering) {
-          statusLine.innerHTML = _('Recovering');
-          if (!statusLine.classList.contains('healing')) statusLine.classList.add('healing');
-        } else if (!statusLine.classList.contains('incapacitated')) {
-          statusLine.innerHTML = _('Incapacitated');
-          statusLine.classList.add('incapacitated');
-        }
-      } else {
-        if (character.recovering) {
-          if (statusLine.classList.contains('healing')) {
-            statusLine.innerHTML = '';
-            statusLine.classList.remove('healing');
-          }
-        } else if (statusLine.classList.contains('incapacitated')) {
-          statusLine.classList.remove('incapacitated');
-        } else if (statusLine.classList.contains('healing')) {
-          statusLine.innerHTML = '';
-          statusLine.classList.remove('healing');
-        }
-      }
 
-      playerSideContainer.querySelector(`.equipment .value`).innerHTML =
-        [...equipments].map((d) => `<span class="equipment-item equipment-${d.itemId}">${_(d.name)}</span>`).join(', ') || _('None');
-      playerSideContainer.querySelector(`.hindrance .value`).innerHTML =
-        hindrance.map((d) => `<span class="hindrance-item hindrance-${d.id}">${_(d.name)}</span>`).join(', ') || _('None');
+      playerSideContainer.querySelector(`.item .value`).innerHTML = item
+        ? `<span class="item-item item-${item.itemId}">${_(item.id)}</span>`
+        : _('None');
       if (gameData.gamestate?.name !== 'characterSelect') playerSideContainer.style['background-color'] = character?.isActive ? '#fff' : '';
-      [...equipments].forEach((d) => {
-        addClickListener(playerSideContainer.querySelector(`.equipment-${d.itemId}`), _(d.name), () => {
+      if (item)
+        addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.id), () => {
           this.tooltip.show();
-          renderImage(d.id, this.tooltip.renderByElement(), {
+          renderImage(item.id, this.tooltip.renderByElement(), {
             withText: true,
             type: 'tooltip-item',
             pos: 'replace',
-            rotate: d.rotate,
+            rotate: item.rotate,
             centered: true,
           });
         });
-      });
-      hindrance.forEach((d) => {
-        addClickListener(playerSideContainer.querySelector(`.hindrance-${d.id}`), _(d.name), () => {
-          this.tooltip.show();
-          renderImage(d.id, this.tooltip.renderByElement(), {
-            withText: true,
-            type: 'tooltip-hindrance',
-            pos: 'replace',
-            rotate: d.rotate,
-            centered: true,
-          });
-        });
-      });
 
-      document.querySelector(`#${characterSideId} .first-player-marker`).style['display'] = character?.isFirst ? 'inline-block' : 'none';
       // Player main board
       if (gameData.gamestate.name !== 'characterSelect') {
         const container = $(`player-container-${Math.floor(i / 2) + 1}`);
-        if (container && !$(`player-${character.name}`)) {
+        if (container && !$(`player-${character.id}`)) {
           container.insertAdjacentHTML(
             'beforeend',
-            `<div id="player-${character.name}" class="player-card">
-                <div class="card-extra-container"></div>
-                <div class="card"><div class="first-player-marker"></div><div class="extra-token"></div></div>
-                <div class="color-marker" style="background-color: #${character.playerColor}"></div>
-                <div class="character"><div class="cover"></div></div>
-                <div class="max-fatigue max-marker"></div>
-                <div class="fatigue marker fa fa-heart"></div>
-                <div class="max-actions max-marker"></div>
-                <div class="actions marker fa fa-bolt"></div>
-                <div class="weapon" style="top: ${(60 * 4) / scale}px;left: ${(125 * 4) / scale}px"></div>
-                <div class="tool" style="top: ${(60 * 4) / scale}px;left: ${(242.5 * 4) / scale}px"></div>
+            `<div id="player-${character.id}" class="player-card">
+                <div class="card"></div>
+                <div class="character"></div>
+                <div class="extra-token"></div>
+                <div class="fatigue-dial"></div>
+                <div class="actions-marker"></div>
+                <div class="strength-marker"></div>
+                <div class="item"></div>
               </div>`,
           );
-          // <div class="slot3" style="top: ${(80 * 4) / scale}px;left: ${(183 * 4) / scale}px"></div>
-          renderImage(`character-board`, document.querySelector(`#player-${character.name} > .card`), { scale, pos: 'insert' });
-          renderImage('skull', document.querySelector(`#player-${character.name} .first-player-marker`), { scale: 8, pos: 'replace' });
+          renderImage(`character-board`, document.querySelector(`#player-${character.id} > .card`), { scale, pos: 'insert' });
         }
-        document.querySelector(`#player-${character.name} .card`).style['outline'] = character?.isActive
+        document.querySelector(`#player-${character.id} .card`).style['outline'] = character?.isActive
           ? `5px solid #fff` //#${character.playerColor}
           : '';
-        document.querySelector(`#player-${character.name} .first-player-marker`).style['display'] = character?.isFirst ? 'block' : 'none';
 
-        const extraTokenElem = document.querySelector(`#player-${character.name} .extra-token`);
+        const extraTokenElem = document.querySelector(`#player-${character.id} .extra-token`);
         extraTokenElem.innerHTML = '';
-
-        document.querySelector(`#player-${character.name} .max-fatigue.max-marker`).style = `left: ${Math.round(
-          ((character.maxFatigue ?? 0) * 20.85 * 4) / scale + (126.5 * 4) / scale,
-        )}px;top: ${Math.round((10 * 4) / scale)}px`;
-        document.querySelector(`#player-${character.name} .fatigue.marker`).style = `background-color: #${character.playerColor};left: ${
-          Math.round(((character.fatigue ?? 0) * 20.85 * 4) / scale + (126.5 * 4) / scale) + 2
-        }px;top: ${Math.round((10 * 4) / scale) + 2 + (character.fatigue == 0 ? (3 * 4) / scale : 0)}px`;
-        document.querySelector(`#player-${character.name} .max-actions.max-marker`).style = `left: ${Math.round(
-          ((character.maxActions ?? 0) * 20.85 * 4) / scale + (126.5 * 4) / scale,
-        )}px;top: ${Math.round((34.5 * 4) / scale)}px`;
-        document.querySelector(`#player-${character.name} .actions.marker`).style = `background-color: #${character.playerColor};left: ${
-          Math.round(((character.actions ?? 0) * 20.85 * 4) / scale + (126.5 * 4) / scale) + 2
-        }px;top: ${Math.round((34.5 * 4) / scale) + 2 - (character.actions == 0 ? (3 * 4) / scale : 0)}px`;
-        const characterElem = document.querySelector(`#player-${character.name} > .character`);
-        renderImage(character.name, characterElem, { scale, pos: 'replace' });
-        addClickListener(characterElem, character.name, () => {
-          this.tooltip.show();
-          renderImage(character.name, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+        const degs = [-2, 19, 35, 57, 76, 98, 118, 138, 156, 181, 208, 225, 248, 272, 294, 320, 341];
+        renderImage('dial', document.querySelector(`#player-${character.id} .fatigue-dial`), {
+          scale,
+          pos: 'replace',
+          card: false,
+          styles: { '--rotate': `${degs[character.fatigue]}deg` },
         });
-        const coverElem = document.createElement('div');
-        characterElem.appendChild(coverElem);
-        // const coverElem = characterElem.querySelector(`.cover`);
-        coverElem.classList.add('cover');
-        if (character.incapacitated) {
-          if (character.recovering) {
-            coverElem.innerHTML = _('Recovering');
-            if (!coverElem.classList.contains('healing')) coverElem.classList.add('healing');
-          } else if (!coverElem.classList.contains('incapacitated')) {
-            coverElem.innerHTML = _('Incapacitated');
-            coverElem.classList.add('incapacitated');
-          }
-        } else {
-          if (character.recovering) {
-            if (coverElem.classList.contains('healing')) coverElem.classList.remove('healing');
-          } else if (coverElem.classList.contains('incapacitated')) {
-            coverElem.classList.remove('incapacitated');
-          }
-        }
+        renderImage('token-action', document.querySelector(`#player-${character.id} .actions-marker`), {
+          scale,
+          pos: 'replace',
+          card: false,
+        });
 
-        const renderedItems = [];
-        const weapon = equipments.find((d) => d.itemType === 'weapon');
-        if (weapon) {
-          renderedItems.push(weapon);
-          renderImage(weapon.id, document.querySelector(`#player-${character.name} > .weapon`), {
+        document
+          .querySelector(`#player-${character.id} .actions-marker .image`)
+          .insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${character.actions ?? 0}</div>`);
+
+        character.actions ?? 0;
+
+        renderImage(character.id + '-token', document.querySelector(`#player-${character.id} .strength-marker`), {
+          scale,
+          pos: 'replace',
+          styles: { '--color': character.characterColor },
+        });
+        document.querySelector(`#player-${character.id} .strength-marker`).style = `left: ${(character.strength ?? 0) * 62 + 18}px;`;
+        const characterElem = document.querySelector(`#player-${character.id} > .character`);
+        renderImage(character.id, characterElem, { scale, pos: 'replace' });
+        addClickListener(characterElem, character.id, () => {
+          this.tooltip.show();
+          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+        });
+
+        if (item) {
+          renderImage(item.id, document.querySelector(`#player-${character.id} > .item`), {
             scale: scale,
             pos: 'replace',
           });
-          addClickListener(document.querySelector(`#player-${character.name} > .weapon`), _(weapon.name), () => {
+          addClickListener(document.querySelector(`#player-${character.id} > .item`), _(item.id), () => {
             this.tooltip.show();
-            renderImage(weapon.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
+            renderImage(item.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
           });
         } else {
-          document.querySelector(`#player-${character.name} > .weapon`).innerHTML = '';
-        }
-
-        const tool = equipments.find((d) => d.itemType === 'tool');
-        if (tool) {
-          renderedItems.push(tool);
-          renderImage(tool.id, document.querySelector(`#player-${character.name} > .tool`), {
-            scale: scale,
-            pos: 'replace',
-          });
-          addClickListener(document.querySelector(`#player-${character.name} > .tool`), _(tool.name), () => {
-            this.tooltip.show();
-            renderImage(tool.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
-          });
-        } else {
-          document.querySelector(`#player-${character.name} > .tool`).innerHTML = '';
-        }
-        const item3 = equipments.find((d) => !renderedItems.includes(d));
-        const extraContainerButtons = document.querySelector(`#player-${character.name} .card-extra-container`);
-        extraContainerButtons.innerHTML = '';
-        extraContainerButtons.insertAdjacentHTML(
-          'beforeend',
-          `<div class="card-extra-equipment">${_('Extra Equipment')} (<span>0</span>)</div>
-              <div class="card-hindrance">${_('Hindrance')} (<span>0</span>)</div>`,
-        );
-        // if (item3) {
-        //   renderedItems.push(item3);
-        //   renderImage(item3.id, document.querySelector(`#player-${character.name} > .slot3`), {
-        //     scale: scale / 2,
-        //     pos: 'replace',
-        //   });
-        //   addClickListener(document.querySelector(`#player-${character.name} > .slot3`), item3.name, () => {
-        //     this.tooltip.show();
-        //     renderImage(item3.id, this.tooltip.renderByElement(), {withText: true,  type: 'tooltip-item', pos: 'replace' });
-        //   });
-        // }
-        const extraEquipmentElem = extraContainerButtons.querySelector(`.card-extra-equipment`);
-        extraEquipmentElem.style['display'] = !!item3 || character.dayEvent.length > 0 || character.necklaces.length > 0 ? `` : 'none';
-        extraEquipmentElem.querySelector('span').innerHTML = (!!item3 ? 1 : 0) + character.dayEvent.length + character.necklaces.length;
-        addClickListener(extraEquipmentElem, _('Extra Equipment'), () => {
-          this.tooltip.show();
-          if (item3)
-            renderImage(item3.id, this.tooltip.renderByElement(), {
-              withText: true,
-              type: 'tooltip-item',
-              pos: 'append',
-              rotate: item3.rotate,
-              centered: true,
-            });
-          [...character.dayEvent, ...character.necklaces].forEach((dayEvent) => {
-            renderImage(dayEvent.id, this.tooltip.renderByElement(), {
-              withText: true,
-              type: 'tooltip-item',
-              pos: 'append',
-              rotate: dayEvent.rotate,
-              centered: true,
-            });
-          });
-        });
-
-        const hindranceElem = extraContainerButtons.querySelector(`.card-hindrance`);
-        hindranceElem.style['display'] = this.expansions.includes('hindrance') && hindrance.length > 0 ? `` : 'none';
-        hindranceElem.querySelector('span').innerHTML = hindrance.length;
-        addClickListener(hindranceElem, _('Hindrance'), () => {
-          this.tooltip.show();
-          character.physicalHindrance.forEach((hindrance) => {
-            renderImage(hindrance.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-hindrance', pos: 'append' });
-          });
-          character.mentalHindrance.forEach((hindrance) => {
-            renderImage(hindrance.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-hindrance', pos: 'append' });
-          });
-        });
-        const displayContainer = !hindranceElem.style['display'] || !extraEquipmentElem.style['display'];
-        extraContainerButtons.style['display'] = displayContainer ? `` : 'none';
-        const cardElem = document.querySelector(`#player-${character.name}`);
-        if (displayContainer) {
-          if (!cardElem.classList.contains('has-card-extra-container')) cardElem.classList.add('has-card-extra-container');
-        } else {
-          if (cardElem.classList.contains('has-card-extra-container')) cardElem.classList.remove('has-card-extra-container');
+          document.querySelector(`#player-${character.id} > .item`).innerHTML = '';
         }
       }
     });
@@ -356,8 +216,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = 5;
       }
     });
-
-    this.infoOverlay.updateTurnOrder();
   },
   enableClick: function (elem) {
     if (elem.classList.contains('disabled')) {
@@ -405,7 +263,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.firstPlayer = Object.values(gameui.gamedatas.players).find((d) => d.player_no == 1).id;
     // Main board
 
-    this.board = new Board(this, gameData.tiles ?? []);
+    this.board = new Board(this, gameData);
     // renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
   },
   setupCharacterSelections: function (gameData) {
@@ -417,19 +275,19 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     Object.keys(this.data)
       .filter((d) => this.data[d].options.type === 'character')
       .sort()
-      .forEach((characterName) => {
-        renderImage(characterName, elem, { scale: 2, pos: 'append' });
-        addClickListener(elem.querySelector(`.${characterName}`), characterName, () => {
+      .forEach((characterId) => {
+        renderImage(characterId, elem, { scale: 1.5, pos: 'append' });
+        addClickListener(elem.querySelector(`.${characterId}`), characterId, () => {
           const saved = [...this.mySelectedCharacters];
-          const i = this.mySelectedCharacters.indexOf(characterName);
+          const i = this.mySelectedCharacters.indexOf(characterId);
           if (i >= 0) {
             // Remove selection
             this.mySelectedCharacters.splice(i, 1);
           } else {
             if (this.mySelectedCharacters.length >= this.selectCharacterCount) {
-              this.mySelectedCharacters[this.mySelectedCharacters.length - 1] = characterName;
+              this.mySelectedCharacters[this.mySelectedCharacters.length - 1] = characterId;
             } else {
-              this.mySelectedCharacters.push(characterName);
+              this.mySelectedCharacters.push(characterId);
             }
           }
           this.bgaPerformAction('actCharacterClicked', {
@@ -443,8 +301,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           });
         });
         this.addHelpTooltip({
-          node: elem.querySelector(`.${characterName}`),
-          tooltipText: characterName,
+          node: elem.querySelector(`.${characterId}`),
+          tooltipText: characterId,
         });
       });
   },
@@ -452,12 +310,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     const elem = $('character-selector');
     const myCharacters = this.selectedCharacters
       .filter((d) => d.playerId == gameui.player_id)
-      .map((d) => d.name)
+      .map((d) => d.id)
       .sort((a, b) => this.mySelectedCharacters.indexOf(a) - this.mySelectedCharacters.indexOf(b));
     this.mySelectedCharacters = myCharacters;
-    const characterLookup = this.selectedCharacters.reduce((acc, d) => ({ ...acc, [d.name]: d }), {});
+    const characterLookup = this.selectedCharacters.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
     elem.querySelectorAll('.character-card').forEach((card) => {
       const character = characterLookup[card.getAttribute('name')];
+      console.log(character, characterLookup, card.getAttribute('name'));
       if (character) {
         card.style.setProperty('--player-color', '#' + character.playerColor);
         card.classList.add('selected');
@@ -561,41 +420,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (isStudio())
       console.log('Entering state: ' + stateName, args, isActive, this.getActivePlayers(), gameui.isPlayerActive(), this.player_id);
     switch (stateName) {
-      case 'tooManyItems':
-        if (isActive) this.tooManyItemsScreen.show(args.args);
-        break;
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
-        break;
-      case 'eatSelection':
-        if (isActive) this.eatScreen.show(args.args);
-        break;
-      case 'startHindrance':
-        this.upgradeSelectionScreen.show(this.player_id == args.active_player, args.args);
-        break;
-      case 'resourceSelection':
-        if (isActive) this.tokenScreen.show(args.args);
-        break;
-      case 'tokenReduceSelection':
-        if (isActive) this.tokenReduceScreen.show(args.args);
-        break;
-      case 'characterSelection':
-        if (isActive) this.characterSelectionScreen.show(args.args);
-        break;
-      case 'hindranceSelection':
-        if (isActive) this.hindranceSelectionScreen.show(args.args);
         break;
       case 'cardSelection':
         if (isActive) this.cardSelectionScreen.show(args.args);
         break;
-      case 'whichWeapon':
-        if (isActive) this.weaponScreen.show(args.args);
-        break;
       case 'characterSelect':
         this.selectedCharacters = args.args.characters ?? [];
         this.updateCharacterSelections(args.args);
-        dojo.style('character-selector', 'display', 'none');
-        dojo.style('game_play_area', 'display', '');
         break;
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
@@ -605,25 +438,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           this.leftTradePhase = false;
           this.showDayTracker();
         }
-        break;
-      case 'tradeSelect':
-      case 'tradePhase':
-        if (this.firstRender && args.args.drawNightCard) await this.showNightTracker(args.args.drawNightCard.card.id);
-
-        this.leftTradePhase = false;
-        await Promise.all(this.animations);
-        if (this.leftMorningPhase == 'morning') {
-          if (this.leftMorningPhase != 'skip') {
-            this.itemTradeScreen.show(args.args);
-          }
-          this.leftMorningPhase = null;
-        } else if (!this.leftMorningPhase) {
-          this.itemTradeScreen.show(args.args);
-        }
-        break;
-      case 'confirmTradePhase':
-      case 'waitTradePhase':
-        this.itemTradeScreen.showConfirm(args.args);
         break;
       case 'nightDrawCard':
         this.showNightTracker(args.args.card.id);
@@ -648,35 +462,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         this.leftMorningPhase = 'morning';
         // await this.wait(500);
         break;
-      case 'startHindrance':
-        this.upgradeSelectionScreen.hide();
-        break;
-      case 'eatSelection':
-        this.eatScreen.hide();
-        break;
       case 'itemSelection':
         this.itemsScreen.hide();
-        break;
-      case 'whichWeapon':
-        this.weaponScreen.hide();
-        break;
-      case 'characterSelection':
-        this.characterSelectionScreen.hide();
-        break;
-      case 'tokenReduceSelection':
-        this.tokenReduceScreen.hide();
         break;
       case 'hindranceSelection':
         this.hindranceSelectionScreen.hide();
         break;
       case 'cardSelection':
         this.cardSelectionScreen.hide();
-        break;
-      case 'resourceSelection':
-        this.tokenScreen.hide();
-        break;
-      case 'tooManyItems':
-        this.tooManyItemsScreen.hide();
         break;
       case 'tradePhase':
         this.leftMorningPhase = 'skip';
@@ -688,10 +481,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         dojo.style('game_play_area', 'display', '');
         this.refreshCharacters = true;
         this.selectedCharacters = [];
-        break;
-      case 'confirmTradePhase':
-      case 'waitTradePhase':
-        this.itemTradeScreen.clearSelection();
         break;
     }
   },
@@ -705,7 +494,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (action['skillOption']) suffix += ` (${_(action['skillOption'].name)})`;
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
-    if (action['actions'] != null) suffix += ` <i class="fa fa-bolt dmtnt__stamina"></i> ${action['actions']}`;
+    if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa fa-heart dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
     if (action['perTurn'] != null)
@@ -981,11 +770,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           );
       };
       switch (stateName) {
-        case 'startHindrance':
-          this.statusBar.addActionButton(_('Done'), () => {
-            this.bgaPerformAction('actDone');
-          });
-          break;
         case 'eatSelection':
           this.statusBar.addActionButton(args.selectionState?.title ? _(args.selectionState.title) : _('Eat'), () => {
             this.bgaPerformAction('actSelectEat', {
@@ -1095,7 +879,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           );
           this.statusBar.addActionButton(_('Randomize') + ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`, () => {
             const saved = [...this.mySelectedCharacters];
-            const otherCharacters = this.selectedCharacters.filter((d) => d.playerId != gameui.player_id).map((d) => d.name);
+            const otherCharacters = this.selectedCharacters.filter((d) => d.playerId != gameui.player_id).map((d) => d.id);
             const validCharacters = Object.keys(this.data).filter(
               (d) => this.data[d].options.type === 'character' && !otherCharacters.includes(d),
             );

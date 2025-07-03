@@ -36,7 +36,6 @@ class DMTNT_Undo
             throw new BgaUserException(clienttranslate('Can\'t undo another player\'s action'));
         }
         $undoId = $undoState['undo_id'];
-        $itemTable = json_decode($undoState['itemTable'], true);
         $characterTable = json_decode($undoState['characterTable'], true);
         $globalsTable = json_decode($undoState['globalsTable'], true);
         $extraTables = json_decode($undoState['extraTables'], true);
@@ -47,7 +46,6 @@ class DMTNT_Undo
         foreach ($globalsTable as $k => $v) {
             $this->game->gameData->set($k, $v);
         }
-        $this->game->gameData->setItems($itemTable);
         foreach ($this->extraTablesList as $table) {
             $this->game::DbQuery("DELETE FROM `$table` where 1 = 1");
             if (sizeof($extraTables[$table]) > 0) {
@@ -79,7 +77,6 @@ class DMTNT_Undo
     public function loadInitialState(): void
     {
         $moveId = $this->getLastMoveId();
-        $itemsData = json_encode($this->game->gameData->getCreatedItems());
         $globalsData = json_encode($this->game->gameData->getAll());
         $characterData = [];
         try {
@@ -98,7 +95,6 @@ class DMTNT_Undo
         }
         $this->initialState = [
             'moveId' => $moveId,
-            'itemsData' => $itemsData,
             'characterData' => $characterData,
             'globalsData' => $globalsData,
             'extraTables' => $extraTables,
@@ -118,7 +114,6 @@ class DMTNT_Undo
                 $this->game::DbQuery('DELETE FROM `undoState` where pending OR gamelog_move_id=' . $this->savedMoveId);
             }
             $moveId = $this->initialState['moveId'];
-            $itemsData = $this->game::escapeStringForDB($this->initialState['itemsData']);
             $characterData = $this->game::escapeStringForDB($this->initialState['characterData']);
             $globalsData = $this->game::escapeStringForDB($this->initialState['globalsData']);
             $extraTables = $this->game::escapeStringForDB($this->initialState['extraTables']);
@@ -129,8 +124,8 @@ class DMTNT_Undo
                 $pending = 'true';
             }
             $this->game::DbQuery(
-                'INSERT INTO `undoState` (`character_id`, `gamelog_move_id`, `pending`, `itemTable`, `characterTable`, `globalsTable`, `extraTables`) VALUES ' .
-                    "('$char', $moveId, $pending, '$itemsData', '$characterData', '$globalsData', '$extraTables')"
+                'INSERT INTO `undoState` (`character_id`, `gamelog_move_id`, `pending`, `characterTable`, `globalsTable`, `extraTables`) VALUES ' .
+                    "('$char', $moveId, $pending, '$characterData', '$globalsData', '$extraTables')"
             );
         }
         if (

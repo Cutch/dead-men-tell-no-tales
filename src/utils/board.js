@@ -1,10 +1,12 @@
 import on from 'dojo/on';
 import { renderImage } from './images';
 import Panzoom from '@panzoom/panzoom';
+import { Dice } from './dice';
 export class Board {
-  constructor(game, tiles) {
+  constructor(game, { tiles, explosions }) {
     this.game = game;
     this.positions = {};
+    this.dice = {};
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
@@ -13,59 +15,108 @@ export class Board {
       .getElementById('game_play_area')
       .insertAdjacentHTML(
         'beforeend',
-        `<div class="board-buttons"><button id="zoom-in">Zoom In</button><button id="zoom-out">Zoom Out</button><button id="reset">Reset</button></div>`,
+        `<div class="board-buttons-wrapper"><div class="board-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`,
       );
     document
       .getElementById('game_play_area')
-      .insertAdjacentHTML('beforeend', `<div class="board-wrapper"><div id="board-container" style="min-height: 90vh;"></div></div>`);
+      .insertAdjacentHTML(
+        'beforeend',
+        `<div id="board-wrapper" class="board-wrapper" style="min-height: 70vh;"><div id="board-container" style="width: 0;"></div></div>`,
+      );
     on($('zoom-in'), 'click', () => this.panzoom.zoomIn());
     on($('zoom-out'), 'click', () => this.panzoom.zoomOut());
     on($('reset'), 'click', () => this.panzoom.reset());
+    this.wrapper = $('board-wrapper');
     this.container = $('board-container');
     const defaultScale = 0.5;
     this.panzoom = Panzoom(this.container, {
       maxScale: 5,
       startScale: defaultScale,
     });
-    this.update(tiles);
-    setTimeout(() => this.panzoom.pan(-(this.minX - 1) * 300, -(this.minY - 1) * 300), 0);
+    renderImage('tracker', this.container, {
+      pos: 'append',
+      card: false,
+      scale: 1,
+      styles: { left: `-400px`, bottom: `-192px`, position: 'absolute' },
+    });
+    renderImage('explosion', this.container, {
+      pos: 'append',
+      card: false,
+      scale: 1.5,
+      styles: {
+        left: `${-325 + 150 * (explosions - 1)}px`,
+        display: explosions === 0 ? 'none' : '',
+        bottom: `-100px`,
+        position: 'absolute',
+      },
+    });
+    this.explosion = this.container.querySelector('.explosion-base');
+    this.update({ tiles, explosions });
+    setTimeout(() => {
+      this.panzoom.pan(
+        ((this.minX - 1) * 300) / 2 + this.wrapper.getBoundingClientRect().width,
+        (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
+      );
+      this.panzoom.setOptions({
+        startX: ((this.minX - 1) * 300) / 2 + this.wrapper.getBoundingClientRect().width,
+        startY: (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
+      });
+    }, 0);
   }
-  update(tiles) {
+  getKey({ x, y }) {
+    return `${x}${y}`;
+  }
+  update({ tiles, explosions }) {
     this.container.querySelectorAll('.ocean').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
-    tiles.forEach(({ name, x, y }) => {
+    tiles?.forEach(({ map_id: name, x, y, fire }) => {
       this.minX = Math.min(this.minX, x);
       this.maxX = Math.max(this.maxX, x);
       this.minY = Math.min(this.minY, y);
       this.maxY = Math.max(this.maxY, y);
       this.positions[`${x}${y}`] = name;
-      const tileElem = this.container.querySelector(`.${name}`);
-      if (!tileElem)
+      let tileElem = this.container.querySelector(`.${name}-base`);
+      if (!tileElem) {
         renderImage(name, this.container, {
           pos: 'append',
           card: false,
           scale: 1,
           styles: {
             left: `${x * 300}px`,
-            top: `${y * 300}px`,
+            bottom: `${y * 300}px`,
             position: 'absolute',
           },
         });
+        tileElem = this.container.querySelector(`.${name}-base`);
+        tileElem.insertAdjacentHTML('beforeend', '<div class="trapdoor"></div><div class="deckhands"></div><div class="dice"></div>');
+      }
+      const deckhandElem = tileElem.querySelector(`.deckhands`);
+      const trapdoorElem = tileElem.querySelector(`.trapdoor`);
+      const diceElem = tileElem.querySelector(`.dice`);
+      const die = new Dice(this.game, diceElem);
+      this.dice[this.getKey({ x, y })] = die;
+      if (fire === 0) die._hide();
+      else {
+        die._show();
+        die._set({ roll: fire });
+      }
     });
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
-        if (this.positions[`${x}${y}`]) continue;
+        if (y == -1 && x >= -2 && x <= 2) continue;
+        if (this.positions[this.getKey({ x, y })]) continue;
         renderImage('ocean', this.container, {
           pos: 'append',
           card: false,
           scale: 1,
-          styles: { left: `${x * 300}px`, top: `${y * 300}px`, position: 'absolute' },
+          styles: { left: `${x * 300}px`, bottom: `${y * 300}px`, position: 'absolute' },
         });
       }
     }
-    this.panzoom.setOptions({ startX: -(this.minX - 1) * 300, startY: -(this.minY - 1) * 300 });
+    this.explosion.style.left = `${-325 + 150 * (explosions - 1)}px`;
+    this.explosion.style.display = explosions === 0 ? 'none' : '';
   }
 }

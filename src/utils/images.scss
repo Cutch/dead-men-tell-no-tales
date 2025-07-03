@@ -26,6 +26,9 @@
 .character-card {
   background-image: url(img/character-spritesheet.png);
 }
+.character-board-card {
+  background-image: url(img/player-board.png);
+}
 .character-token-card {
   background-image: url(img/character-token-spritesheet.png);
   border-radius: 50%;
@@ -35,6 +38,10 @@
 }
 .ocean-card {
   background-image: url(img/ocean.png);
+  box-shadow: 0px 0px 0px 1px #222222;
+}
+.dial-card {
+  background-image: url(img/dial.png);
 }
 .tracker-card {
   background-image: url(img/tracker.png);

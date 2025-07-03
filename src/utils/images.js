@@ -7,15 +7,7 @@ export const getSpriteSize = (name, scale = 2) => {
   if (rotate) return { width: h / scale, height: w / scale };
   else return { width: w / scale, height: h / scale };
 };
-const scaleLookups = {
-  'tooltip-character': 2,
-  'tooltip-item': 2,
-  'tooltip-day-event': 2,
-  'tooltip-card': 1,
-  'tooltip-night-event': 1,
-  'tooltip-hindrance': 2,
-  'tooltip-unlock': 0.75,
-};
+const scaleLookups = { 'tooltip-item': 1, 'tooltip-character': 1.5 };
 export const renderText = ({ name }) => {
   const text = getAllData()[name]?.options?.text;
   return text

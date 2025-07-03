@@ -4,14 +4,11 @@
   padding: 0.25rem;
   border-radius: 10px;
   position: relative;
-  .equipment-item {
+  .item-item {
     text-decoration: underline;
-    &.equipment-hide {
+    &.item-hide {
       text-decoration: unset;
     }
-  }
-  .hindrance-item {
-    text-decoration: underline;
   }
   .character-image {
     position: absolute;
@@ -19,15 +16,8 @@
     top: 0;
     .card {
       border: unset;
-      box-shadow: 0 0 6px 0px white inset;
-    }
-  }
-  .status {
-    &.incapacitated {
-      color: red;
-    }
-    &.healing {
-      color: rgb(54, 124, 255);
+      box-shadow: inset 0 0 0px 5px var(--color);
+      margin: 2px;
     }
   }
 }
@@ -35,11 +25,6 @@
   font-size: 16px;
   text-decoration: underline;
   margin-bottom: 2px;
-}
-.side-panel-skull {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 5px;
 }
 .line {
   .fa {

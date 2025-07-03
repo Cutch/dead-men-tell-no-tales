@@ -43,22 +43,16 @@ CREATE TABLE IF NOT EXISTS `map` (
     `destroyed` int(1) DEFAULT 0,
     PRIMARY KEY (`map_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
-CREATE TABLE IF NOT EXISTS `item` (
-    `item_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-    `item_name` varchar(20) NOT NULL,
-    PRIMARY KEY (`item_id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `character` (
     `character_id` varchar(10) NOT NULL,
     `player_id` int(10) unsigned NOT NULL,
     `necromancer_player_id` int(10) unsigned NULL,
     `order` int(10) UNSIGNED DEFAULT 0,
-    `item` int(10) unsigned NULL,
-    `action` int(10) UNSIGNED DEFAULT 0,
+    `item` varchar(20) DEFAULT NULL,
+    `actions` int(10) UNSIGNED DEFAULT 0,
     `fatigue` int(10) UNSIGNED DEFAULT 0,
     `tempStrength` int(10) UNSIGNED DEFAULT 0,
     `confirmed` int(1) UNSIGNED DEFAULT 0,
-    FOREIGN KEY (item) REFERENCES item(item_id),
     FOREIGN KEY (player_id) REFERENCES player(player_id),
     FOREIGN KEY (necromancer_player_id) REFERENCES player(player_id),
     PRIMARY KEY (`character_id`)
@@ -68,7 +62,6 @@ CREATE TABLE IF NOT EXISTS `undoState` (
     `character_id` varchar(10) NOT NULL,
     `gamelog_move_id` int(10) unsigned NULL,
     `pending` int(1) UNSIGNED DEFAULT 0,
-    `itemTable` text DEFAULT '',
     `characterTable` text DEFAULT '',
     `globalsTable` text DEFAULT '',
     `extraTables` text DEFAULT '',

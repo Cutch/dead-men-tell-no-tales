@@ -18,7 +18,7 @@ export default {
           h: 150,
         },
       },
-      'garret-token': {
+      'garrett-token': {
         frame: {
           x: 300,
           y: 0,

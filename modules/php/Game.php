@@ -93,8 +93,8 @@ class Game extends \Table
         // automatically complete notification args when needed
         $this->notify->addDecorator(function (string $message, array $args) {
             $args['gamestate'] = ['name' => $this->gamestate->state(true, false, true)['name']];
-            if (!array_key_exists('character_id', $args) && str_contains($message, '${character_id}')) {
-                $args['character_id'] = $this->getCharacterHTML();
+            if (!array_key_exists('character_name', $args) && str_contains($message, '${character_name}')) {
+                $args['character_name'] = $this->getCharacterHTML();
             }
             if (!array_key_exists('player_name', $args) && str_contains($message, '${player_name}')) {
                 if (array_key_exists('playerId', $args)) {
@@ -102,13 +102,16 @@ class Game extends \Table
                 } elseif (array_key_exists('character_id', $args)) {
                     $playerId = (int) $this->character->getCharacterData($args['character_id'])['playerId'];
                     $args['player_name'] = $this->getPlayerNameById($playerId);
+                } elseif (array_key_exists('character_name', $args)) {
+                    $playerId = (int) $this->character->getCharacterData($args['character_name'])['playerId'];
+                    $args['player_name'] = $this->getPlayerNameById($playerId);
                 } else {
                     $playerId = (int) $this->getActivePlayerId();
                     $args['player_name'] = $this->getPlayerNameById($playerId);
                 }
             }
-            if (!array_key_exists('character_id', $args) && $this->character->getTurnCharacterId()) {
-                $args['character_id'] = $this->getCharacterHTML();
+            if (!array_key_exists('character_name', $args) && $this->character->getTurnCharacterId()) {
+                $args['character_name'] = $this->getCharacterHTML();
             }
             return $args;
         });
@@ -146,14 +149,14 @@ class Game extends \Table
         }
         $this->notify->player($playerId, ...$arg);
     }
-    public function getCharacterHTML(?string $name = null)
+    public function getCharacterHTML(?string $id = null)
     {
-        if ($name) {
-            $char = $this->character->getCharacterData($name);
+        if ($id) {
+            $char = $this->character->getCharacterData($id);
         } else {
             $char = $this->character->getSubmittingCharacter();
-            $name = $char['character_id'];
         }
+        $name = $char['name'];
         $playerName = $this->getPlayerNameById($char['playerId']);
         $playerColor = $char['player_color'];
         return "<!--PNS--><span class=\"playername\" style=\"color:#$playerColor;\">$name ($playerName)</span><!--PNE-->";
@@ -201,7 +204,7 @@ class Game extends \Table
         ];
         $data['sendNotification'] = function () use ($value, $characterName, &$notificationSent, $actionName) {
             if ($characterName) {
-                $this->notify('rollBattleDie', clienttranslate('${character_id} rolled a ${value} ${action_name}'), [
+                $this->notify('rollBattleDie', clienttranslate('${character_name} rolled a ${value} ${action_name}'), [
                     'value' => $value,
                     'character_id' => $this->getCharacterHTML($characterName),
                     'characterId' => $characterName,
@@ -247,9 +250,52 @@ class Game extends \Table
         $this->completeAction(false);
     }
 
+    public function getCharacterPos(string $id): array
+    {
+        $playerPositions = $this->gameData->get('playerPositions');
+        return array_key_exists($id, $playerPositions) ? $playerPositions[$id] : [0, 0];
+    }
+
+    public function setCharacterPos(string $id, int $x, int $y): void
+    {
+        $this->gameData->set('playerPositions', [$this->gameData->get('playerPositions'), $id => [$x, $y]]);
+        $this->markChanged('player');
+    }
+
     public function actPlaceTile(int $x, int $y, int $rotate): void
     {
         //
+    }
+
+    public function actIncreaseBattleStrength(): void
+    {
+        $this->actions->spendActionCost('actIncreaseBattleStrength');
+        $this->character->updateCharacterData($this->character->getTurnCharacterId(), function (&$data) {
+            $data['tempStrength']++;
+        });
+        $this->completeAction();
+    }
+
+    public function actPickupToken(): void
+    {
+        $this->actions->spendActionCost('actPickupToken');
+        // $this->character->updateCharacterData($this->character->getTurnCharacterId(), function (&$data) {
+        //     $data['tempStrength']++;
+        // });
+        $this->completeAction();
+    }
+
+    public function actRest(): void
+    {
+        $this->actions->spendActionCost('actRest');
+        $this->character->adjustActiveFatigue(-2);
+        $this->completeAction();
+    }
+    public function actFightFire(): void
+    {
+        $this->actions->spendActionCost('actFightFire');
+        $this->map->decreaseFire(...$this->getCharacterPos($this->character->getTurnCharacterId()));
+        $this->completeAction();
     }
     public function actUseSkill(string $skillId, ?string $skillSecondaryId = null): void
     {
@@ -285,7 +331,7 @@ class Game extends \Table
                 $_this->character->setSubmittingCharacter('actUseSkill', $skillId);
                 $notificationSent = false;
                 $skill['sendNotification'] = function () use (&$skill, $_this, &$notificationSent) {
-                    $_this->notify('notify', clienttranslate('${character_id} used the skill ${skill_name}'), [
+                    $_this->notify('notify', clienttranslate('${character_name} used the skill ${skill_name}'), [
                         'skill_name' => $skill['name'],
                         'usedActionId' => 'actUseSkill',
                         'usedActionName' => $skill['name'],
@@ -354,7 +400,7 @@ class Game extends \Table
                 $_this->character->setSubmittingCharacter('actUseItem', $skillId);
                 $notificationSent = false;
                 $skill['sendNotification'] = function () use (&$skill, $_this, &$notificationSent) {
-                    $_this->notify('notify', clienttranslate('${character_id} used the item\'s skill ${skill_name}'), [
+                    $_this->notify('notify', clienttranslate('${character_name} used the item\'s skill ${skill_name}'), [
                         'skill_name' => $skill['name'],
                         'usedActionId' => 'actUseSkill',
                         'usedActionName' => $skill['name'],
@@ -383,7 +429,7 @@ class Game extends \Table
     public function actEndTurn(): void
     {
         // Notify all players about the choice to pass.
-        $this->eventLog(clienttranslate('${character_id} ends their turn'), [
+        $this->eventLog(clienttranslate('${character_name} ends their turn'), [
             'usedActionId' => 'actEndTurn',
         ]);
 
@@ -480,15 +526,6 @@ class Game extends \Table
     public function actSelectItem(?string $itemId = null): void
     {
         $this->selectionStates->actSelectItem($itemId);
-    }
-    public function stPlayerTurn()
-    {
-        $char = $this->character->getTurnCharacter();
-        if ($char['isActive'] && $char['incapacitated']) {
-            $this->eventLog(clienttranslate('${character_id} is incapacitated'));
-            $this->endTurn();
-        }
-        // }
     }
     public function stDrawCard()
     {
@@ -645,8 +682,7 @@ class Game extends \Table
     public function getGameProgression()
     {
         // Compute and return the game progression
-        extract($this->gameData->getAll('day', 'turnNo'));
-        return ((($day - 1) * 4 + ($turnNo ?? 0)) / (12 * 4)) * 100;
+        return 1;
     }
     public function endTurn()
     {
@@ -654,7 +690,6 @@ class Game extends \Table
             'characterId' => $this->character->getTurnCharacterId(),
         ];
         $this->hooks->onEndTurn($data);
-        $this->gameData->set('lastAction', null);
         $this->nextState('endTurn');
         $this->undo->clearUndoHistory();
     }
@@ -663,34 +698,10 @@ class Game extends \Table
      */
     public function stNextCharacter(): void
     {
-        // Retrieve the active player ID.
-        if (
-            sizeof(
-                array_filter($this->character->getAllCharacterData(true), function ($d) {
-                    return $d['incapacitated'] && !$d['recovering'];
-                })
-            ) == 4
-        ) {
-            $this->lose();
-        } else {
-            while (true) {
-                if ($this->character->isLastCharacter()) {
-                    $this->nextState('dinnerPhase');
-                    resetPerTurn($this);
-                    break;
-                } else {
-                    $this->character->activateNextCharacter();
-                    resetPerTurn($this);
-                    if ($this->character->getActiveFatigue() == 0) {
-                        $this->notify('playerTurn', clienttranslate('${character_id} is incapacitated'), []);
-                    } else {
-                        $this->nextState('playerTurn');
-                        $this->notify('playerTurn', clienttranslate('${character_id} begins their turn'), []);
-                        break;
-                    }
-                }
-            }
-        }
+        $this->character->activateNextCharacter();
+        resetPerTurn($this);
+        $this->nextState('playerTurn');
+        $this->notify('playerTurn', clienttranslate('${character_name} begins their turn'), []);
     }
     public function stSelectCharacter()
     {
@@ -754,15 +765,25 @@ class Game extends \Table
         $result['decks'] = $data['decks'];
         $result['decksDiscards'] = $data['decksDiscards'];
     }
+    public function getTiles(&$result): void
+    {
+        $result['tiles'] = array_values($this->map->getMap());
+        $result['explosions'] = $this->gameData->get('explosions');
+    }
     public function getItemData(&$result): void
     {
-        // $selectable = $this->actions->getActionSelectable('actCraft');
-        // $result['availableEquipment'] = array_combine(
-        //     toId($selectable),
-        //     array_map(function ($d) use ($result) {
-        //         return $d['count'] - (array_key_exists($d['id'], $result['builtEquipment']) ? $result['builtEquipment'][$d['id']] : 0);
-        //     }, $selectable)
-        // );
+        $equippedItems = array_filter(
+            array_merge(
+                array_map(function ($d) {
+                    return $d['item'];
+                }, $this->character->getAllCharacterData(true))
+            )
+        );
+        $items = [...$this->data->getItems()];
+        array_walk($equippedItems, function ($d) use (&$items) {
+            unset($items[$d['id']]);
+        });
+        $result['availableItems'] = array_values(toId($items));
     }
     public function getGameData(&$result): void
     {
@@ -860,12 +881,13 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
         ];
         if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
-            // $result['character_id'] = $this->getCharacterHTML();
-            // $result['actions'] = array_values($this->actions->getValidActions());
-            // $result['availableSkills'] = $this->actions->getAvailableSkills();
+            $result['character_name'] = $this->getCharacterHTML();
+            $result['actions'] = array_values($this->actions->getValidActions());
+            $result['availableSkills'] = $this->actions->getAvailableSkills();
             // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
-            // $result['activeTurnPlayerId'] = $this->character->getTurnCharacter(true)['player_id'];
-            // $this->getAllPlayers($result);
+            $result['activeTurnPlayerId'] = $this->character->getTurnCharacter(true)['player_id'];
+            $this->getAllPlayers($result);
+            $this->getTiles($result);
         }
         if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
             $result['canUndo'] = $this->undo->canUndo();

@@ -18,9 +18,10 @@ class DMTNT_CharacterSelection
         ?string $character1 = null,
         ?string $character2 = null,
         ?string $character3 = null,
-        ?string $character4 = null
+        ?string $character4 = null,
+        ?string $character5 = null
     ): void {
-        $characters = [$character1, $character2, $character3, $character4];
+        $characters = [$character1, $character2, $character3, $character4, $character5];
         $this->validateCharacterCount(false, $characters);
         $playerId = $this->game->getCurrentPlayer();
         $characters = array_filter($characters);
@@ -49,20 +50,16 @@ class DMTNT_CharacterSelection
         // Remove player's previous selected
         $this->game::DbQuery("DELETE FROM `character` WHERE player_id = $playerId");
         // Add player's current selected
-        if ($character1) {
+        if ($characters) {
             $values = join(
                 ', ',
                 array_map(function ($char) use ($playerId) {
                     extract($this->game->data->getCharacters()[$char]);
                     $char = $this->game::escapeStringForDB($char);
-                    return "('$char', $playerId, $stamina, $health)";
+                    return "('$char', $playerId, $actions)";
                 }, $characters)
             );
-            $this->game::DbQuery("INSERT INTO `character` (`character_id`, `player_id`, `stamina`, `health`) VALUES $values");
-        }
-        $characterIds = $this->game->character->getAllCharacterIds();
-        if (in_array('Atouk', $characterIds) && in_array('Yurt', $characterIds)) {
-            throw new BgaUserException(clienttranslate('Atouk and Yurt cannot be in the same tribe'));
+            $this->game::DbQuery("INSERT INTO `character` (`character_id`, `player_id`, `actions`) VALUES $values");
         }
         // Notify Players
         $results = [];
@@ -126,6 +123,7 @@ class DMTNT_CharacterSelection
                 $turnOrder[$playerNo + $i] = array_key_exists($i, $selectedCharacters) ? $selectedCharacters[$i] : null;
             }
         }
+        // var_dump($turnOrder);
         $this->game->gameData->set('turnOrder', $turnOrder);
     }
     public function actChooseCharacters(): void
@@ -143,10 +141,9 @@ class DMTNT_CharacterSelection
         $message = '';
         foreach ($selectedCharacters as $index => $value) {
             $characterObject = $this->game->data->getCharacters()[$value];
-            if (array_key_exists('startsWith', $characterObject)) {
-                $itemId = $this->game->gameData->createItem($characterObject['startsWith']);
-                $this->game->character->equipEquipment($value, [$itemId]);
-            }
+            // if (array_key_exists('startsWith', $characterObject)) {
+            //     $this->game->character->equipEquipment($value, [$itemId]);$characterObject['startsWith']
+            // }
             $this->game->hooks->onCharacterChoose($characterObject);
 
             $selectedCharactersArgs['character' . ($index + 1)] = $value;
@@ -164,9 +161,14 @@ class DMTNT_CharacterSelection
             case 4:
                 $message = clienttranslate('${player_name} selected ${character1}, ${character2}, ${character3} and ${character4}');
                 break;
+            case 5:
+                $message = clienttranslate(
+                    '${player_name} selected ${character1}, ${character2}, ${character3}, ${character4} and ${character5}'
+                );
+                break;
         }
-        // $this->game->character->adjustAllHealth(10);
-        // $this->game->character->adjustAllStamina(10);
+        // $this->game->character->adjustAllfatigue(10);
+        // $this->game->character->adjustAllactions(10);
 
         $this->setTurnOrder($playerId, $selectedCharacters);
         $results = ['player_id' => $playerId];
@@ -179,21 +181,14 @@ class DMTNT_CharacterSelection
         );
         $this->game->markChanged('token');
 
-        $targetState = $this->game->isValidExpansion('hindrance') ? 'startHindrance' : 'playerTurn';
         // Deactivate player, and move to next state if none are active
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, $targetState);
-        if ($this->game->gamestate->state(true, false, true)['name'] == $targetState) {
-            $this->game->gameData->set('turnOrderStart', $this->game->gameData->get('turnOrder'));
-        }
+        $this->game->gamestate->setPlayerNonMultiactive($playerId, 'playerTurn');
     }
     public function actUnBack(): void
     {
         $playerId = $this->game->getCurrentPlayer();
         // Deactivate player, and move to next state if none are active
-        $this->game->gamestate->setPlayersMultiactive(
-            [$playerId],
-            $this->game->isValidExpansion('hindrance') ? 'startHindrance' : 'playerTurn'
-        );
+        $this->game->gamestate->setPlayersMultiactive([$playerId], 'playerTurn');
     }
     public function test_swapCharacter($character)
     {
@@ -203,11 +198,11 @@ class DMTNT_CharacterSelection
         $this->game::DbQuery('DELETE FROM `character` WHERE character_id = "' . $oldChar . '"');
         // Add player's current selected
         $data = $this->game->data->getCharacters()[$character];
-        $health = $data['health'];
-        $stamina = $data['stamina'];
+        $fatigue = $data['fatigue'];
+        $actions = $data['actions'];
         $char = $this->game::escapeStringForDB($character);
         $this->game::DbQuery(
-            "INSERT INTO `character` (`character_id`, `player_id`, `stamina`, `health`) VALUES ('$char', $playerId, $stamina, $health)"
+            "INSERT INTO `character` (`character_id`, `player_id`, `actions`, `fatigue`) VALUES ('$char', $playerId, $actions, $fatigue)"
         );
         $turnOrder = $this->game->gameData->get('turnOrder');
         $this->game->gameData->set(
@@ -216,19 +211,13 @@ class DMTNT_CharacterSelection
                 return $charId == $oldChar ? $character : $charId;
             }, $turnOrder)
         );
-        $this->game->gameData->set(
-            'turnOrderStart',
-            array_map(function ($charId) use ($oldChar, $character) {
-                return $charId == $oldChar ? $character : $charId;
-            }, $this->game->gameData->get('turnOrderStart'))
-        );
-        if (array_key_exists('startsWith', $data)) {
-            $itemId = $this->game->gameData->createItem($data['startsWith']);
-            $this->game->character->equipEquipment($character, [$itemId]);
-        }
+        // if (array_key_exists('startsWith', $data)) {
+        //     $itemId = $this->game->gameData->createItem($data['startsWith']);
+        //     $this->game->character->equipEquipment($character, [$itemId]);
+        // }
         $this->game->hooks->onCharacterChoose($data);
 
-        // $this->game->character->adjustAllHealth(10);
-        // $this->game->character->adjustAllStamina(10);
+        // $this->game->character->adjustAllfatigue(10);
+        // $this->game->character->adjustAllactions(10);
     }
 }

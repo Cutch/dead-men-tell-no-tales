@@ -51,7 +51,7 @@
   height: 10em;
   transform-style: preserve-3d;
   transform: translate3d(-50%, -50%, 2rem) rotateX(0) rotateZ(0);
-  // transition: transform 1s;
+  transition: transform 1s;
   position: relative;
 
   &.show-1 {
@@ -104,49 +104,49 @@
   }
   .image {
     background-image: url(img/dice-spritesheet.png);
-    width: 50px;
-    height: 50px;
+    width: 100px;
+    height: 100px;
   }
   .side-wrapper.one {
     transform: translateZ(4.8em);
     .image {
       background-position: 0px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   .side-wrapper.two {
     transform: rotateY(-180deg) translateZ(4.8em);
     .image {
       background-position: -100px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   .side-wrapper.three {
     transform: rotateY(-90deg) translateZ(4.8em);
     .image {
       background-position: -200px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   .side-wrapper.four {
     transform: rotateX(90deg) translateZ(4.8em);
     .image {
       background-position: -300px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   .side-wrapper.five {
     transform: rotateX(-90deg) translateZ(4.8em);
     .image {
       background-position: -400px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   .side-wrapper.six {
     transform: rotateY(90deg) translateZ(4.8em);
     .image {
       background-position: -500px 0px;
-      background-size: 150px 50px;
+      background-size: 600px 100px;
     }
   }
   // .corner {
