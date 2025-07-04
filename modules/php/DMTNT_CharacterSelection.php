@@ -170,8 +170,6 @@ class DMTNT_CharacterSelection
                 );
                 break;
         }
-        // $this->game->character->adjustAllfatigue(10);
-        // $this->game->character->adjustAllactions(10);
 
         $this->setTurnOrder($playerId, $selectedCharacters);
         $results = ['player_id' => $playerId];
@@ -185,7 +183,7 @@ class DMTNT_CharacterSelection
         $this->game->markChanged('token');
 
         // Deactivate player, and move to next state if none are active
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, 'playerTurn');
+        $this->game->gamestate->setPlayerNonMultiactive($playerId, 'initializeTile');
     }
     public function argSelectionCount(): array
     {
@@ -197,7 +195,7 @@ class DMTNT_CharacterSelection
     {
         $playerId = $this->game->getCurrentPlayer();
         // Deactivate player, and move to next state if none are active
-        $this->game->gamestate->setPlayersMultiactive([$playerId], 'playerTurn');
+        $this->game->gamestate->setPlayersMultiactive([$playerId], 'initializeTile');
     }
     public function test_swapCharacter($character)
     {
@@ -225,8 +223,5 @@ class DMTNT_CharacterSelection
         //     $this->game->character->equipEquipment($character, [$itemId]);
         // }
         $this->game->hooks->onCharacterChoose($data);
-
-        // $this->game->character->adjustAllfatigue(10);
-        // $this->game->character->adjustAllactions(10);
     }
 }

@@ -7,7 +7,7 @@ export default {
           x: 0,
           y: 0,
           w: 150,
-          h: 300,
+          h: 150,
         },
       },
     },
@@ -17,7 +17,7 @@ export default {
       css: 'deckhand-card',
       size: {
         w: 150,
-        h: 300,
+        h: 150,
       },
       scale: '1',
     },

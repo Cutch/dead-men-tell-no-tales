@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `revenge` (
     PRIMARY KEY (`card_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
 CREATE TABLE IF NOT EXISTS `map` (
-    `map_id` varchar(10) NOT NULL,
+    `id` varchar(10) NOT NULL,
     `x` int(10) NOT NULL,
     `y` int(10) NOT NULL,
     `rotate` int(10) NOT NULL,
@@ -40,8 +40,9 @@ CREATE TABLE IF NOT EXISTS `map` (
     `has_trapdoor` int(1) DEFAULT 0,
     `deckhand` int(10) DEFAULT 0,
     `explosion` int(10) DEFAULT NULL,
+    `exploded` int(1) DEFAULT 0,
     `destroyed` int(1) DEFAULT 0,
-    PRIMARY KEY (`map_id`)
+    PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `character` (
     `character_id` varchar(10) NOT NULL,

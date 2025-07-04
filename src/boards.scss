@@ -6,10 +6,6 @@
   @media screen and (max-width: 1798px) {
     flex-flow: row wrap;
   }
-  // flex-flow: column;
-  #track-container {
-    margin: 0 1rem 1rem;
-  }
   #board-container {
     margin: 0 auto 1rem;
   }
@@ -57,67 +53,20 @@
     // }
   }
 }
-#board-container {
+.decks-container {
+  display: flex;
   position: relative;
-}
-#fire-pit .fire-wood {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-.buildings {
-  position: absolute;
-  top: 158px;
-  left: 34px;
-}
-.board {
-  position: relative;
-  /* place-self: anchor-center; */
-}
-.board .gather {
-  position: absolute;
-  top: 30px;
-  left: 193px;
-}
-.board .forage {
-  position: absolute;
-  top: 30px;
-  left: 328px;
-}
-.board .harvest {
-  position: absolute;
-  top: 30px;
-  left: 464px;
-}
-.board .hunt {
-  position: absolute;
-  top: 30px;
-  left: 600px;
-}
-.board .explore {
-  position: absolute;
-  top: 30px;
-  left: 52px;
-}
-.upgrade-selections {
-  position: absolute;
-  top: 0;
-  left: 0;
-  .fkp-spot {
-    position: absolute;
-    width: 195px;
-    height: 87px;
+  flex-direction: column;
+  align-items: center;
+
+  > .decks {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    justify-content: center;
   }
 }
 /* Board Container Stop */
-.tokens {
-  display: flex;
-  gap: 1em;
-  flex-flow: row wrap;
-  justify-content: center;
-  margin: 1rem;
-}
 .token {
   position: relative;
 }
@@ -158,188 +107,9 @@
   right: 0;
   transform: translateX(50%) translateY(0.5em);
 }
-
-/* Track Board Start*/
-#track-container {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-
-  // @media screen and (max-width: 1798px) {
-  //   flex-flow: row wrap;
-  // }
-}
-#track-marker {
-  border-radius: 50%;
-  position: absolute;
-  top: 236px;
-  left: 170px;
-  width: 1.5rem;
-  height: 1.5rem;
-  background-color: #000;
-  border: 4px solid #fff;
-  transition:
-    top 0.75s linear,
-    transform 0.75s linear;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: yellow;
-}
-.fire-pit {
-  position: absolute;
-  right: 10px;
-  top: 256px;
-}
-#event-deck-container {
-  display: flex;
-  align-items: center;
-  flex-flow: column;
-  gap: 1rem;
-}
-/* Track Board Stop*/
-
 .items {
   display: flex;
   flex-flow: wrap;
   justify-content: center;
   gap: 1em;
-}
-.cannot-build::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #0000006b;
-}
-#knowledge-container {
-  position: relative;
-  .fkp {
-    position: absolute;
-  }
-}
-
-#token-container {
-  height: min-content;
-  .resource-title {
-    font-weight: 700;
-    margin-bottom: 4px;
-    padding: 0 0.25rem;
-  }
-  .resources {
-    display: flex;
-    gap: 10px 16px;
-    flex-flow: wrap;
-    padding: 10px 16px 10px 4px;
-    &.no-resource {
-      padding: 2px 4px;
-      font-size: 14px;
-    }
-  }
-}
-.see-all {
-  text-decoration: underline;
-  margin-top: 0.5rem;
-  font-weight: bold;
-}
-.see-all-button {
-  justify-self: center;
-  background-color: rgb(255 255 255);
-  font-size: 1.15rem;
-  padding: 1rem;
-  border-radius: 10px;
-}
-
-.day-popup {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 11;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  #day-text {
-    position: relative;
-    opacity: 0;
-    box-shadow: 0 0 5px black;
-    font-size: 8rem;
-    font-weight: 900;
-    z-index: 10;
-    background: #d3fcff;
-    padding: 2rem 6rem;
-    border-radius: 2rem;
-    user-select: none;
-    overflow: hidden;
-    text-align: center;
-    pointer-events: all;
-    .day-background {
-      color: yellow;
-      position: absolute;
-      font-size: 22rem;
-      top: 0;
-      left: 0;
-      z-index: -1;
-    }
-    .day-background-cloud {
-      color: #00bcff52;
-      position: absolute;
-      font-size: 15rem;
-      bottom: -2rem;
-      right: 1rem;
-      z-index: -1;
-    }
-  }
-}
-
-.night-popup {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 11;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  #night-text {
-    position: relative;
-    opacity: 0;
-    box-shadow: 0 0 5px black;
-    font-size: 8rem;
-    font-weight: 900;
-    z-index: 10;
-    background: #496668;
-    padding: 2rem 6rem;
-    border-radius: 2rem;
-    user-select: none;
-    overflow: hidden;
-    margin: 2rem;
-    text-align: center;
-    pointer-events: all;
-    span {
-      color: #fff;
-    }
-    .night-background {
-      color: #abab3e;
-      position: absolute;
-      font-size: 15rem;
-      top: 0;
-      left: 1rem;
-      z-index: -1;
-    }
-    .night-background-cloud {
-      color: #2f2f2f;
-      position: absolute;
-      font-size: 15rem;
-      bottom: -1rem;
-      right: 1rem;
-      z-index: -1;
-    }
-  }
 }

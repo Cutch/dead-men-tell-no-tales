@@ -1,7 +1,7 @@
 export default {
   getData: () => ({
     sprites: {
-      back: {
+      'revenge-back': {
         frame: {
           x: 0,
           y: 0,

@@ -118,6 +118,7 @@ class DMTNT_Character
         $underlyingCharacterData = $this->game->data->getCharacters()[$characterData['id']];
         $characterData['maxActions'] = $underlyingCharacterData['actions'];
         $characterData['maxFatigue'] = 16;
+        $characterData['pos'] = $this->game->getCharacterPos($characterId);
 
         array_walk($underlyingCharacterData, function ($v, $k) use (&$characterData) {
             if (str_starts_with($k, 'on') || in_array($k, ['skills']) || $k == 'name' || $k == 'color') {
@@ -276,6 +277,9 @@ class DMTNT_Character
         }
         $this->game->gameData->set('turnNo', ($turnNo + 1) % sizeof($turnOrder));
         $character = $turnOrder[($turnNo + 1) % sizeof($turnOrder)];
+        if ($turnNo + 1 === sizeof($turnOrder)) {
+            $this->game->gameData->set('round', $this->game->gameData->get('round') + 1);
+        }
         $turnNo = ($turnNo + 1) % sizeof($turnOrder);
         $characterData = $this->getCharacterData($character);
 
@@ -384,6 +388,7 @@ class DMTNT_Character
                 'maxActions' => $char['maxActions'],
                 'maxFatigue' => $char['maxFatigue'],
                 'fatigue' => $char['fatigue'],
+                'pos' => $char['pos'],
                 'tempStrength' => $char['tempStrength'],
             ];
         }, $this->getAllCharacterData());

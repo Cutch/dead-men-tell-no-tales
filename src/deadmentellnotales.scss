@@ -2,10 +2,10 @@
 
 @include meta.load-css('utils/clickable');
 .dmtnt {
-  @include meta.load-css('utils/board');
   @include meta.load-css('utils/deck');
   @include meta.load-css('utils/dice');
   @include meta.load-css('utils/images');
+  @include meta.load-css('utils/map');
   @include meta.load-css('utils/selector');
   @include meta.load-css('utils/tooltip');
   @include meta.load-css('utils/tweening');
@@ -79,6 +79,19 @@
   }
   .fkp-unlocked {
     pointer-events: none;
+  }
+  button {
+    background-color: #4871b6;
+    border: 1px solid #37578c;
+    font-weight: 700;
+    font-size: 24px;
+    color: #fff;
+    width: unset;
+    padding: 6px 12px;
+    text-shadow: #0006 0 1px 0;
+    border-radius: 6px;
+    box-shadow: 0 1px 0 #000;
+    cursor: pointer;
   }
 }
 

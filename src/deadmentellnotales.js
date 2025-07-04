@@ -21,8 +21,8 @@ import 'ebg/counter'; // Loads Counter class onto ebg.counter if needed
 import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
-import { addClickListener, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
-import { Board } from './utils/board';
+import { addClickListener, Deck, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
+import { Map } from './utils/map';
 
 declare('bgagame.deadmentellnotales', Gamegui, {
   constructor: function () {
@@ -53,6 +53,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       actSwapItem: _('Swap Item'),
       actSelectCharacter: _('Select Character'),
       actSelectCard: _('Select Card'),
+      actPlaceTile: _('Place Tile'),
       actUndo: _('Undo'),
       actEndTurn: _('End Turn'),
     };
@@ -122,11 +123,11 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
 
       playerSideContainer.querySelector(`.item .value`).innerHTML = item
-        ? `<span class="item-item item-${item.itemId}">${_(item.id)}</span>`
+        ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
         : _('None');
       if (gameData.gamestate?.name !== 'characterSelect') playerSideContainer.style['background-color'] = character?.isActive ? '#fff' : '';
       if (item)
-        addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.id), () => {
+        addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.name), () => {
           this.tooltip.show();
           renderImage(item.id, this.tooltip.renderByElement(), {
             withText: true,
@@ -139,8 +140,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
 
       // Player main board
       if (gameData.gamestate.name !== 'characterSelect') {
-        const container = $(`player-container-${Math.floor(i / 2) + 1}`);
-        if (container && !$(`player-${character.id}`)) {
+        const container = $(`players-container`);
+        if (!$(`player-${character.id}`)) {
           container.insertAdjacentHTML(
             'beforeend',
             `<div id="player-${character.id}" class="player-card">
@@ -156,7 +157,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 </div>
               </div>`,
           );
-          renderImage(`character-board`, document.querySelector(`#player-${character.id} > .card`), { scale, pos: 'insert' });
+          renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
         }
         document.querySelector(`#player-${character.id} .card`).style['outline'] = character?.isActive
           ? `5px solid #fff` //#${character.playerColor}
@@ -266,8 +267,29 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.firstPlayer = Object.values(gameui.gamedatas.players).find((d) => d.player_no == 1).id;
     // Main board
 
-    this.board = new Board(this, gameData);
+    this.map = new Map(this, gameData);
     // renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
+  },
+  setupDecks: function (gameData, playArea) {
+    const decks = [
+      { name: 'revenge', expansion: 'base', scale: 2 },
+      { name: 'tile', expansion: 'base', scale: 1.5, style: 'noDiscard' },
+    ].filter((d) => this.expansions.includes(d.expansion));
+
+    playArea.insertAdjacentHTML(
+      'beforeend',
+      `<div class="decks-container"><h3>${_('Decks')}</h3><div class="decks">${decks.map((d) => `<div class="deck-${d.name}"></div>`).join('')}</div></div>`,
+    );
+    decks.forEach(({ name: deck, scale, style }) => {
+      if (!this.decks[deck] && gameData.decks[deck]) {
+        this.decks[deck] = new Deck(this, deck, gameData.decks[deck], playArea.querySelector(`.deck-${deck}`), scale, style);
+        if (!this.decks[deck].isAnimating() && gameData.decksDiscards)
+          this.decks[deck].setDiscard(gameData.decksDiscards[deck]?.name ?? gameData.decksDiscards[deck]?.[0]);
+        if (gameData.game.partials && gameData.game.partials[deck]) {
+          this.decks[deck].drawCard(gameData.game.partials[deck].id, true);
+        }
+      }
+    });
   },
   setupCharacterSelections: function (gameData) {
     const playArea = $('game_play_area');
@@ -375,17 +397,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.infoOverlay = new InfoOverlay(this, $('game_play_area_wrap'));
     this.setupCharacterSelections(gameData);
     this.setupBoard(gameData);
-    this.dice = new Dice(this, this.board.container);
+    this.dice = new Dice(this, this.map.container);
     window.dice = this.dice;
     // this.dice.roll(5);
     // renderImage(`board`, playArea);
-    playArea.insertAdjacentHTML(
-      'beforeend',
-      `<div id="players-container" class="dmtnt__container"><div id="player-container-1" class="inner-container"></div><div id="player-container-2" class="inner-container"></div></div>`,
-    );
+    playArea.insertAdjacentHTML('beforeend', `<div id="players-container" class="dmtnt__container"></div>`);
     this.updatePlayers(gameData);
     // Setting up player boards
     this.updateItems(gameData);
+    this.setupDecks(gameData, playArea);
 
     // Setup game notifications to handle (see "setupNotifications" method below)
     this.setupNotifications();
@@ -426,6 +446,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
         break;
+      case 'placeTile':
+        if (isActive) this.map.setNewCard(this.gamedatas.newTile.id);
+        // if (isActive) this.cardSelectionScreen.show(args.args);
+        break;
       case 'cardSelection':
         if (isActive) this.cardSelectionScreen.show(args.args);
         break;
@@ -436,11 +460,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
-
-        if (this.leftTradePhase) {
-          this.leftTradePhase = false;
-          this.showDayTracker();
-        }
         break;
       case 'nightDrawCard':
         this.showNightTracker(args.args.card.id);
@@ -461,23 +480,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   onLeavingState: async function (stateName) {
     if (isStudio()) console.log('Leaving state: ' + stateName);
     switch (stateName) {
-      case 'morningPhase':
-        this.leftMorningPhase = 'morning';
-        // await this.wait(500);
-        break;
       case 'itemSelection':
         this.itemsScreen.hide();
         break;
-      case 'hindranceSelection':
-        this.hindranceSelectionScreen.hide();
+      case 'placeTile':
+        this.map.clearNewCard();
+        // if (isActive) this.cardSelectionScreen.show(args.args);
         break;
       case 'cardSelection':
         this.cardSelectionScreen.hide();
-        break;
-      case 'tradePhase':
-        this.leftMorningPhase = 'skip';
-        this.itemTradeScreen.hide();
-        this.leftTradePhase = true;
         break;
       case 'characterSelect':
         dojo.style('character-selector', 'display', 'none');
@@ -498,7 +509,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
     if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
-    if (action['fatigue'] != null) suffix += ` <i class="fa fa-heart dmtnt__health"></i> ${action['fatigue']}`;
+    if (action['fatigue'] != null) suffix += ` <i class="fa6 fa6-solid fa6-person-running dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
     if (action['perTurn'] != null)
       suffix += ` <i class="fa fa-sun-o dmtnt__sun"></i> ` + _('${remaining} left').replace(/\$\{remaining\}/, action['perTurn']);
@@ -520,246 +531,56 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (isStudio()) console.log('onUpdateActionButtons', isActive, stateName, actions);
     if (isActive && stateName && actions != null) {
       this.clearActionButtons();
-      let renderedDrawMenu = false;
 
       // Add test action buttons in the action status bar, simulating a card click:
       if (actions) {
-        const colorLookup = {
-          // actSpendFKP: 'darkgray',
-          // actAddWood: 'darkgray',
-          // actRevive: 'darkgray',
-          // actEat: 'darkgray',
-          actDraw: 'green',
-          actUseSkill: 'green',
-          actUseItem: 'green',
-        };
         actions
           .sort((a, b) => {
-            const d1 = a.action.includes('actDraw') ? 8 : null;
-            const d2 = b.action.includes('actDraw') ? 8 : null;
-            return (d1 ?? a?.actions ?? 9) - (d2 ?? b?.actions ?? 9);
+            return (a?.actions ?? 9) - (b?.actions ?? 9);
           })
           .forEach((action) => {
             const actionId = action.action;
-            if (stateName == 'eatSelection') return;
-            if (stateName !== 'playerTurn') {
+            const suffix = this.getActionSuffixHTML(action);
+            return this.statusBar.addActionButton(`${this.getActionMappings()[actionId]}${suffix}`, () => {
               if (actionId === 'actUseSkill' || actionId === 'actUseItem') {
-                return (actionId === 'actUseSkill' ? this.gamedatas.availableSkills : this.gamedatas.availableItemSkills)?.forEach(
+                this.clearActionButtons();
+                Object.values(actionId === 'actUseSkill' ? this.gamedatas.availableSkills : this.gamedatas.availableItemSkills).forEach(
                   (skill) => {
                     const suffix = this.getActionSuffixHTML(skill);
                     this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {
-                      return this.bgaPerformAction(actionId, { skillId: skill.id });
+                      return this.bgaPerformAction(actionId, { skillId: skill.id, skillSecondaryId: skill.secondaryId });
                     });
                   },
                 );
-              }
-            }
-            if (actionId === 'actAddWood') {
-              const elemCost = document.querySelector(`#fire-pit .fire-wood .action-cost`);
-              const suffix = this.getActionSuffixHTML(action);
-              elemCost.innerHTML = suffix;
-              elemCost.style.display = '';
-              this.clickListeners.push(
-                addClickListener(document.querySelector(`#fire-pit .fire-wood`), 'Add Fire Wood', () => {
-                  this.bgaPerformAction(`actAddWood`);
-                }),
-              );
-            } else if (['actDrawGather', 'actDrawForage', 'actDrawHarvest', 'actDrawHunt', 'actDrawExplore'].includes(actionId)) {
-              const uppercaseDeck = actionId.slice(7);
-
-              const elemCost = document.querySelector(`.board .${uppercaseDeck.toLowerCase()}-back .action-cost`);
-              const suffix = this.getActionSuffixHTML(action);
-              elemCost.innerHTML = `${this.getActionMappings()[actionId]}${suffix}`;
-              elemCost.style.display = '';
-              this.clickListeners.push(
-                addClickListener(document.querySelector(`.board .${uppercaseDeck.toLowerCase()}-back`), `${uppercaseDeck} Deck`, () => {
-                  this.bgaPerformAction(`actDraw${uppercaseDeck}`);
-                }),
-              );
-            }
-            if (actionId.includes('actDraw')) {
-              if (!renderedDrawMenu) {
-                const suffix = this.getActionSuffixHTML({ random: true });
+                this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
+              } else if (actionId === 'actPlaceTile') {
+                this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
+              } else if (actionId === 'actCook') {
+                this.clearActionButtons();
+                this.cookScreen.show(this.gamedatas);
+                this.statusBar.addActionButton(this.getActionMappings().actCook + `${suffix}`, () => {
+                  if (!this.cookScreen.hasError()) {
+                    this.bgaPerformAction('actCook', {
+                      resourceType: this.cookScreen.getSelectedId(),
+                    })
+                      .then(() => {
+                        this.cookScreen.hide();
+                      })
+                      .catch(console.error);
+                  }
+                });
                 this.statusBar.addActionButton(
-                  `${this.getActionMappings()['actDraw']}${suffix}`,
+                  _('Cancel'),
                   () => {
-                    this.clearActionButtons();
-
-                    actions
-                      .sort((a, b) => (a?.actions ?? 9) - (b?.actions ?? 9))
-                      .filter((d) => d.action.includes('actDraw'))
-                      .forEach((action) => {
-                        const suffix = this.getActionSuffixHTML(action);
-                        this.statusBar.addActionButton(`${this.getActionMappings()[action.action]}${suffix}`, () => {
-                          return this.bgaPerformAction(action.action);
-                        });
-                      });
-                    this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
+                    this.onUpdateActionButtons(stateName, args);
+                    this.cookScreen.hide();
                   },
-                  stateName === 'playerTurn' ? { classes: 'bgabutton_' + (colorLookup['actDraw'] ?? 'blue') } : null,
+                  { color: 'secondary' },
                 );
+              } else {
+                return this.bgaPerformAction(actionId);
               }
-              renderedDrawMenu = true;
-              return;
-            }
-            const suffix = this.getActionSuffixHTML(action);
-            return this.statusBar.addActionButton(
-              `${this.getActionMappings()[actionId]}${suffix}`,
-              () => {
-                if (actionId === 'actUseSkill' || actionId === 'actUseItem') {
-                  this.clearActionButtons();
-                  Object.values(actionId === 'actUseSkill' ? this.gamedatas.availableSkills : this.gamedatas.availableItemSkills).forEach(
-                    (skill) => {
-                      const suffix = this.getActionSuffixHTML(skill);
-                      this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {
-                        return this.bgaPerformAction(actionId, { skillId: skill.id, skillSecondaryId: skill.secondaryId });
-                      });
-                    },
-                  );
-                  this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
-                } else if (actionId === 'actTrade') {
-                  this.clearActionButtons();
-                  this.tradeScreen.show(this.gamedatas);
-                  this.statusBar.addActionButton(this.getActionMappings().actTradeItem + `${suffix}`, () => {
-                    if (!this.tradeScreen.hasError()) {
-                      this.bgaPerformAction('actTrade', {
-                        data: JSON.stringify({
-                          offered: this.tradeScreen.getOffered(),
-                          requested: this.tradeScreen.getRequested(),
-                        }),
-                      })
-                        .then(() => this.tradeScreen.hide())
-                        .catch(console.error);
-                    }
-                  });
-                  this.statusBar.addActionButton(
-                    _('Cancel'),
-                    () => {
-                      this.onUpdateActionButtons(stateName, args);
-                      this.tradeScreen.hide();
-                    },
-                    { color: 'secondary' },
-                  );
-                } else if (actionId === 'actTradeItem') {
-                  this.bgaPerformAction('actTradeItem', {
-                    data: JSON.stringify(this.itemTradeScreen.getTrade()),
-                  });
-                } else if (actionId === 'actCraft') {
-                  this.clearActionButtons();
-                  this.craftScreen.show(this.gamedatas);
-
-                  this.statusBar.addActionButton(this.getActionMappings().actCraft + `${suffix}`, () => {
-                    if (!this.craftScreen.hasError()) {
-                      const makeCall = () =>
-                        this.bgaPerformAction('actCraft', {
-                          itemName: this.craftScreen.getSelectedId(),
-                        })
-                          .then(() => {
-                            this.craftScreen.hide();
-                          })
-                          .catch(console.error);
-
-                      if (this.gamedatas.allBuildings.includes(this.craftScreen.getSelectedId()))
-                        this.confirmationDialog(
-                          dojo.string.substitute(_('Only ${count} building(s) can be created this game') + '.', {
-                            count: this.gamedatas.maxBuildingCount,
-                          }),
-                          makeCall,
-                        );
-                      else makeCall();
-                    }
-                  });
-                  this.statusBar.addActionButton(
-                    _('Cancel'),
-                    () => {
-                      this.onUpdateActionButtons(stateName, args);
-                      this.craftScreen.hide();
-                    },
-                    { color: 'secondary' },
-                  );
-                } else if (actionId === 'actCook') {
-                  this.clearActionButtons();
-                  this.cookScreen.show(this.gamedatas);
-                  this.statusBar.addActionButton(this.getActionMappings().actCook + `${suffix}`, () => {
-                    if (!this.cookScreen.hasError()) {
-                      this.bgaPerformAction('actCook', {
-                        resourceType: this.cookScreen.getSelectedId(),
-                      })
-                        .then(() => {
-                          this.cookScreen.hide();
-                        })
-                        .catch(console.error);
-                    }
-                  });
-                  this.statusBar.addActionButton(
-                    _('Cancel'),
-                    () => {
-                      this.onUpdateActionButtons(stateName, args);
-                      this.cookScreen.hide();
-                    },
-                    { color: 'secondary' },
-                  );
-                } else if (actionId === 'actRevive') {
-                  this.clearActionButtons();
-                  this.reviveScreen.show(this.gamedatas);
-                  this.statusBar.addActionButton(this.getActionMappings().actRevive + `${suffix}`, () => {
-                    if (!this.reviveScreen.hasError()) {
-                      const { characterSelected, foodSelected } = this.reviveScreen.getSelected();
-                      this.bgaPerformAction('actRevive', {
-                        character: characterSelected,
-                        food: foodSelected,
-                      })
-                        .then(() => {
-                          this.reviveScreen.hide();
-                        })
-                        .catch(console.error);
-                    }
-                  });
-                  this.statusBar.addActionButton(
-                    _('Cancel'),
-                    () => {
-                      this.onUpdateActionButtons(stateName, args);
-                      this.reviveScreen.hide();
-                    },
-                    { color: 'secondary' },
-                  );
-                } else if (actionId === 'actEat') {
-                  this.clearActionButtons();
-                  this.eatScreen.show(this.gamedatas, action.character && this.gamedatas.dinnerEatableFoods?.[action.character]);
-                  this.statusBar.addActionButton(_('Eat') + `${suffix}`, () => {
-                    if (!this.eatScreen.hasError()) {
-                      this.bgaPerformAction('actEat', {
-                        resourceType: this.eatScreen.getSelectedId(),
-                        characterId: action.character ?? null,
-                      })
-                        .then(() => {
-                          if (this.gamedatas.gamestate.name !== 'eatSelection') this.eatScreen.hide();
-                        })
-                        .catch(console.error);
-                    }
-                  });
-                  this.statusBar.addActionButton(
-                    _('Cancel'),
-                    () => {
-                      this.onUpdateActionButtons(stateName, args);
-                      this.eatScreen.hide();
-                    },
-                    { color: 'secondary' },
-                  );
-                } else if (actionId === 'actInvestigateFire' && this.gamedatas.activeCharacter === 'Cali') {
-                  this.clearActionButtons();
-                  [0, 1, 2, 3].forEach((i) => {
-                    this.statusBar.addActionButton(`${_('Guess')} ${i}`, () => {
-                      return this.bgaPerformAction(actionId, { guess: i });
-                    });
-                  });
-                  this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
-                } else {
-                  return this.bgaPerformAction(actionId);
-                }
-              },
-              stateName === 'playerTurn' ? { classes: 'bgabutton_' + (colorLookup[actionId] ?? 'blue') } : null,
-            );
+            });
           });
       }
       const addSelectionCancelButton = () => {
@@ -781,12 +602,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           });
           addSelectionCancelButton();
           break;
-        case 'hindranceSelection':
-          this.statusBar.addActionButton(args.selectionState?.button ? _(args.selectionState.button) : _('Remove Hindrance'), () => {
-            this.bgaPerformAction('actSelectHindrance', { data: JSON.stringify(this.hindranceSelectionScreen.getSelected()) });
-          });
-          addSelectionCancelButton();
-          break;
         case 'characterSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCharacter, () => {
             this.bgaPerformAction('actSelectCharacter', { characterId: this.characterSelectionScreen.getSelectedId() });
@@ -799,49 +614,11 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           });
           addSelectionCancelButton();
           break;
-        case 'resourceSelection':
-          this.statusBar.addActionButton(_('Select Resource'), () => {
-            this.bgaPerformAction('actSelectResource', { resourceType: this.tokenScreen.getSelectedId() });
-          });
-          addSelectionCancelButton();
-          break;
-        case 'tokenReduceSelection':
-          this.statusBar.addActionButton(args.selectionState?.button ? _(args.selectionState.button) : _('Select'), () => {
-            this.bgaPerformAction('actTokenReduceSelection', { data: JSON.stringify(this.tokenReduceScreen.getSelection()) });
-          });
-          addSelectionCancelButton();
-          break;
-        case 'tooManyItems':
-          this.statusBar.addActionButton(_('Send to Camp'), () => {
-            this.bgaPerformAction('actSendToCamp', { sendToCampId: this.tooManyItemsScreen.getSelectedId() });
-          });
-          break;
-        case 'buttonSelection':
-          this.gamedatas.selectionState?.items?.forEach(({ name, value }) => {
-            this.statusBar.addActionButton(_(name), () => {
-              this.bgaPerformAction('actSelectButton', { buttonValue: value });
-            });
-          });
-          addSelectionCancelButton();
-          break;
         case 'itemSelection':
           this.statusBar.addActionButton(_('Select Item'), () => {
             this.bgaPerformAction('actSelectItem', { ...this.itemsScreen.getSelection() });
           });
           addSelectionCancelButton();
-          break;
-        case 'whichWeapon':
-          this.statusBar.addActionButton(_('Confirm'), () =>
-            this.bgaPerformAction('actChooseWeapon', { weaponId: this.weaponScreen.getSelectedId() }),
-          );
-          break;
-        case 'tradePhase':
-        case 'tradePhaseActions':
-          this.statusBar.addActionButton(_('Pass'), () => this.bgaPerformAction('actTradeDone'), { color: 'secondary' });
-          this.statusBar.addActionButton(_('Yield to All Changes'), () => this.bgaPerformAction('actTradeYield'), { color: 'secondary' });
-          break;
-        case 'confirmTradePhase':
-          this.statusBar.addActionButton(_('Cancel'), () => this.bgaPerformAction('actCancelTrade'), { color: 'secondary' });
           break;
         case 'interrupt':
           if (!this.gamedatas.availableSkills.some((d) => d.cancellable === false))
@@ -849,19 +626,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'dayEvent':
           // No Cancel Button
-          break;
-        case 'dinnerPhase':
-        case 'dinnerPhasePrivate':
-          this.statusBar.addActionButton(
-            _('Done'),
-            () =>
-              (this.gamedatas.resources['fireWood'] ?? 0) <= (this.gamedatas['fireWoodCost'] ?? 0)
-                ? this.confirmationDialog(_('There is not enough wood for the morning phase. You will lose the game!'), () =>
-                    this.bgaPerformAction('actDone'),
-                  )
-                : this.bgaPerformAction('actDone'),
-            { color: 'secondary' },
-          );
           break;
         case 'postEncounter':
           this.statusBar.addActionButton(_('Done'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
@@ -907,14 +671,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             );
           }
           break;
-        default:
-          if (isActive)
-            this.statusBar.addActionButton(
-              _('End Turn'),
-              () => this.confirmationDialog(_('End Turn'), () => this.bgaPerformAction('actEndTurn')),
-              { color: 'secondary' },
-            );
-          break;
       }
       // if (isActive && this.gamedatas.cancellable === true)
       //   this.statusBar.addActionButton(
@@ -945,24 +701,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         );
       };
       switch (stateName) {
-        case 'dinnerPhase':
-        case 'dinnerPhasePrivate':
-          backAction();
-          if (!this.gamedatas.availableSkills.some((d) => d.cancellable === false)) skipOthersActions();
-          break;
-        case 'tradePhase':
-          backAction();
-          skipOthersActions();
-          break;
-        case 'waitTradePhase':
-          this.statusBar.addActionButton(
-            _('Cancel'),
-            () => {
-              this.bgaPerformAction('actForceSkip', null, { checkAction: false });
-            },
-            { color: 'secondary' },
-          );
-          break;
         case 'characterSelect':
           backAction();
           break;
@@ -1051,7 +789,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     dojo.subscribe('zombieBackDLD', this, 'notif_zombieBack');
     dojo.subscribe('zombieChange', this, 'notif_zombieChange');
     dojo.subscribe('activeCharacter', this, 'notif_tokenUsed');
-    dojo.subscribe('tradeItem', this, 'notif_tradeItem');
+    dojo.subscribe('updateMap', this, 'notif_updateMap');
     dojo.subscribe('tokenUsed', this, 'notif_tokenUsed');
     dojo.subscribe('shuffle', this, 'notif_shuffle');
     dojo.subscribe('cardDrawn', this, 'notif_cardDrawn');
@@ -1123,7 +861,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       await this.decks[notification.args.deck].drawCard(notification.args.card.id, notification.args.partial);
     }
     this.decks[notification.args.deck].updateDeckCounts(gameData.decks[notification.args.deck]);
-    this.decks[notification.args.deck].updateMarker(gameData.decks[notification.args.deck]);
   },
   notif_shuffle: async function (notification) {
     if (await this.notificationWrapper(notification)) return;
@@ -1162,8 +899,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.selectedCharacters = notification.args.gameData.characters ?? [];
     this.updateCharacterSelections(notification.args);
   },
-  notif_tradeItem: async function (notification) {
-    this.itemTradeScreen.update(notification.args);
+  notif_updateMap: async function (notification) {
+    await this.notificationWrapper(notification);
+    if (isStudio()) console.log('notif_updateMap', notification);
+    this.map.update(notification.args.gameData);
   },
   notif_updateCharacterData: async function (notification) {
     await this.notificationWrapper(notification);

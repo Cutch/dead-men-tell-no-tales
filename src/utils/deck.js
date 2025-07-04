@@ -14,12 +14,14 @@ export class Deck {
     this.div.classList.add('deck');
     this.div.classList.add(this.style === 'vertical' ? 'vertical' : 'horizontal');
     renderImage(`${this.deck}-back`, this.div, { scale: this.scale, pos: 'replace' });
-    this.div.insertAdjacentHTML(
-      'beforeend',
-      `<div class="flipped-card"></div><div class="deck-marker"></div><div class="shuffle shuffle-1"></div><div class="shuffle shuffle-2"></div>`,
-    );
-    renderImage(`${this.deck}-back`, this.div.querySelector(`.shuffle-1`), { scale: this.scale, pos: 'replace' });
-    renderImage(`${this.deck}-back`, this.div.querySelector(`.shuffle-2`), { scale: this.scale, pos: 'replace' });
+    if (this.style != 'noDiscard') {
+      this.div.insertAdjacentHTML(
+        'beforeend',
+        `<div class="flipped-card"></div><div class="deck-marker"></div><div class="shuffle shuffle-1"></div><div class="shuffle shuffle-2"></div>`,
+      );
+      renderImage(`${this.deck}-back`, this.div.querySelector(`.shuffle-1`), { scale: this.scale, pos: 'replace' });
+      renderImage(`${this.deck}-back`, this.div.querySelector(`.shuffle-2`), { scale: this.scale, pos: 'replace' });
+    }
     this.div
       .querySelector(`.${this.deck}-back`)
       .insertAdjacentHTML(
@@ -63,33 +65,22 @@ export class Deck {
       this.cleanup();
       this.cleanup = null;
     }
-    if (!cardId) {
-      const { width, height } = getSpriteSize(`${this.deck}-back`, this.scale);
-      if (this.style != 'noDiscard')
+    if (this.style !== 'noDiscard') {
+      if (!cardId) {
+        const { width, height } = getSpriteSize(`${this.deck}-back`, this.scale);
+
         this.div.querySelector(`.flipped-card`).innerHTML = `<div class="empty-discard" style="width: ${width}px;height: ${height}px;">${_(
           'Discard',
         )}</div>`;
-    } else {
-      renderImage(cardId, this.div.querySelector(`.flipped-card`), { scale: this.scale, pos: 'replace' });
-      this.cleanup = addClickListener(this.div.querySelector(`.flipped-card`), cardId, this.discardTooltip(cardId));
-    }
-    this.div
-      .querySelector(`.flipped-card`)
-      .insertAdjacentHTML('beforeend', `<div class="discard-counter dot dot--number counter">${this.countData.discardCount}</div>`);
-    this.topDiscard = cardId;
-  }
-  updateMarker({ tokens }) {
-    const marker = this.div.querySelector(`.deck-marker`);
-    marker.innerHTML = '';
-    tokens?.forEach((token) => {
-      renderImage(token, marker, { scale: 2, pos: 'replace' });
-      if (token === 'trap') {
-        this.game.addHelpTooltip({
-          node: marker.querySelector(`.${token}`),
-          text: _('If rolling equal or greater than a Danger! cards life, trap it to remove it and this token from the game.'),
-        });
+      } else {
+        renderImage(cardId, this.div.querySelector(`.flipped-card`), { scale: this.scale, pos: 'replace' });
+        this.cleanup = addClickListener(this.div.querySelector(`.flipped-card`), cardId, this.discardTooltip(cardId));
       }
-    });
+      this.div
+        .querySelector(`.flipped-card`)
+        .insertAdjacentHTML('beforeend', `<div class="discard-counter dot dot--number counter">${this.countData.discardCount}</div>`);
+      this.topDiscard = cardId;
+    }
   }
   async drawCard(cardId, partial = false) {
     this.drawing.push([cardId, partial]);

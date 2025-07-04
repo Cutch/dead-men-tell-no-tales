@@ -51,6 +51,9 @@
 $gameSetup = 1;
 $gameStart = 2;
 $characterSelect = 3;
+$initializeTile = 7;
+$placeTile = 8;
+$finalizeTile = 9;
 $playerTurn = 10;
 $drawCard = 11;
 $nextCharacter = 15;
@@ -88,7 +91,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('Welcome'),
         'type' => 'game',
         'action' => 'stGameStart',
-        'transitions' => ['characterSelect' => $characterSelect, 'playerTurn' => $playerTurn],
+        'transitions' => ['characterSelect' => $characterSelect, 'initializeTile' => $initializeTile],
     ],
     $characterSelect => [
         'name' => 'characterSelect',
@@ -97,8 +100,41 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionCount',
         'possibleactions' => ['actChooseCharacters', 'actCharacterClicked', 'actUnBack'],
-        'transitions' => ['playerTurn' => $playerTurn],
+        'transitions' => ['initializeTile' => $initializeTile],
         'action' => 'stSelectCharacter',
+    ],
+    $initializeTile => [
+        'name' => 'initializeTile',
+        'description' => clienttranslate('${character_name} is searching the ship'),
+        'descriptionmyturn' => clienttranslate('Search the ship'),
+        'type' => 'game',
+        'action' => 'stInitializeTile',
+        'transitions' => [
+            'placeTile' => $placeTile,
+        ],
+    ],
+    $placeTile => [
+        'name' => 'placeTile',
+        'description' => clienttranslate('${character_name} is searching the ship'),
+        'descriptionmyturn' => clienttranslate('Search the ship'),
+        'type' => 'activeplayer',
+        'args' => 'argPlaceTile',
+        'possibleactions' => ['actPlaceTile'],
+        'transitions' => [
+            'placeTile' => $placeTile,
+            'playerTurn' => $playerTurn,
+        ],
+    ],
+    $finalizeTile => [
+        'name' => 'finalizeTile',
+        'description' => clienttranslate('${character_name} is searching the ship'),
+        'descriptionmyturn' => clienttranslate('Search the ship'),
+        'type' => 'game',
+        'action' => 'stFinalizeTile',
+        'transitions' => [
+            'initializeTile' => $initializeTile,
+            'playerTurn' => $playerTurn,
+        ],
     ],
     $playerTurn => [
         'name' => 'playerTurn',
@@ -121,6 +157,7 @@ $machinestates = [
             'actSwapItem',
         ],
         'transitions' => [
+            'placeTile' => $placeTile,
             'endGame' => $gameEnd,
             'drawCard' => $drawCard,
             'endTurn' => $nextCharacter,

@@ -29,9 +29,14 @@
 .character-board-card {
   background-image: url(img/player-board.png);
 }
+
 .character-token-card {
   background-image: url(img/character-token-spritesheet.png);
   border-radius: 50%;
+  &-base {
+    border-radius: 50%;
+    box-shadow: 0px 0px 2px 6px var(--color);
+  }
 }
 .revenge-card {
   background-image: url(img/revenge-spritesheet.png);
@@ -41,6 +46,9 @@
 }
 .tracker-card {
   background-image: url(img/tracker.png);
+}
+.deckhand-card {
+  background-image: url(img/deckhand.png);
 }
 .player-board-card {
   background-image: url(img/player-board.png);

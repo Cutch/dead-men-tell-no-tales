@@ -28,6 +28,7 @@ class DMTNT_GameData
     private Game $game;
     private array $cachedGameData = [];
     private static $defaults = [
+        'round' => 1,
         'expansion' => 0,
         'difficulty' => 0,
         'turnUseItems' => [],
@@ -40,6 +41,8 @@ class DMTNT_GameData
         'actInterruptState' => [],
         'playerPositions' => [],
         'explosions' => 0,
+        'newTile' => [],
+        'newTileCount' => 0,
     ];
     public function __construct(Game $game)
     {

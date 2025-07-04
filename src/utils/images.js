@@ -24,9 +24,9 @@ export const renderImage = (
     card = true,
     css: extraCss = '',
     baseCss: extraBaseCss = '',
+    baseData = '',
     overridePos = null,
     rotate = 0,
-    centered = false,
     withText = false,
     textOnly = false,
     styles = {},
@@ -56,7 +56,9 @@ export const renderImage = (
       scaledWidth = scaledWidth * Math.abs(overridePos.w - overridePos.x);
       scaledHeight = scaledHeight * Math.abs(overridePos.h - overridePos.y);
     }
-    html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base" style="${Object.keys(styles)
+    html = `<div class="tooltip-image-and-text ${extraBaseCss} ${name}-base ${css}-base" data-data="${baseData}" style="${Object.keys(
+      styles,
+    )
       .map((key) => `${key}:${styles[key]}`)
       .join(';')}"><div name="${name}" data-scale="${scale}" class="image ${css} ${extraCss} ${
       card ? 'card' : ''

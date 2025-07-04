@@ -43,7 +43,6 @@ export class Dice {
         this.dice.style['transition'] = 'unset';
       },
     });
-    console.log(roll);
 
     this.game.bgaPlayDojoAnimation(animation);
   }

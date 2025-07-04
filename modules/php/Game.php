@@ -259,7 +259,7 @@ class Game extends \Table
     public function getCharacterPos(string $id): array
     {
         $playerPositions = $this->gameData->get('playerPositions');
-        return array_key_exists($id, $playerPositions) ? $playerPositions[$id] : [0, 0];
+        return array_key_exists($id, $playerPositions) ? $playerPositions[$id] : [0, -1];
     }
 
     public function setCharacterPos(string $id, int $x, int $y): void
@@ -270,7 +270,70 @@ class Game extends \Table
 
     public function actPlaceTile(int $x, int $y, int $rotate): void
     {
-        //
+        $newTile = $this->gameData->get('newTile');
+        $newTile['x'] = $x;
+        $newTile['y'] = $y;
+        $newTile['rotate'] = $rotate;
+        $tiles = $this->map->getAdjacentTiles($x, $y);
+        if (sizeof($tiles) === 0) {
+            throw new BgaUserException(clienttranslate('Tile can\'t be placed there'));
+        }
+        $any = false;
+        array_walk($tiles, function ($tile) use ($newTile, &$any) {
+            $any = $any || $this->map->testTouchPoints($newTile, $tile);
+        });
+        if ($any) {
+            throw new BgaUserException(clienttranslate('Tile must connect to a door'));
+        }
+        $newTileData = $this->data->getTile()[$newTile['id']];
+        $this->map->placeMap(
+            $newTile['id'],
+            $x,
+            $y,
+            $rotate,
+            rand(1, 5),
+            $newTileData['color'],
+            0,
+            0,
+            array_key_exists('barrel', $newTileData) ? $newTileData['barrel'] : 0
+        );
+        $this->updateMapNotification();
+    }
+    public function updateMapNotification()
+    {
+        $result = [];
+        $this->getTiles($result);
+        $this->notify('updateMap', '', ['gameData' => $result]);
+    }
+    public function argPlaceTile()
+    {
+        return [
+            'actions' => [
+                [
+                    'action' => 'actPlaceTile',
+                    'type' => 'action',
+                ],
+            ],
+            'character_name' => $this->getCharacterHTML(),
+            'newTile' => $this->gameData->get('newTile'),
+        ];
+    }
+
+    public function stInitializeTile()
+    {
+        $card = $this->decks->pickCard('tile');
+        $this->gameData->set('newTile', $card);
+        $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+        $this->nextState('placeTile');
+    }
+
+    public function stFinalizeTile()
+    {
+        if ($this->gameData->get('round') == 1 && $this->gameData->get('newTileCount') < 2) {
+            $this->nextState('initializeTile');
+        } else {
+            $this->nextState('playerTurn');
+        }
     }
 
     public function actIncreaseBattleStrength(): void
@@ -701,7 +764,7 @@ class Game extends \Table
     {
         if ($this->gameData->get('randomSelection')) {
             $this->characterSelection->randomCharacters();
-            $this->nextState('playerTurn');
+            $this->nextState('initializeTile');
         } else {
             $this->nextState('characterSelect');
         }
@@ -770,6 +833,14 @@ class Game extends \Table
     public function getAllPlayers(&$result): void
     {
         $result['characters'] = $this->character->getMarshallCharacters();
+        $result['characterPositions'] = array_reduce(
+            $result['characters'],
+            function ($arr, $char) {
+                $arr[$char['pos'][0] . 'x' . $char['pos'][1]][] = $char['id'];
+                return $arr;
+            },
+            []
+        );
         $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no FROM `player`');
     }
     public function getDecks(&$result): void
