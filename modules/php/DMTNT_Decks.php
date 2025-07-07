@@ -17,6 +17,7 @@ class DMTNT_Decks
         $this->decksNames = [
             'revenge' => clienttranslate('Revenge'),
             'tile' => clienttranslate('Tile'),
+            'bag' => clienttranslate('Bag'),
         ];
         $this->game = $game;
         foreach ($this->getAllDeckNames() as $deck) {
@@ -33,11 +34,7 @@ class DMTNT_Decks
     }
     public function getAllDeckNames(): array
     {
-        return array_values(
-            array_filter(array_keys($this->decksNames), function ($name) {
-                return array_key_exists($name . '-back', $this->game->data->getDecks());
-            })
-        );
+        return array_keys($this->decksNames);
     }
     public function setup()
     {
@@ -50,22 +47,45 @@ class DMTNT_Decks
         $filtered_cards = array_filter(
             $this->game->data->getDecks(),
             function ($v, $k) use ($type) {
-                return $v['type'] == 'deck' && $v['deck'] == $type;
+                return array_key_exists('type', $v) && $v['type'] === 'deck' && $v['deck'] === $type;
             },
             ARRAY_FILTER_USE_BOTH
         );
-        $cards = array_map(
-            function ($k, $v) {
-                return [
-                    'type' => $v['deck'],
-                    'card_location' => 'deck',
-                    'type_arg' => $k,
-                    'nbr' => 1,
-                ];
-            },
-            array_keys($filtered_cards),
-            $filtered_cards
-        );
+        $cards = [];
+        if ($type === 'bag') {
+            array_walk($filtered_cards, function ($v, $k) use (&$cards) {
+                if (array_key_exists('rewards', $v)) {
+                    foreach ($v['rewards'] as $name => $count) {
+                        $cards[] = [
+                            'type' => $v['deck'],
+                            'card_location' => 'deck',
+                            'type_arg' => $k . '_' . $name,
+                            'nbr' => $count,
+                        ];
+                    }
+                } else {
+                    $cards[] = [
+                        'type' => $v['deck'],
+                        'card_location' => 'deck',
+                        'type_arg' => $k,
+                        'nbr' => 1,
+                    ];
+                }
+            });
+        } else {
+            $cards = array_map(
+                function ($k, $v) {
+                    return [
+                        'type' => $v['deck'],
+                        'card_location' => 'deck',
+                        'type_arg' => $k,
+                        'nbr' => 1,
+                    ];
+                },
+                array_keys($filtered_cards),
+                $filtered_cards
+            );
+        }
         $this->getDeck($type)->createCards($cards, 'deck');
         $this->getDeck($type)->shuffle('deck');
     }

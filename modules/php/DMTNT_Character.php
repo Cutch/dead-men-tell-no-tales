@@ -354,9 +354,6 @@ class DMTNT_Character
         $data['fatigue'] = clamp($data['fatigue'] + $hookData['change'], 0, $data['maxFatigue']);
         $prev = $data['fatigue'] - $prev;
 
-        if ($prev < 0) {
-            $this->game->incStat(-$prev, 'fatigue_lost', $this->getCharacterData($characterId)['playerId']);
-        }
         if ($prev > 0) {
             $this->game->incStat($prev, 'fatigue_gained', $this->getCharacterData($characterId)['playerId']);
         }
@@ -399,8 +396,8 @@ class DMTNT_Character
                 'playerColor' => $char['player_color'],
                 'characterColor' => $char['color'],
                 'playerId' => $char['playerId'],
-                'actions' => $char['actions'],
-                'maxActions' => $char['maxActions'],
+                'actions' => $char['actions'] + $this->game->gameData->get('tempActions'),
+                'maxActions' => $char['maxActions'] + $this->game->gameData->get('tempActions'),
                 'maxFatigue' => $char['maxFatigue'],
                 'fatigue' => $char['fatigue'],
                 'pos' => $char['pos'],

@@ -70,7 +70,7 @@ class DMTNT_Actions
                 'actions' => 0,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0;
                 },
             ],
             'actIncreaseBattleStrength' => [

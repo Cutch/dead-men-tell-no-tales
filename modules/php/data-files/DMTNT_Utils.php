@@ -17,7 +17,7 @@ if (!function_exists('addId')) {
                 array_walk($v['skills'], function ($iv, $ik) use ($k, &$array, $v) {
                     $keyName = $k . $ik;
                     if ($v['type'] == 'character') {
-                        $array[$keyName] = ['id' => $keyName, 'characterId' => $v['name'], ...$iv];
+                        $array[$keyName] = ['id' => $keyName, 'characterId' => $v['id'], ...$iv];
                     } elseif ($v['type'] == 'deck') {
                         $array[$keyName] = ['id' => $keyName, 'cardId' => $v['id'], ...$iv];
                     } else {

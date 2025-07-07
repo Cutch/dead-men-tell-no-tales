@@ -7,12 +7,14 @@ require_once dirname(__DIR__) . '/php/data-files/DMTNT_Characters.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_RevengeDeck.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Items.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Tile.php';
+require_once dirname(__DIR__) . '/php/data-files/DMTNT_Treasure.php';
 class DMTNT_Data
 {
     private Game $game;
     private array $decks;
     private array $characters;
     private array $tile;
+    private array $treasure;
     private array $items;
 
     public function __construct(Game $game)
@@ -36,9 +38,11 @@ class DMTNT_Data
             $charactersData = (new DMTNT_CharactersData())->getData();
             $tileData = (new DMTNT_TileData())->getData();
             $itemsData = (new DMTNT_ItemsData())->getData();
-            $this->decks = array_merge(addId($revengeDeckData), addId($tileData));
+            $treasureData = (new DMTNT_TreasureData())->getData();
+            $this->decks = array_merge(addId($revengeDeckData), addId($tileData), addId($treasureData));
             $this->characters = addId($charactersData);
             $this->tile = addId($tileData);
+            $this->treasure = addId($treasureData);
             $this->items = addId($itemsData);
         }
 
@@ -59,5 +63,9 @@ class DMTNT_Data
     public function getItems()
     {
         return $this->get('items');
+    }
+    public function getTreasure()
+    {
+        return $this->get('treasure');
     }
 }

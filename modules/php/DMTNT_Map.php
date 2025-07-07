@@ -144,20 +144,28 @@ class DMTNT_Map
         if (array_key_exists($key, $this->xyMap)) {
             $currentTile = $this->xyMap[$key];
             $currentFire = $currentTile['fire'];
-            array_push($moveIds, $currentTile['id']);
         }
         $hasTreasure = false;
         $data = ['hasTreasure' => $hasTreasure];
         $this->game->hooks->onCalculateMovesHasTreasure($data);
-        $hasTreasure = $data['$hasTreasure'];
+        $hasTreasure = $data['hasTreasure'];
+        $badFatigueValues = $this->convertFatigueToDie();
         $fatigueList = [];
-        array_walk($moveList, function ($firstTile) use ($currentTile, $moveIds, $hasTreasure, $currentFire, &$fatigueList) {
-            if ($currentTile && !$this->testTouchPoints($currentTile, $firstTile)) {
+        array_walk($moveList, function ($firstTile) use (
+            $currentTile,
+            $moveIds,
+            $hasTreasure,
+            $currentFire,
+            $badFatigueValues,
+            &$fatigueList
+        ) {
+            $fire = $firstTile['fire'];
+            $deckhand = $firstTile['deckhand'];
+            if (($currentTile && !$this->testTouchPoints($currentTile, $firstTile)) || $fire >= $badFatigueValues || $deckhand >= 3) {
                 return;
             }
             $x = $firstTile['x'];
             $y = $firstTile['y'];
-            $fire = $firstTile['fire'];
             $id = $firstTile['id'];
             if ($hasTreasure) {
                 $fatigueList[$id] = $currentFire + $fire;
@@ -168,7 +176,12 @@ class DMTNT_Map
             $tempList = $this->getAdjacentTiles($x, $y);
             foreach ($tempList as $tempTile) {
                 $id = $tempTile['id'];
-                if (in_array($id, $moveIds) || !$this->testTouchPoints($firstTile, $tempTile)) {
+                if (
+                    in_array($id, $moveIds) ||
+                    !$this->testTouchPoints($firstTile, $tempTile) ||
+                    $tempTile['fire'] >= $badFatigueValues ||
+                    $tempTile['deckhand'] >= 3
+                ) {
                     continue;
                 }
                 if ($hasTreasure) {
@@ -193,7 +206,21 @@ class DMTNT_Map
 
         $this->game->hooks->onCalculateMoves($data);
 
-        return $fatigueList;
+        return $data['fatigueList'];
+    }
+    public function convertFatigueToDie(): int
+    {
+        $fatigue = $this->game->character->getTurnCharacter()['fatigue'];
+        if ($fatigue >= 14) {
+            return 2;
+        } elseif ($fatigue >= 12) {
+            return 3;
+        } elseif ($fatigue >= 9) {
+            return 4;
+        } elseif ($fatigue >= 5) {
+            return 5;
+        }
+        return 7;
     }
     public function calculateFires(): array
     {
@@ -204,7 +231,7 @@ class DMTNT_Map
         if (array_key_exists($key, $this->xyMap)) {
             $currentTile = $this->xyMap[$key];
             if ($currentTile['fire'] > 0) {
-                $currentTile[] = $currentTile['id'];
+                $fireList[] = $currentTile['id'];
             }
         }
 

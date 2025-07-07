@@ -19,6 +19,7 @@ class DMTNT_CharactersData
                 'actions' => '5',
                 'name' => 'Black Gus Garrett',
                 'color' => '#3c464c',
+                // Garret can run and force deckhands to flee
             ],
             'flynn' => [
                 'type' => 'character',
@@ -47,8 +48,9 @@ class DMTNT_CharactersData
                 'color' => '#ece9e8',
                 'onCalculateMoves' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
-                        array_walk($data['fatigueList'], function ($cost, $k) use (&$data) {
-                            $data['fatigueList'][$k] = max($data['fatigueList'][$k] - 1, 0);
+                        $fatigueList = &$data['fatigueList'];
+                        array_walk($fatigueList, function (&$cost, $k) {
+                            $cost = max($cost - 1, 0);
                         });
                     }
                 },

@@ -365,7 +365,7 @@ export class Map {
     this.renderCharacters(trackerElem, characterPositions, 0, -1);
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
-        if (y == -1 && x >= -2 && x <= 2) continue;
+        if (y <= -1) continue;
         if (this.positions[this.getKey({ x, y })]) continue;
         renderImage('ocean', this.container, {
           pos: 'append',

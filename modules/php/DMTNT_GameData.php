@@ -44,6 +44,7 @@ class DMTNT_GameData
         'explosions' => 0,
         'newTile' => [],
         'newTileCount' => 0,
+        'tempActions' => 0,
     ];
     public function __construct(Game $game)
     {

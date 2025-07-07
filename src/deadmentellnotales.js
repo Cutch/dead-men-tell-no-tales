@@ -21,7 +21,7 @@ import 'ebg/counter'; // Loads Counter class onto ebg.counter if needed
 import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
-import { addClickListener, Deck, Dice, InfoOverlay, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
+import { addClickListener, Deck, Dice, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
 import { Map } from './utils/map';
 
 declare('bgagame.deadmentellnotales', Gamegui, {
@@ -415,7 +415,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.tweening = new Tweening(this, playArea);
     this.selector = new Selector(playArea);
     this.tooltip = new Tooltip($('game_play_area_wrap'));
-    this.infoOverlay = new InfoOverlay(this, $('game_play_area_wrap'));
     this.setupCharacterSelections(gameData);
     this.setupBoard(gameData);
     this.dice = new Dice(this, this.map.container);
@@ -873,7 +872,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   notif_actionNotification: async function (notification) {
     const usedActionId = notification.args.usedActionId;
     if (usedActionId) {
-      this.infoOverlay.addMessage(notification.args);
     }
   },
   // notif_startSelection: async function (notification) {
@@ -883,7 +881,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   // },
   notif_resetNotifications: async function (notification) {
     await this.notificationWrapper(notification);
-    this.infoOverlay.addMessage({ ...notification.args, usedActionId: 'actUndo' });
     const lastMoveId = parseInt(notification.args.moveId, 10);
     for (const logId of Object.keys(gameui.log_to_move_id)) {
       const moveId = parseInt(gameui.log_to_move_id[logId], 10);

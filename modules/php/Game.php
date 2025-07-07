@@ -559,10 +559,21 @@ class Game extends \Table
     }
     public function actEndTurn(): void
     {
+        // TODO: Can't end turn early if sweltering
         // Notify all players about the choice to pass.
-        $this->eventLog(clienttranslate('${character_name} ends their turn'), [
-            'usedActionId' => 'actEndTurn',
-        ]);
+        $leftOverActions = $this->character->getTurnCharacter()['actions'];
+        if ($leftOverActions > 0) {
+            $this->gameData->set('tempActions', $leftOverActions);
+            $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} actions'), [
+                'usedActionId' => 'actEndTurn',
+                'count' => $leftOverActions,
+            ]);
+        } else {
+            $this->gameData->set('tempActions', 0);
+            $this->eventLog(clienttranslate('${character_name} ends their turn'), [
+                'usedActionId' => 'actEndTurn',
+            ]);
+        }
 
         // at the end of the action, move to the next state
         $this->endTurn();
@@ -1263,6 +1274,10 @@ class Game extends \Table
             $data['actions'] = 0;
         });
         $this->completeAction();
+    }
+    public function setup()
+    {
+        $this->decks->setup();
     }
     public function resetFatigue()
     {

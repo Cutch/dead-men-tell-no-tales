@@ -61,31 +61,55 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Blanket'),
                 'actions' => 1,
+                // If with flynn, can be used on adjacent rooms
+                // Lower fire die by 2 once per turn
             ],
             'compass' => [
                 'type' => 'item',
                 'name' => clienttranslate('Compass'),
                 'actions' => 0,
+                'onGetActionCost' => function (Game $game, $char, &$data) {
+                    if ($data['action'] == 'actMove' && getUsePerTurn('compass', $game)) {
+                        $data['actions'] = 0;
+                        usePerTurn('compass', $game);
+                    }
+                },
             ],
             'dagger' => [
                 'type' => 'item',
                 'name' => clienttranslate('Dagger'),
                 'actions' => 1,
+                'onGetActionCost' => function (Game $game, $char, &$data) {
+                    if ($data['action'] == 'actEliminateDeckhand' && getUsePerTurn('dagger', $game)) {
+                        $data['actions'] = 0;
+                        usePerTurn('dagger', $game);
+                    }
+                },
             ],
             'pistol' => [
                 'type' => 'item',
                 'name' => clienttranslate('Pistol'),
                 'actions' => 1,
+                // Attack from adjacent rooms
             ],
             'rum' => [
                 'type' => 'item',
                 'name' => clienttranslate('Rum'),
                 'actions' => 0,
+                'onGetActionCost' => function (Game $game, $char, &$data) {
+                    if ($data['action'] == 'actRest' && getUsePerTurn('rum', $game)) {
+                        $data['actions'] = 0;
+                        usePerTurn('rum', $game);
+                    }
+                },
             ],
             'sword' => [
                 'type' => 'item',
                 'name' => clienttranslate('Sword'),
                 'actions' => 0,
+                'onGetStrength' => function (Game $game, $item, &$data) {
+                    $data['strength']++;
+                },
             ],
         ];
         return $data;
