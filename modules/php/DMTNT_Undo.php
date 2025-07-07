@@ -11,7 +11,7 @@ class DMTNT_Undo
 {
     private Game $game;
     private array $initialState;
-    private array $extraTablesList = ['stats'];
+    private array $extraTablesList = ['stats', 'map'];
     private ?int $savedMoveId = null;
     private bool $actionWasCleared = false;
     public function __construct(Game $game)
@@ -54,7 +54,7 @@ class DMTNT_Undo
         }
         $this->game->markChanged('token');
         $this->game->markChanged('player');
-        $this->game->markChanged('knowledge');
+        $this->game->markChanged('map');
         $this->game->markChanged('actions');
         $this->game::DbQuery("DELETE FROM `undoState` where pending OR undo_id = $undoId");
         $currentState = $this->game->gamestate->state(true, false, true)['name'];

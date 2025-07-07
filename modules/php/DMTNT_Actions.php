@@ -20,21 +20,17 @@ class DMTNT_Actions
                     return true;
                 },
             ],
-            'actRun' => [
-                'state' => ['playerTurn'],
-                'actions' => 1,
-                'fatigue' => 2,
-                'type' => 'action',
-                'requires' => function (Game $game, $action) {
-                    return true;
-                },
-            ],
             'actFightFire' => [
                 'state' => ['playerTurn'],
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    [$x, $y] = $game->getCharacterPos($game->character->getTurnCharacterId());
+                    $tile = $game->map->getTileByXY($x, $y);
+                    if ($tile) {
+                        return $tile['fire'] > 0;
+                    }
+                    return false;
                 },
             ],
             'actEliminateDeckhand' => [
@@ -42,7 +38,15 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    [$x, $y] = $game->getCharacterPos($game->character->getTurnCharacterId());
+                    $tile = $game->map->getTileByXY($x, $y);
+                    $tiles = array_filter([...$game->map->getAdjacentTiles($x, $y), $tile]);
+
+                    $any = false;
+                    array_walk($tiles, function ($tile) use (&$any) {
+                        $any = $any || $tile['deckhand'];
+                    });
+                    return $any;
                 },
             ],
             'actPickupToken' => [
@@ -58,7 +62,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    return $game->character->getTurnCharacter()['fatigue'] > 0;
                 },
             ],
             'actDrop' => [
@@ -74,13 +78,19 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    $character = $game->character->getTurnCharacter();
+                    return (array_key_exists('cutlass', $character['tokenItems']) ? $character['tokenItems']['cutlass'] : 0) +
+                        $character['tempStrength'] <
+                        4;
                 },
             ],
             'actSwapItem' => [
                 'state' => ['playerTurn'],
                 'actions' => 1,
                 'type' => 'action',
+                'requires' => function (Game $game, $action) {
+                    return true;
+                },
             ],
         ]);
         $this->game = $game;

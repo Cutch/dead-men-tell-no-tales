@@ -11,7 +11,15 @@ class DMTNT_Character
     private Game $game;
     private ?string $submittingCharacter = null;
     private array $cachedData = [];
-    private static array $characterColumns = ['character_id', 'player_id', 'necromancer_player_id', 'item', 'actions', 'fatigue'];
+    private static array $characterColumns = [
+        'character_id',
+        'player_id',
+        'necromancer_player_id',
+        'item',
+        'actions',
+        'fatigue',
+        'tempStrength',
+    ];
 
     public function __construct($game)
     {
@@ -150,6 +158,13 @@ class DMTNT_Character
         } else {
             $characterData['item'] = null;
         }
+        $tokenItems = $this->game->gameData->get('tokenItems');
+        if (array_key_exists($characterId, $tokenItems)) {
+            $characterData['tokenItems'] = array_count_values($tokenItems['characterId']);
+        } else {
+            $characterData['tokenItems'] = [];
+        }
+
         if (!$_skipHooks) {
             $this->game->hooks->onGetCharacterData($characterData);
         }
@@ -390,6 +405,7 @@ class DMTNT_Character
                 'fatigue' => $char['fatigue'],
                 'pos' => $char['pos'],
                 'tempStrength' => $char['tempStrength'],
+                'tokenItems' => $char['tokenItems'],
             ];
         }, $this->getAllCharacterData());
     }

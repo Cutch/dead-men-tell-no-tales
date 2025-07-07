@@ -255,19 +255,23 @@ class Game extends \Table
         $this->characterSelection->actChooseCharacters();
         $this->completeAction(false);
     }
-
+    public function getDeckhandTargetCount(): int
+    {
+        $data = ['count' => 1];
+        $this->hooks->onGetDeckhandTargetCount($data);
+        return $data['count'];
+    }
     public function getCharacterPos(string $id): array
     {
-        $playerPositions = $this->gameData->get('playerPositions');
-        return array_key_exists($id, $playerPositions) ? $playerPositions[$id] : [0, -1];
+        $characterPositions = $this->gameData->get('characterPositions');
+        return array_key_exists($id, $characterPositions) ? $characterPositions[$id] : [0, -1];
     }
 
     public function setCharacterPos(string $id, int $x, int $y): void
     {
-        $this->gameData->set('playerPositions', [$this->gameData->get('playerPositions'), $id => [$x, $y]]);
+        $this->gameData->set('characterPositions', [$this->gameData->get('characterPositions'), $id => [$x, $y]]);
         $this->markChanged('player');
     }
-
     public function actPlaceTile(int $x, int $y, int $rotate): void
     {
         $newTile = $this->gameData->get('newTile');
@@ -275,14 +279,14 @@ class Game extends \Table
         $newTile['y'] = $y;
         $newTile['rotate'] = $rotate;
         $tiles = $this->map->getAdjacentTiles($x, $y);
-        if (sizeof($tiles) === 0) {
+        if (sizeof($tiles) === 0 || $y < 0) {
             throw new BgaUserException(clienttranslate('Tile can\'t be placed there'));
         }
         $any = false;
         array_walk($tiles, function ($tile) use ($newTile, &$any) {
-            $any = $any || $this->map->testTouchPoints($newTile, $tile);
+            $any = $any || $this->map->testTouchPoints($tile, $newTile);
         });
-        if ($any) {
+        if (!$any) {
             throw new BgaUserException(clienttranslate('Tile must connect to a door'));
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
@@ -291,23 +295,17 @@ class Game extends \Table
             $x,
             $y,
             $rotate,
-            rand(1, 5),
+            $newTileData['fire'],
             $newTileData['color'],
             0,
             0,
             array_key_exists('barrel', $newTileData) ? $newTileData['barrel'] : 0
         );
-        $this->updateMapNotification();
-    }
-    public function updateMapNotification()
-    {
-        $result = [];
-        $this->getTiles($result);
-        $this->notify('updateMap', '', ['gameData' => $result]);
+        $this->nextState('finalizeTile');
     }
     public function argPlaceTile()
     {
-        return [
+        $result = [
             'actions' => [
                 [
                     'action' => 'actPlaceTile',
@@ -316,6 +314,24 @@ class Game extends \Table
             ],
             'character_name' => $this->getCharacterHTML(),
             'newTile' => $this->gameData->get('newTile'),
+        ];
+        $this->getTiles($result);
+        return $result;
+    }
+    public function argFinalizeTile()
+    {
+        $result = [
+            'actions' => [],
+            'character_name' => $this->getCharacterHTML(),
+        ];
+        $this->getTiles($result);
+        return $result;
+    }
+    public function argBasic()
+    {
+        return [
+            'actions' => [],
+            'character_name' => $this->getCharacterHTML(),
         ];
     }
 
@@ -336,12 +352,46 @@ class Game extends \Table
         }
     }
 
+    public function actMove(int $x, int $y): void
+    {
+        $character = $this->character->getTurnCharacter();
+        $moves = $this->map->calculateMoves();
+        $fatigue = $moves[$this->map->getTileByXY($x, $y)['id']];
+        if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
+            throw new BgaUserException(clienttranslate('Not enough fatigue'));
+        }
+        $this->character->adjustActiveFatigue($fatigue);
+        $this->actions->spendActionCost('actMove');
+        $this->gameData->set('characterPositions', [$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
+        $this->markChanged('player');
+        $this->eventLog(clienttranslate('${character_name} moved'), [
+            'usedActionId' => 'actMove',
+        ]);
+        $this->completeAction();
+    }
+    public function actEliminateDeckhand(#[JsonParam] array $data): void
+    {
+        if (!$data || sizeof($data) == 0) {
+            throw new BgaUserException(clienttranslate('Must select a deckhand'));
+        }
+        foreach ($data as $deckhandTargets) {
+            $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
+        }
+        $this->actions->spendActionCost('actEliminateDeckhand');
+        $this->eventLog(clienttranslate('${character_name} increased their strength by 1'), [
+            'usedActionId' => 'actEliminateDeckhand',
+        ]);
+        $this->completeAction();
+    }
     public function actIncreaseBattleStrength(): void
     {
         $this->actions->spendActionCost('actIncreaseBattleStrength');
         $this->character->updateCharacterData($this->character->getTurnCharacterId(), function (&$data) {
             $data['tempStrength']++;
         });
+        $this->eventLog(clienttranslate('${character_name} increased their strength by 1'), [
+            'usedActionId' => 'actIncreaseBattleStrength',
+        ]);
         $this->completeAction();
     }
 
@@ -351,6 +401,9 @@ class Game extends \Table
         // $this->character->updateCharacterData($this->character->getTurnCharacterId(), function (&$data) {
         //     $data['tempStrength']++;
         // });
+        $this->eventLog(clienttranslate('${character_name} picked up a ${item}'), [
+            'usedActionId' => 'actPickupToken',
+        ]);
         $this->completeAction();
     }
 
@@ -360,10 +413,19 @@ class Game extends \Table
         $this->character->adjustActiveFatigue(-2);
         $this->completeAction();
     }
-    public function actFightFire(): void
+    public function actFightFire(int $x, int $y): void
     {
+        $tileId = $this->map->getTileByXY($x, $y)['id'];
+        $fires = $this->map->calculateFires();
+        if (!in_array($tileId, $fires)) {
+            throw new BgaUserException(clienttranslate('Invalid Selection'));
+        }
         $this->actions->spendActionCost('actFightFire');
-        $this->map->decreaseFire(...$this->getCharacterPos($this->character->getTurnCharacterId()));
+        $this->map->decreaseFire($x, $y);
+        $this->eventLog(clienttranslate('${character_name} lowered a fire by ${count}'), [
+            'usedActionId' => 'actFightFire',
+            'count' => 1,
+        ]);
         $this->completeAction();
     }
     public function actUseSkill(string $skillId, ?string $skillSecondaryId = null): void
@@ -776,7 +838,7 @@ class Game extends \Table
     {
         $this->character->activateNextCharacter();
         resetPerTurn($this);
-        $this->nextState('playerTurn');
+        $this->nextState('initializeTile');
         $this->notify('playerTurn', clienttranslate('${character_name} begins their turn'), []);
     }
     public function stSelectCharacter()
@@ -853,6 +915,7 @@ class Game extends \Table
     {
         $result['tiles'] = array_values($this->map->getMap());
         $result['explosions'] = $this->gameData->get('explosions');
+        $this->getAllPlayers($result);
     }
     public function getItemData(&$result): void
     {
@@ -902,7 +965,7 @@ class Game extends \Table
         $difficultyMapping = ['normal', 'challenge', 'hard'];
         return $difficultyMapping[$this->gameData->get('difficulty')];
     }
-    private array $changed = ['token' => false, 'player' => false, 'knowledge' => false, 'actions' => false];
+    private array $changed = ['token' => false, 'player' => false, 'map' => false, 'actions' => false];
     public function markChanged(string $type)
     {
         if (!array_key_exists($type, $this->changed)) {
@@ -926,15 +989,29 @@ class Game extends \Table
 
             $this->notify('tokenUsed', '', ['gameData' => $result]);
         }
-        if ($this->changed['player'] || $this->changed['knowledge']) {
+        if ($this->changed['player']) {
             $result = [
                 'activeCharacter' => $this->character->getTurnCharacterId(),
                 'activePlayer' => $this->character->getTurnCharacterId(),
+                'moves' => $this->map->calculateMoves(),
+                'fires' => $this->map->calculateFires(),
             ];
             $this->getAllPlayers($result);
             $this->getItemData($result);
 
             $this->notify('updateCharacterData', '', ['gameData' => $result]);
+        }
+        if ($this->changed['map']) {
+            $result = [
+                'activeCharacter' => $this->character->getTurnCharacterId(),
+                'activePlayer' => $this->character->getTurnCharacterId(),
+                'moves' => $this->map->calculateMoves(),
+                'fires' => $this->map->calculateFires(),
+            ];
+            $this->getAllPlayers($result);
+            $this->getTiles($result);
+
+            $this->notify('updateMap', '', ['gameData' => $result]);
         }
         if (!in_array($this->gamestate->state(true, false, true)['name'], ['characterSelect', 'interrupt'])) {
             $result = [
@@ -958,11 +1035,17 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
         ];
         if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
-            $result['character_name'] = $this->getCharacterHTML();
-            $result['actions'] = array_values($this->actions->getValidActions());
-            $result['availableSkills'] = $this->actions->getAvailableSkills();
-            // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
-            $result['activeTurnPlayerId'] = $this->character->getTurnCharacter(true)['player_id'];
+            $result = [
+                ...$result,
+                'character_name' => $this->getCharacterHTML(),
+                'actions' => array_values($this->actions->getValidActions()),
+                'availableSkills' => $this->actions->getAvailableSkills(),
+                // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
+                'activeTurnPlayerId' => $this->character->getTurnCharacter(true)['player_id'],
+                'moves' => $this->map->calculateMoves(),
+                'fires' => $this->map->calculateFires(),
+                'deckhandTargetCount' => $this->getDeckhandTargetCount(),
+            ];
             $this->getAllPlayers($result);
             $this->getTiles($result);
         }

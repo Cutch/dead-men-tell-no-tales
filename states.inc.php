@@ -109,6 +109,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('Search the ship'),
         'type' => 'game',
         'action' => 'stInitializeTile',
+        'args' => 'argBasic',
         'transitions' => [
             'placeTile' => $placeTile,
         ],
@@ -121,8 +122,7 @@ $machinestates = [
         'args' => 'argPlaceTile',
         'possibleactions' => ['actPlaceTile'],
         'transitions' => [
-            'placeTile' => $placeTile,
-            'playerTurn' => $playerTurn,
+            'finalizeTile' => $finalizeTile,
         ],
     ],
     $finalizeTile => [
@@ -131,6 +131,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('Search the ship'),
         'type' => 'game',
         'action' => 'stFinalizeTile',
+        'args' => 'argFinalizeTile',
         'transitions' => [
             'initializeTile' => $initializeTile,
             'playerTurn' => $playerTurn,
@@ -147,7 +148,6 @@ $machinestates = [
             'actEndTurn',
             'actUndo',
             'actMove',
-            'actRun',
             'actFightFire',
             'actEliminateDeckhand',
             'actPickupToken',

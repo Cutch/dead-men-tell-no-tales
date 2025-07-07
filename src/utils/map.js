@@ -1,12 +1,19 @@
 import on from 'dojo/on';
+import fx from 'dojo/fx';
 import { renderImage } from './images';
 import Panzoom from '@panzoom/panzoom';
 import { Dice } from './dice';
 import { addClickListener } from './clickable';
+import dojo from 'dojo';
+import { v4 } from 'uuid';
 export class Map {
   constructor(game, gameData) {
     this.game = game;
     this.positions = {};
+    this.deckhandSelection = [];
+    this.placeListeners = [];
+    this.selectionListeners = [];
+    this.deckhandListeners = [];
     this.dice = {};
     this.maxX = 0;
     this.minX = 0;
@@ -39,9 +46,15 @@ export class Map {
       pos: 'append',
       card: false,
       scale: 1,
+      baseData: this.getKey({ x: 0, y: -1 }),
       styles: { left: `-400px`, bottom: `-192px`, position: 'absolute' },
     });
-    this.container.querySelector('.tracker-base').insertAdjacentHTML('beforeend', `<div class="characters"></div>`);
+    this.container
+      .querySelector('.tracker-base')
+      .insertAdjacentHTML(
+        'beforeend',
+        `<div class="characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
+      );
 
     renderImage('explosion', this.container, {
       pos: 'append',
@@ -66,6 +79,57 @@ export class Map {
         startY: (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
       });
     }, 0);
+  }
+  hideTileSelectionScreen() {
+    document.querySelectorAll('.tile-selector').forEach((e) => {
+      e.classList.remove('tile-selected');
+      e.style.display = 'none';
+    });
+    this.selectionListeners.forEach((d) => d());
+    this.selectionListeners = [];
+    this.selectionPosition = null;
+  }
+  showTileSelectionScreen(type, selection) {
+    document.querySelectorAll('.tile-selector').forEach((e) => e.classList.remove('tile-selected'));
+    if (Array.isArray(selection)) selection = selection.reduce((acc, d) => ({ ...acc, [d]: d }), {});
+    Object.entries(selection).forEach(([tileId, count]) => {
+      // if (tileId == 'tracker') {
+      //   return;
+      // }
+      const elem = this.container.querySelector(`.${tileId}-base .tile-selector`);
+      elem.style.display = '';
+      const dot = elem.querySelector('.dot');
+      if (type == 'actMove') {
+        dot.innerHTML = `<div class="fa6 fa6-solid fa6-person-running"></div>${count}`;
+        dot.style.display = '';
+      } else if (type == 'actFightFire') {
+        dot.innerHTML = `<div class="fa6 fa6-solid fa6-droplet"></div>`;
+        dot.style.display = '';
+      } else {
+        dot.style.display = 'none';
+      }
+
+      this.selectionListeners.push(
+        addClickListener(elem, 'Select', () => {
+          const { x, y } = this.getXY(elem.parentNode.getAttribute('data-data'));
+          if (x == this.selectionPosition?.x && y == this.selectionPosition?.y) return;
+          document.querySelectorAll('.tile-selector').forEach((e) => e.classList.remove('tile-selected'));
+          elem.classList.add('tile-selected');
+          this.selectionPosition = { x, y };
+        }),
+      );
+    });
+  }
+  getSelectionPosition() {
+    return this.selectionPosition;
+  }
+  clearNewCard() {
+    this.newCardContainer.style.display = 'none';
+    document.querySelectorAll('.new-card').forEach((d) => d.remove());
+    document.querySelectorAll('.place-new').forEach((e) => e.classList.remove('place-new'));
+    this.placeListeners.forEach((d) => d());
+    this.cardRotation = 0;
+    this.cardPosition = null;
   }
   setNewCard(id) {
     renderImage(id, this.newCardContainer, { pos: 'replace', scale: 1.5, card: false });
@@ -106,6 +170,50 @@ export class Map {
       );
     });
   }
+  showDeckhandSelection() {
+    const deckhandTargetCount = this.game.gamedatas.deckhandTargetCount;
+    document.querySelectorAll('.tile-card-base').forEach((baseElem) => {
+      const { x, y } = this.getXY(baseElem.getAttribute('data-data'));
+      baseElem.querySelectorAll('.deckhand-card').forEach((elem) => {
+        elem.classList.add('selectable');
+        const uuid = elem.parentNode.getAttribute('data-data');
+
+        this.deckhandListeners.push(
+          addClickListener(elem.parentNode, 'Select', () => {
+            const i = this.deckhandSelection.findIndex(({ uuid: d }) => d == uuid);
+            if (i !== -1) {
+              elem.classList.remove('selected');
+              this.deckhandSelection.splice(i, 1);
+            } else {
+              if (this.deckhandSelection.length >= deckhandTargetCount) {
+                document
+                  .querySelector(
+                    `.deckhand-card-base[data-data="${this.deckhandSelection[this.deckhandSelection.length - 1].uuid}"] .selected`,
+                  )
+                  .classList.remove('selected');
+                this.deckhandSelection.splice(this.deckhandSelection.length - 1, 1);
+              }
+              elem.classList.add('selected');
+              this.deckhandSelection.push({ x, y, uuid });
+            }
+          }),
+        );
+      });
+    });
+  }
+  hideDeckhandSelection() {
+    document.querySelectorAll('.deckhand-card').forEach((elem) => {
+      elem.classList.remove('selectable');
+      elem.classList.remove('selected');
+    });
+
+    this.deckhandListeners.forEach((d) => d());
+    this.deckhandListeners = [];
+    this.deckhandSelection = [];
+  }
+  getDeckhandSelection() {
+    return this.deckhandSelection.map(({ x, y }) => ({ x, y }));
+  }
   getNewCardPosition() {
     return { rotate: ((((this.cardRotation ?? 0) % 360) + 360) % 360) / 90, ...this.cardPosition };
   }
@@ -119,13 +227,6 @@ export class Map {
       return !!this.positions[this.getKey({ x: x + nx, y: y + ny })];
     });
   }
-  clearNewCard() {
-    this.newCardContainer.style.display = 'none';
-    document.querySelectorAll('.place-new').forEach((e) => e.classList.remove('place-new'));
-    this.placeListeners.forEach((d) => d());
-    this.cardRotation = 0;
-    this.cardPosition = null;
-  }
   getKey({ x, y }) {
     return `${x}x${y}`;
   }
@@ -136,83 +237,130 @@ export class Map {
   renderDeckhands(container, count) {
     if (count > 10) {
       container.innerHTML = `<div class="deckhand"><div class="dot dot--number counter">${count}</div></div>`;
-    } else {
-      container.innerHTML = Array(parseInt(count, 0))
+    } else if (count) {
+      container.innerHTML = Array(parseInt(count, 10))
         .fill(0)
         .map(() => `<div class="deckhand"></div>`)
         .join('');
     }
-    container.querySelectorAll('.deckhand').forEach((elem) => renderImage('deckhand', elem, { pos: 'insert', card: false, scale: 3 }));
+    container.querySelectorAll('.deckhand').forEach((elem) => {
+      renderImage('deckhand', elem, { pos: 'insert', card: false, scale: 3, baseData: v4() });
+    });
+  }
+  getWindowRelativeOffset(parentElem, elem) {
+    return {
+      left: (elem.getBoundingClientRect().left - parentElem.getBoundingClientRect().left) / this.panzoom.getScale(),
+      top: (elem.getBoundingClientRect().top - parentElem.getBoundingClientRect().top) / this.panzoom.getScale(),
+    };
   }
   renderCharacters(container, characterPositions, x, y) {
-    container.innerHTML = '';
+    // container.innerHTML = '';
     const id = this.getKey({ x, y });
     container.style.setProperty('--count', characterPositions[id]?.length ?? 0);
     characterPositions[id]?.forEach((id) => {
-      renderImage(id + '-token', container, {
-        pos: 'append',
-        card: false,
-        scale: 1.5,
-        styles: { '--color': this.game.gamedatas.characters.find((d) => d.id === id).characterColor },
-      });
+      const key = this.getKey({ x, y });
+      const currentElem = this.container.querySelector(`.${id}-token-base`);
+
+      if (currentElem) {
+        if (currentElem.getAttribute('data-data') !== key) {
+          container.insertAdjacentHTML('beforeend', '<div class="temp-mover"></div>');
+          currentElem.setAttribute('data-data', key);
+          const tempMover = container.querySelector('.temp-mover');
+          const targetOffset = this.getWindowRelativeOffset(this.container, tempMover);
+          const currentOffset = this.getWindowRelativeOffset(this.container, currentElem);
+          this.container.appendChild(currentElem);
+          currentElem.style.position = 'absolute';
+          currentElem.style.left = currentOffset.left + 'px';
+          currentElem.style.top = currentOffset.top + 'px';
+          const animationId = fx
+            .slideTo({
+              node: currentElem,
+              ...targetOffset,
+              units: 'px',
+              duration: 750,
+            })
+            .play();
+          dojo.connect(animationId, 'onEnd', () => {
+            tempMover.remove();
+            container.appendChild(currentElem);
+            currentElem.style.position = '';
+            currentElem.style.left = '';
+            currentElem.style.top = '';
+          });
+          animationId.play();
+        }
+      } else {
+        renderImage(id + '-token', container, {
+          pos: 'append',
+          card: false,
+          scale: 1.5,
+          baseData: this.getKey({ x, y }),
+          styles: { '--color': this.game.gamedatas.characters.find((d) => d.id === id).characterColor },
+        });
+      }
     });
   }
   update({ tiles, explosions, characterPositions }) {
-    this.container.querySelectorAll('.ocean').forEach((e) => e.remove());
+    this.container.querySelectorAll('.ocean-base').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
-    tiles?.forEach(({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, destroyed }) => {
-      this.minX = Math.min(this.minX, x);
-      this.maxX = Math.max(this.maxX, x);
-      this.minY = Math.min(this.minY, y);
-      this.maxY = Math.max(this.maxY, y);
-      this.positions[this.getKey({ x, y })] = name;
-      let tileElem = this.container.querySelector(`.${name}-base`);
-      if (destroyed == 1) {
-        if (tileElem) {
-          tileElem.remove();
+    (tiles ?? this.game.gamedatas.tiles)?.forEach(
+      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, destroyed, escape }) => {
+        if (escape == 1) return;
+        this.minX = Math.min(this.minX, x);
+        this.maxX = Math.max(this.maxX, x);
+        this.minY = Math.min(this.minY, y);
+        this.maxY = Math.max(this.maxY, y);
+        const tileKey = this.getKey({ x, y });
+        this.positions[tileKey] = name;
+        let tileElem = this.container.querySelector(`.${name}-base`);
+        if (destroyed == 1) {
+          if (tileElem) {
+            tileElem.remove();
+          }
+          name = 'tile-back';
+          tileElem = null;
         }
-        name = 'tile-back';
-        tileElem = null;
-      }
-      if (!tileElem) {
-        renderImage(name, this.container, {
-          pos: 'append',
-          card: false,
-          scale: 1,
-          rotate: rotate * 90,
-          styles: {
-            left: `${x * 300}px`,
-            bottom: `${y * 300}px`,
-            position: 'absolute',
-          },
-        });
-        if (destroyed == 1) return; // Stop rendering here if destroyed
-        tileElem = this.container.querySelector(`.${name}-base`);
-        tileElem.insertAdjacentHTML(
-          'beforeend',
-          '<div class="trapdoor"></div><div class="deckhands"></div><div class="dice"></div><div class="characters"></div>',
-        );
-        const diceElem = tileElem.querySelector(`.dice`);
-        const die = new Dice(this.game, diceElem, fireColor);
-        this.dice[this.getKey({ x, y })] = die;
-        const trapdoorElem = tileElem.querySelector(`.trapdoor`);
-        if (hasTrapdoor == 1 && name !== 'tile004') {
-          renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
+        if (!tileElem) {
+          renderImage(name, this.container, {
+            pos: 'append',
+            card: false,
+            scale: 1,
+            rotate: rotate * 90,
+            baseData: tileKey,
+            styles: {
+              left: `${x * 300}px`,
+              bottom: `${y * 300}px`,
+              position: 'absolute',
+            },
+          });
+          if (destroyed == 1) return; // Stop rendering here if destroyed
+          tileElem = this.container.querySelector(`.${name}-base`);
+          tileElem.insertAdjacentHTML(
+            'beforeend',
+            '<div class="trapdoor"></div><div class="deckhands"></div><div class="dice"></div><div class="characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>',
+          );
+          const diceElem = tileElem.querySelector(`.dice`);
+          const die = new Dice(this.game, diceElem, fireColor);
+          this.dice[tileKey] = die;
+          const trapdoorElem = tileElem.querySelector(`.trapdoor`);
+          if (hasTrapdoor == 1 && name !== 'tile004') {
+            renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
+          }
         }
-      }
-      const deckhandElem = tileElem.querySelector(`.deckhands`);
-      const charactersElem = tileElem.querySelector(`.characters`);
-      this.renderDeckhands(deckhandElem, deckhand);
-      this.renderCharacters(charactersElem, characterPositions, x, y);
-      if (fire === 0) this.dice[this.getKey({ x, y })]._hide();
-      else {
-        this.dice[this.getKey({ x, y })]._show();
-        this.dice[this.getKey({ x, y })]._set({ roll: fire });
-      }
-    });
+        const deckhandElem = tileElem.querySelector(`.deckhands`);
+        const charactersElem = tileElem.querySelector(`.characters`);
+        this.renderDeckhands(deckhandElem, deckhand);
+        this.renderCharacters(charactersElem, characterPositions, x, y);
+        if (fire === 0) this.dice[tileKey]._hide();
+        else {
+          this.dice[tileKey]._show();
+          this.dice[tileKey]._set({ roll: fire });
+        }
+      },
+    );
     const trackerElem = this.container.querySelector('.tracker-base .characters');
     this.renderCharacters(trackerElem, characterPositions, 0, -1);
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
@@ -228,7 +376,9 @@ export class Map {
         });
       }
     }
-    this.explosion.style.left = `${-325 + 150 * (explosions - 1)}px`;
-    this.explosion.style.display = explosions === 0 ? 'none' : '';
+    if (explosions != null) {
+      this.explosion.style.left = `${-325 + 150 * (explosions - 1)}px`;
+      this.explosion.style.display = explosions === 0 ? 'none' : '';
+    }
   }
 }

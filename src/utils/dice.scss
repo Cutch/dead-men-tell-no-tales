@@ -53,7 +53,7 @@
   transform: translate3d(-50%, -50%, 2rem) rotateX(0) rotateZ(0);
   // transition: transform 1s;
   position: relative;
-
+  pointer-events: none;
   &.show-1 {
     transform: translate3d(-50%, -50%, 2rem) rotateX(720deg) rotateZ(-720deg);
   }
@@ -76,6 +76,31 @@
 
   &.show-2 {
     transform: translate3d(-50%, -50%, 2rem) rotateX(900deg) rotateZ(-900deg);
+  }
+  &.no-roll {
+    &.show-1 {
+      transform: translate3d(-50%, -50%, 2rem) rotateX(0deg) rotateZ(-0deg);
+    }
+
+    &.show-6 {
+      transform: translate3d(-50%, -50%, 2rem) rotateX(-270deg) rotateZ(90deg);
+    }
+
+    &.show-3 {
+      transform: translate3d(-50%, -50%, 2rem) rotateY(-180deg) rotateZ(-0deg);
+    }
+
+    &.show-4 {
+      transform: translate3d(-50%, -50%, 2rem) rotateX(-90deg) rotateZ(-0deg);
+    }
+
+    &.show-5 {
+      transform: translate3d(-50%, -50%, 2rem) rotateY(90deg) rotateZ(90deg);
+    }
+
+    &.show-2 {
+      transform: translate3d(-50%, -50%, 2rem) rotateX(180deg) rotateZ(-180deg);
+    }
   }
 
   .side-wrapper {

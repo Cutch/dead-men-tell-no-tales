@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `map` (
     `explosion` int(10) DEFAULT NULL,
     `exploded` int(1) DEFAULT 0,
     `destroyed` int(1) DEFAULT 0,
+    `escape` int(1) DEFAULT 0,
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 CREATE TABLE IF NOT EXISTS `character` (

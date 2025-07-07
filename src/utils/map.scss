@@ -1,3 +1,6 @@
+#map-container {
+  position: relative;
+}
 .map-buttons-wrapper {
   display: flex;
   justify-content: center;
@@ -13,8 +16,29 @@
   cursor: pointer;
   box-shadow: inset 0 0 7px 7px #fff;
 }
+.tile-selector {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 14px dotted #fff;
+  width: 7rem;
+  height: 7rem;
+  transform: translate(-50%, -50%);
+  margin: -2px;
+  &.tile-selected {
+    border: 14px dotted #ff0000;
+  }
+  .dot {
+    --size: 4.5rem;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+}
 .map-wrapper {
-  margin: 1rem;
+  margin: 1rem 0;
   border: 1px solid;
   box-shadow: 0px 0px 2px;
   position: relative;
@@ -56,8 +80,8 @@
   .tooltip-image-and-text {
     > .dice {
       position: absolute;
-      top: 110px;
-      left: 110px;
+      top: 100px;
+      left: 100px;
     }
     > .trapdoor {
       position: absolute;
@@ -88,6 +112,15 @@
       width: var(--size);
       height: var(--size);
       > * {
+        // &::before {
+        //   content: '';
+        //   box-shadow: 0px 0px 20px 20px #ffffff87;
+        //   border-radius: 50%;
+        //   background: #ffffff87;
+        //   width: var(--size);
+        //   height: var(--size);
+        //   display: block;
+        // }
         display: block;
         position: absolute;
         z-index: 1;
@@ -99,6 +132,10 @@
             transition: transform 1s;
           }
         }
+      }
+      .temp-mover {
+        width: var(--size);
+        height: var(--size);
       }
       // .character-token-card-base {
       // }

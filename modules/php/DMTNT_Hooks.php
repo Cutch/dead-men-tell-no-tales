@@ -181,22 +181,22 @@ class DMTNT_Hooks
     {
         $this->callHooks(__FUNCTION__, $args, $data);
     }
-    function onUseHerb(&$data, array $args = [])
+    function onGetDeckhandTargetCount(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onEat(&$data, array $args = [])
+    function onCalculateMoves(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onGetSlots(&$data, array $args = [])
+    function onCalculateFires(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onGetItemValidation(&$data, array $args = [])
+    function onCalculateMovesHasTreasure(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

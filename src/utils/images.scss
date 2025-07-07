@@ -49,6 +49,15 @@
 }
 .deckhand-card {
   background-image: url(img/deckhand.png);
+  &.selectable {
+    background-position: 0 0 !important;
+    filter: saturate(3.5) hue-rotate(135deg) brightness(2);
+    &.selected:not(#\9):not(#\9):not(#\9) {
+      filter: unset;
+      border-radius: unset;
+      border: unset;
+    }
+  }
 }
 .player-board-card {
   background-image: url(img/player-board.png);

@@ -43,7 +43,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   getActionMappings() {
     return {
       actMove: _('Move'),
-      actRun: _('Run'),
       actFightFire: _('Fight Fire'),
       actEliminateDeckhand: _('Eliminate Deckhand'),
       actPickupToken: _('Pickup Token'),
@@ -73,35 +72,40 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       */
   updatePlayers: function (gameData) {
     // If character selection, keep removing characters
-    let characters = gameData?.characters
+    const characters = gameData?.characters
       ? Object.values(gameData?.characters)
       : Object.values(this.selectedCharacters).sort((a, b) => a.id.localeCompare(b.id));
-    if (gameData.gamestate?.name === 'characterSelect' || this.refreshCharacters) {
-      document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
-      document.querySelectorAll('.player-card').forEach((el) => el.remove());
-      if (this.gamedatas.characters) characters = this.gamedatas.characters;
-      this.refreshCharacters = false;
-    }
+    // if (gameData.gamestate?.name === 'characterSelect' || this.refreshCharacters) {
+    //   document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
+    //   document.querySelectorAll('.player-card').forEach((el) => el.remove());
+    //   if (this.gamedatas.characters) characters = this.gamedatas.characters;
+    //   this.refreshCharacters = false;
+    // }
     const scale = 3;
     characters.forEach((character, i) => {
       // Player side board
       const playerPanel = this.getPlayerPanelElement(character.playerId);
       const item = character.item;
       const characterSideId = `player-side-${character.playerId}-${character.id}`;
-      const playerSideContainer = $(characterSideId);
+      let playerSideContainer = $(characterSideId);
       if (!playerSideContainer) {
         playerPanel.insertAdjacentHTML(
           'beforeend',
           `<div id="${characterSideId}" class="character-side-container">
-            <div class="character-name">${this.data[character.id].options.name}</div>
-            <div class="fatigue line"><div class="fa6 fa6-solid fa6-person-running"></div><span class="label">${_(
-              'Fatigue',
-            )}: </span><span class="value"></span></div>
-            <div class="actions line"><div class="fa6 fa6-solid fa6-bolt"></div><span class="label">${_(
-              'Actions',
-            )}: </span><span class="value"></span></div>
-            <div class="item line"><div class="fa6 fa6-solid fa6-toolbox"></div><span class="label">${_('Item')}: </span><span class="value"></span></div>
             <div class="character-image"></div>
+            <div>
+              <div class="character-name">${this.data[character.id].options.name}</div>
+              <div class="fatigue line"><div class="fa6 fa6-solid fa6-person-running"></div><span class="label">${_(
+                'Fatigue',
+              )}: </span><span class="value"></span></div>
+              <div class="actions line"><div class="fa6 fa6-solid fa6-bolt"></div><span class="label">${_(
+                'Actions',
+              )}: </span><span class="value"></span></div>
+              <div class="strength line"><div class="fa6 fa6-solid fa6-hand-fist"></div><span class="label">${_(
+                'Strength',
+              )}: </span><span class="value"></span></div>
+              <div class="item line"><div class="fa6 fa6-solid fa6-toolbox"></div><span class="label">${_('Item')}: </span><span class="value"></span></div>
+            </div>
           </div>`,
         );
         playerSideContainer = $(characterSideId);
@@ -121,6 +125,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       }
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
+      const cutlassCount = character.tokenItems['cutlass'] ?? 0;
+      const strength = cutlassCount + parseInt(character.tempStrength ?? 0, 10);
+      playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
 
       playerSideContainer.querySelector(`.item .value`).innerHTML = item
         ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
@@ -145,15 +152,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           container.insertAdjacentHTML(
             'beforeend',
             `<div id="player-${character.id}" class="player-card">
-                <div class="card-container">
-                  <div class="character"></div>
-                  <div class="item"></div>
-                </div>
                 <div class="card">
                   <div class="extra-token"></div>
                   <div class="fatigue-dial"></div>
                   <div class="actions-marker"></div>
+                  <div class="cutlass-markers"></div>
                   <div class="strength-marker"></div>
+                  <div class="character"></div>
+                </div>
+                <div class="card-container">
+                  <div class="item"></div>
                 </div>
               </div>`,
           );
@@ -166,12 +174,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         const extraTokenElem = document.querySelector(`#player-${character.id} .extra-token`);
         extraTokenElem.innerHTML = '';
         const degs = [-2, 19, 35, 57, 76, 98, 118, 138, 156, 181, 208, 225, 248, 272, 294, 320, 341];
-        renderImage('dial', document.querySelector(`#player-${character.id} .fatigue-dial`), {
-          scale,
-          pos: 'replace',
-          card: false,
-          styles: { '--rotate': `${degs[character.fatigue]}deg` },
-        });
+        const dial = document.querySelector(`#player-${character.id} .fatigue-dial .dial-base`);
+        if (dial) dial.style.setProperty('--rotate', `${degs[character.fatigue]}deg`);
+        else
+          renderImage('dial', document.querySelector(`#player-${character.id} .fatigue-dial`), {
+            scale,
+            pos: 'replace',
+            card: false,
+            styles: { '--rotate': `${degs[character.fatigue]}deg` },
+          });
         renderImage('token-action', document.querySelector(`#player-${character.id} .actions-marker`), {
           scale,
           pos: 'replace',
@@ -189,9 +200,19 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           pos: 'replace',
           styles: { '--color': character.characterColor },
         });
-        document.querySelector(`#player-${character.id} .strength-marker`).style = `left: ${(character.strength ?? 0) * 62 + 18}px;`;
+        const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
+        cutlassMarkersElem.innerHTML = '';
+        for (let i = 0; i < cutlassCount; i++) {
+          renderImage('cutlass', cutlassMarkersElem, {
+            scale,
+            pos: 'replace',
+            baseCss: 'cutlass-marker',
+            styles: { '--color': character.characterColor, left: `${i * 62 + 18}px` },
+          });
+        }
+        document.querySelector(`#player-${character.id} .strength-marker`).style.left = `${strength * 62 + 18}px`;
         const characterElem = document.querySelector(`#player-${character.id} .character`);
-        renderImage(character.id, characterElem, { scale, pos: 'replace' });
+        renderImage(character.id, characterElem, { scale: 5, pos: 'replace' });
         addClickListener(characterElem, character.id, () => {
           this.tooltip.show();
           renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
@@ -446,6 +467,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
         break;
+      case 'finalizeTile':
+        this.map.update(this.gamedatas);
+        break;
       case 'placeTile':
         if (isActive) this.map.setNewCard(this.gamedatas.newTile.id);
         // if (isActive) this.cardSelectionScreen.show(args.args);
@@ -555,25 +579,51 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
               } else if (actionId === 'actPlaceTile') {
                 this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
-              } else if (actionId === 'actCook') {
+              } else if (actionId === 'actMove') {
                 this.clearActionButtons();
-                this.cookScreen.show(this.gamedatas);
-                this.statusBar.addActionButton(this.getActionMappings().actCook + `${suffix}`, () => {
-                  if (!this.cookScreen.hasError()) {
-                    this.bgaPerformAction('actCook', {
-                      resourceType: this.cookScreen.getSelectedId(),
-                    })
-                      .then(() => {
-                        this.cookScreen.hide();
-                      })
-                      .catch(console.error);
-                  }
+                this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
+                this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
+                  this.bgaPerformAction('actMove', this.map.getSelectionPosition())
+                    .then(() => this.map.hideTileSelectionScreen())
+                    .catch(console.error);
                 });
                 this.statusBar.addActionButton(
                   _('Cancel'),
                   () => {
                     this.onUpdateActionButtons(stateName, args);
-                    this.cookScreen.hide();
+                    this.map.hideTileSelectionScreen();
+                  },
+                  { color: 'secondary' },
+                );
+              } else if (actionId === 'actFightFire') {
+                this.clearActionButtons();
+                this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
+                this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
+                  this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
+                    .then(() => this.map.hideTileSelectionScreen())
+                    .catch(console.error);
+                });
+                this.statusBar.addActionButton(
+                  _('Cancel'),
+                  () => {
+                    this.onUpdateActionButtons(stateName, args);
+                    this.map.hideTileSelectionScreen();
+                  },
+                  { color: 'secondary' },
+                );
+              } else if (actionId === 'actEliminateDeckhand') {
+                this.clearActionButtons();
+                this.map.showDeckhandSelection();
+                this.statusBar.addActionButton(this.getActionMappings().actEliminateDeckhand + `${suffix}`, () => {
+                  this.bgaPerformAction('actEliminateDeckhand', { data: JSON.stringify(this.map.getDeckhandSelection()) })
+                    .then(() => this.map.hideDeckhandSelection())
+                    .catch(console.error);
+                });
+                this.statusBar.addActionButton(
+                  _('Cancel'),
+                  () => {
+                    this.onUpdateActionButtons(stateName, args);
+                    this.map.hideDeckhandSelection();
                   },
                   { color: 'secondary' },
                 );
@@ -909,6 +959,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (isStudio()) console.log('notif_updateCharacterData', notification);
     this.updatePlayers(notification.args.gameData);
     this.updateItems(notification.args.gameData);
+    this.map.update(notification.args.gameData);
   },
   notif_tokenUsed: async function (notification) {
     await this.notificationWrapper(notification);

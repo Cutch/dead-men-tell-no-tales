@@ -27,6 +27,7 @@ export class Dice {
   }
   _show() {
     this.container.style['visibility'] = 'unset';
+    this.dice.classList.add('no-roll');
   }
   _hide() {
     this.container.style['visibility'] = 'hidden';
@@ -34,6 +35,9 @@ export class Dice {
   _set({ roll }) {
     this.dice.style['transition'] = 'transform 0.75s';
     this.dice.style.animationPlayState = 'running';
+    for (let i = 1; i <= 6; i++) {
+      this.dice.classList.remove('show-' + i);
+    }
     this.dice.classList.add('show-' + roll);
 
     const animation = new dojo.Animation({

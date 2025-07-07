@@ -6,6 +6,8 @@
   gap: 1em;
   .player-card {
     display: flex;
+    flex-flow: column;
+    align-items: center;
     > .card {
       position: relative;
       align-self: flex-start;
@@ -16,11 +18,11 @@
       margin: 1rem;
       gap: 1rem;
     }
-    // .character {
-    //   position: absolute;
-    //   top: 1rem;
-    //   left: -90px;
-    // }
+    .character {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+    }
     // .item {
     //   position: absolute;
     // }
@@ -42,6 +44,11 @@
     }
   }
   .strength-marker {
+    position: absolute;
+    bottom: 20px;
+    transition: 1s left;
+  }
+  .cutlass-marker {
     position: absolute;
     bottom: 20px;
     transition: 1s left;
