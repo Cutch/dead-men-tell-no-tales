@@ -9,6 +9,34 @@ class DMTNT_Actions
 {
     private $actions;
     private Game $game;
+    public function isSweltering(): bool
+    {
+        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        $currentTile = $this->game->map->getTileByXY($x, $y);
+        if ($currentTile) {
+            $badFatigueValues = $this->game->map->convertFatigueToDie();
+            return $currentTile['fire'] >= $badFatigueValues;
+        }
+        return false;
+    }
+    public function tooManyDeckhands(): bool
+    {
+        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        $currentTile = $this->game->map->getTileByXY($x, $y);
+        if ($currentTile) {
+            return $currentTile['deckhand'] >= 3;
+        }
+        return false;
+    }
+    public function twoDeckhands(): bool
+    {
+        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        $currentTile = $this->game->map->getTileByXY($x, $y);
+        if ($currentTile) {
+            return $currentTile['deckhand'] >= 2;
+        }
+        return false;
+    }
     public function __construct(Game $game)
     {
         $this->actions = addId([
@@ -30,7 +58,7 @@ class DMTNT_Actions
                     if ($tile) {
                         return $tile['fire'] > 0;
                     }
-                    return false;
+                    return false && !$this->tooManyDeckhands();
                 },
             ],
             'actEliminateDeckhand' => [
@@ -46,7 +74,7 @@ class DMTNT_Actions
                     array_walk($tiles, function ($tile) use (&$any) {
                         $any = $any || $tile['deckhand'];
                     });
-                    return $any;
+                    return $any && !$this->isSweltering();
                 },
             ],
             'actPickupToken' => [
@@ -54,7 +82,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    return true && !$this->isSweltering() && !$this->tooManyDeckhands() && !$this->twoDeckhands();
                 },
             ],
             'actRest' => [
@@ -62,7 +90,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return $game->character->getTurnCharacter()['fatigue'] > 0;
+                    return $game->character->getTurnCharacter()['fatigue'] > 0 && !$this->tooManyDeckhands();
                 },
             ],
             'actDrop' => [
@@ -70,7 +98,9 @@ class DMTNT_Actions
                 'actions' => 0,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0;
+                    return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0 &&
+                        !$this->isSweltering() &&
+                        !$this->tooManyDeckhands();
                 },
             ],
             'actIncreaseBattleStrength' => [
@@ -81,7 +111,9 @@ class DMTNT_Actions
                     $character = $game->character->getTurnCharacter();
                     return (array_key_exists('cutlass', $character['tokenItems']) ? $character['tokenItems']['cutlass'] : 0) +
                         $character['tempStrength'] <
-                        4;
+                        4 &&
+                        !$this->isSweltering() &&
+                        !$this->tooManyDeckhands();
                 },
             ],
             'actSwapItem' => [
@@ -89,7 +121,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    return true && !$this->isSweltering() && !$this->tooManyDeckhands();
                 },
             ],
         ]);
@@ -135,9 +167,10 @@ class DMTNT_Actions
     public function getActiveEquipmentSkills()
     {
         $character = $this->game->character->getSubmittingCharacter();
-        $skills = array_merge(
-            ...$character['item'] !== null && array_key_exists('skills', $character['item']) ? $character['item']['skills'] : []
-        );
+        $skills =
+            array_key_exists('item', $character) && $character['item'] !== null && array_key_exists('skills', $character['item'])
+                ? $character['item']['skills']
+                : [];
         return $skills;
     }
     public function getAction(string $actionId, ?string $subActionId = null): array

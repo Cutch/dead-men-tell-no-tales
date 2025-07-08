@@ -102,13 +102,31 @@
         font-size: 2rem;
       }
     }
-    > .characters {
+    > .barrel-marker {
+      position: absolute;
+      // bottom: 10px;
+      // left: 50%;
+      // pointer-events: none;
+      // transform: translate(-50%, 0);
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%) rotateZ(calc(var(--rotate) * 1deg)) translate(0%, 95px);
+    }
+    > .tokens {
       --count: 0;
       --size: 100px;
       $item-size: 50px;
       position: absolute;
-      bottom: 20px;
-      left: 20px;
+      &.characters {
+        bottom: 20px;
+        left: 20px;
+        pointer-events: none;
+      }
+      &.treasures {
+        bottom: 20px;
+        right: 20px;
+      }
       width: var(--size);
       height: var(--size);
       > * {
@@ -141,7 +159,7 @@
       // }
     }
   }
-  .tracker-base > .characters {
+  .tracker-base > .tokens.characters {
     left: unset;
     bottom: -25px;
   }

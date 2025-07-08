@@ -40,7 +40,10 @@ export class Map {
     const defaultScale = 0.5;
     this.panzoom = Panzoom(this.container, {
       maxScale: 5,
+      bounds: true,
+      boundsPadding: 0.2,
       startScale: defaultScale,
+      // transformOrigin: { x: 0.5, y: 0.5 },
     });
     renderImage('tracker', this.container, {
       pos: 'append',
@@ -53,7 +56,7 @@ export class Map {
       .querySelector('.tracker-base')
       .insertAdjacentHTML(
         'beforeend',
-        `<div class="characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
+        `<div class="tokens characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
       );
 
     renderImage('explosion', this.container, {
@@ -124,6 +127,7 @@ export class Map {
     return this.selectionPosition;
   }
   clearNewCard() {
+    this.newCardPhase = false;
     this.newCardContainer.style.display = 'none';
     document.querySelectorAll('.new-card').forEach((d) => d.remove());
     document.querySelectorAll('.place-new').forEach((e) => e.classList.remove('place-new'));
@@ -132,6 +136,7 @@ export class Map {
     this.cardPosition = null;
   }
   setNewCard(id) {
+    this.newCardPhase = true;
     renderImage(id, this.newCardContainer, { pos: 'replace', scale: 1.5, card: false });
     this.newCardContainer.insertAdjacentHTML('afterbegin', `<h3>${_('New Tile')}</h3>`);
     this.newCardContainer.style.display = '';
@@ -253,13 +258,13 @@ export class Map {
       top: (elem.getBoundingClientRect().top - parentElem.getBoundingClientRect().top) / this.panzoom.getScale(),
     };
   }
-  renderCharacters(container, characterPositions, x, y) {
+  renderTokens(container, positions, x, y) {
     // container.innerHTML = '';
     const id = this.getKey({ x, y });
-    container.style.setProperty('--count', characterPositions[id]?.length ?? 0);
-    characterPositions[id]?.forEach((id) => {
+    container.style.setProperty('--count', positions[id]?.length ?? 0);
+    positions[id]?.forEach(({ name, type }) => {
       const key = this.getKey({ x, y });
-      const currentElem = this.container.querySelector(`.${id}-token-base`);
+      const currentElem = this.container.querySelector(`.${name}-token-base`);
 
       if (currentElem) {
         if (currentElem.getAttribute('data-data') !== key) {
@@ -290,24 +295,26 @@ export class Map {
           animationId.play();
         }
       } else {
-        renderImage(id + '-token', container, {
+        const color = this.game.gamedatas.characters.find((d) => d.id === name)?.characterColor;
+        renderImage(name + '-token', container, {
           pos: 'append',
           card: false,
           scale: 1.5,
           baseData: this.getKey({ x, y }),
-          styles: { '--color': this.game.gamedatas.characters.find((d) => d.id === id).characterColor },
+          styles: { '--color': color ?? '#000' },
         });
       }
     });
   }
-  update({ tiles, explosions, characterPositions }) {
+  update({ tiles, explosions, characterPositions, tokenPositions }) {
+    if (this.newCardPhase) return;
     this.container.querySelectorAll('.ocean-base').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
-      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, destroyed, escape }) => {
+      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, escape }) => {
         if (escape == 1) return;
         this.minX = Math.min(this.minX, x);
         this.maxX = Math.max(this.maxX, x);
@@ -334,13 +341,20 @@ export class Map {
               left: `${x * 300}px`,
               bottom: `${y * 300}px`,
               position: 'absolute',
+              '--rotate': rotate * 90,
             },
           });
           if (destroyed == 1) return; // Stop rendering here if destroyed
           tileElem = this.container.querySelector(`.${name}-base`);
           tileElem.insertAdjacentHTML(
             'beforeend',
-            '<div class="trapdoor"></div><div class="deckhands"></div><div class="dice"></div><div class="characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>',
+            `<div class="trapdoor"></div>
+            <div class="dice"></div>
+            <div class="barrel-marker"></div>
+            <div class="deckhands"></div>
+            <div class="tokens treasures"></div>
+            <div class="tokens characters"></div>
+            <div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
           );
           const diceElem = tileElem.querySelector(`.dice`);
           const die = new Dice(this.game, diceElem, fireColor);
@@ -350,10 +364,18 @@ export class Map {
             renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
           }
         }
+        if (exploded == 1)
+          renderImage('explosion-barrel', tileElem.querySelector(`.barrel-marker`), {
+            pos: 'replace',
+            card: false,
+            scale: 1.5,
+          });
         const deckhandElem = tileElem.querySelector(`.deckhands`);
         const charactersElem = tileElem.querySelector(`.characters`);
+        const treasuresElem = tileElem.querySelector(`.treasures`);
         this.renderDeckhands(deckhandElem, deckhand);
-        this.renderCharacters(charactersElem, characterPositions, x, y);
+        if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
+        if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
         if (fire === 0) this.dice[tileKey]._hide();
         else {
           this.dice[tileKey]._show();
@@ -362,7 +384,7 @@ export class Map {
       },
     );
     const trackerElem = this.container.querySelector('.tracker-base .characters');
-    this.renderCharacters(trackerElem, characterPositions, 0, -1);
+    this.renderTokens(trackerElem, characterPositions, 0, -1);
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
         if (y <= -1) continue;

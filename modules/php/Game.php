@@ -194,7 +194,7 @@ class Game extends \Table
             'card' => $card,
             'deck' => $deck,
             'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_id' => $this->getCharacterHTML(),
+            'character_name' => $this->getCharacterHTML(),
             'gameData' => $gameData,
             ...$arg,
         ];
@@ -212,7 +212,7 @@ class Game extends \Table
             if ($characterName) {
                 $this->notify('rollBattleDie', clienttranslate('${character_name} rolled a ${value} ${action_name}'), [
                     'value' => $value,
-                    'character_id' => $this->getCharacterHTML($characterName),
+                    'character_name' => $this->getCharacterHTML($characterName),
                     'characterId' => $characterName,
                     'roll' => $value,
                     'action_name' => '(' . $actionName . ')',
@@ -290,6 +290,24 @@ class Game extends \Table
             throw new BgaUserException(clienttranslate('Tile must connect to a door'));
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
+
+        // Get tokens
+        $card = $this->decks->pickCardWithoutLookup('bag');
+        $trapdoor = false;
+        if ($card['type_arg'] === 'trapdoor') {
+            $trapdoor = true;
+        } else {
+            $tokens = [$this->getTokenData($card)];
+            if (str_contains($card['type_arg'], 'captain')) {
+                $this->decks->discardCards('tile', function ($data, $card) {
+                    return str_contains($card['type_arg'], 'captain');
+                });
+                $card2 = $this->decks->pickCardWithoutLookup('bag');
+                $tokens[] = $this->getTokenData($card2);
+            }
+            $this->gameData->set('tokenPositions', [...$this->gameData->get('tokenPositions'), $this->map->xy($x, $y) => $tokens]);
+        }
+
         $this->map->placeMap(
             $newTile['id'],
             $x,
@@ -297,11 +315,17 @@ class Game extends \Table
             $rotate,
             $newTileData['fire'],
             $newTileData['color'],
-            0,
-            0,
+            $trapdoor ? 1 : 0,
+            $trapdoor ? 1 : 0,
             array_key_exists('barrel', $newTileData) ? $newTileData['barrel'] : 0
         );
+
         $this->nextState('finalizeTile');
+    }
+    public function getTokenData(array $card)
+    {
+        [$token, $treasure] = explode('_', $card['type_arg']);
+        return ['token' => $token, 'treasure' => $treasure, 'id' => $card['id'], 'isTreasure' => false];
     }
     public function argPlaceTile()
     {
@@ -351,9 +375,42 @@ class Game extends \Table
             $this->nextState('playerTurn');
         }
     }
-
-    public function actMove(int $x, int $y): void
+    public function actInitSwapItem(): void
     {
+        $equippedItems = array_map(
+            function ($d) {
+                return ['id' => $d['item']['id'], 'characterId' => $d['id'], 'isActive' => $d['isActive']];
+            },
+            array_filter($this->character->getAllCharacterData(true), function ($d) {
+                return $d['item'];
+            })
+        );
+        $items = [...$this->data->getItems()];
+        array_walk($equippedItems, function ($d, $k) use (&$items, &$equippedItems) {
+            unset($items[$d['id']]);
+            if ($d['isActive']) {
+                unset($equippedItems[$k]);
+            }
+        });
+        $items = array_map(function ($d) {
+            return ['id' => $d];
+        }, array_values(toId($items)));
+
+        $this->selectionStates->initiateState(
+            'itemSelection',
+            [
+                'items' => [...$items, ...array_filter($equippedItems)],
+                'id' => 'actInitSwapItem',
+            ],
+            $this->character->getTurnCharacterId(),
+            true
+        );
+    }
+    public function actMove(?int $x = null, ?int $y = null): void
+    {
+        if ($x == null || $y == null) {
+            throw new BgaUserException(clienttranslate('Select a location'));
+        }
         $character = $this->character->getTurnCharacter();
         $moves = $this->map->calculateMoves();
         $fatigue = $moves[$this->map->getTileByXY($x, $y)['id']];
@@ -620,22 +677,11 @@ class Game extends \Table
         $this->completeAction($saveState);
     }
 
-    public function argDrawCard()
+    public function argDrawRevengeCard()
     {
         $result = [
-            ...$this->gameData->get('state'),
             'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_id' => $this->getCharacterHTML(),
-        ];
-        $this->getDecks($result);
-        return $result;
-    }
-    public function argNightDrawCard()
-    {
-        $result = [
-            ...$this->gameData->get('drawNightState') ?? $this->gameData->get('state'),
-            'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_id' => $this->getCharacterHTML(),
+            'character_name' => $this->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
         ];
         $this->getDecks($result);
@@ -669,72 +715,20 @@ class Game extends \Table
     {
         $this->selectionStates->actSelectItem($itemId);
     }
-    public function stDrawCard()
+    public function stDrawRevengeCard()
     {
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
             func_get_args(),
-            [$this->hooks, 'onResolveDraw'],
+            [$this->hooks, 'onDrawRevengeCard'],
             function (Game $_this) {
-                // $character = $this->character->getSubmittingCharacter();
                 // deck,card
-                $state = $this->gameData->get('state');
-                $deck = $state['deck'];
-                $card = $state['card'];
-                $this->cardDrawEvent($card, $deck);
-                if ($card['deckType'] == 'revenge') {
-                } elseif ($card['deckType'] == 'tile') {
-                }
-                return [...$state, 'discard' => false];
+                $card = $this->decks->pickCard('revenge');
+                $this->cardDrawEvent($card, 'revenge');
+                return ['card' => $card, 'state' => 'revenge'];
             },
-            function (Game $_this, bool $finalizeInterrupt, $data) use (&$moveToDrawCardState) {
-                $deck = $data['deck'];
+            function (Game $_this, bool $finalizeInterrupt, $data) {
                 $card = $data['card'];
-                if ($data['discard']) {
-                    $this->nextState('playerTurn');
-                } else {
-                    $this->nextState('playerTurn');
-                }
-            }
-        );
-        if ($moveToDrawCardState) {
-            $this->nextState('drawCard');
-        }
-    }
-    public function stNightPhase()
-    {
-        $this->actInterrupt->interruptableFunction(
-            __FUNCTION__,
-            func_get_args(),
-            [$this->hooks, 'onNight'],
-            function (Game $_this) {
-                $card = $this->decks->pickCard('night-event');
-                $this->gameData->set('drawNightState', ['card' => $card, 'deck' => 'night-event']);
-                return ['card' => $card, 'deck' => 'night-event'];
-            },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
-                $deck = $data['deck'];
-                $this->eventLog(clienttranslate('It\'s night, drawing from the night deck'));
-                $this->nextState('nightDrawCard');
-            }
-        );
-    }
-    public function stNightDrawCard()
-    {
-        $this->actInterrupt->interruptableFunction(
-            __FUNCTION__,
-            func_get_args(),
-            [$this->hooks, 'onNightDrawCard'],
-            function (Game $_this) {
-                // deck,card
-                $state = $this->gameData->get('drawNightState') ?? $this->gameData->get('state');
-                $deck = $state['deck'];
-                $card = $state['card'];
-                $this->cardDrawEvent($card, $deck);
-                return ['state' => $state];
-            },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
-                $card = $data['state']['card'];
                 $_this->hooks->reconnectHooks($card, $_this->decks->getCard($card['id']));
 
                 if (!$data || !array_key_exists('onUse', $data) || $data['onUse'] != false) {
@@ -746,7 +740,7 @@ class Game extends \Table
                 ) {
                     $this->eventLog('${buttons}', [
                         'buttons' => notifyButtons([
-                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'night-event'],
+                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
                         ]),
                     ]);
                 }
@@ -754,7 +748,7 @@ class Game extends \Table
                     (!$data || !array_key_exists('nextState', $data) || $data['nextState'] != false) &&
                     (!$result || !array_key_exists('nextState', $result) || $result['nextState'] != false)
                 ) {
-                    $this->nextState('morningPhase');
+                    $this->nextState('nextCharacter');
                 }
             }
         );
@@ -830,7 +824,7 @@ class Game extends \Table
             'characterId' => $this->character->getTurnCharacterId(),
         ];
         $this->hooks->onEndTurn($data);
-        $this->nextState('endTurn');
+        $this->nextState('drawRevengeCard');
         $this->undo->clearUndoHistory();
     }
     public function stGameStart(): void
@@ -909,7 +903,7 @@ class Game extends \Table
         $result['characterPositions'] = array_reduce(
             $result['characters'],
             function ($arr, $char) {
-                $arr[$char['pos'][0] . 'x' . $char['pos'][1]][] = $char['id'];
+                $arr[$char['pos'][0] . 'x' . $char['pos'][1]][] = ['name' => $char['id'], 'type' => 'character'];
                 return $arr;
             },
             []
@@ -926,6 +920,15 @@ class Game extends \Table
     {
         $result['tiles'] = array_values($this->map->getMap());
         $result['explosions'] = $this->gameData->get('explosions');
+        $result['tokenPositions'] = array_map(function ($tokens) {
+            return array_map(function ($d) {
+                if ($d['isTreasure']) {
+                    return ['name' => $d['treasure'], 'type' => 'treasure'];
+                } else {
+                    return ['name' => $d['token'], 'type' => 'enemy'];
+                }
+            }, $tokens);
+        }, $this->gameData->get('tokenPositions'));
         $this->getAllPlayers($result);
     }
     public function getItemData(&$result): void
@@ -1024,7 +1027,7 @@ class Game extends \Table
 
             $this->notify('updateMap', '', ['gameData' => $result]);
         }
-        if (!in_array($this->gamestate->state(true, false, true)['name'], ['characterSelect', 'interrupt'])) {
+        if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn'])) {
             $result = [
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),

@@ -21,6 +21,7 @@ import 'ebg/counter'; // Loads Counter class onto ebg.counter if needed
 import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
+import { ItemsScreen } from './screens/items-screen';
 import { addClickListener, Deck, Dice, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
 import { Map } from './utils/map';
 
@@ -37,6 +38,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.clickListeners = [];
     this.cardSelectionScreen = new CardSelectionScreen(this);
     this.characterSelectionScreen = new CharacterSelectionScreen(this);
+    this.itemsScreen = new ItemsScreen(this);
+
     this.currentResources = { prevResources: {}, resources: {} };
     this.animations = [];
   },
@@ -429,7 +432,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
 
     // Setup game notifications to handle (see "setupNotifications" method below)
     this.setupNotifications();
-    this.firstRender = true;
   },
   updateGameDatas: function (gameData) {
     if (gameData?.version && this.gamedatas.version < gameData?.version && !this.reloadShown) {
@@ -484,9 +486,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
         break;
-      case 'nightDrawCard':
-        this.showNightTracker(args.args.card.id);
-        break;
       // case 'drawCard':
       //   if (!args.args.resolving) {
       //     this.decks[args.args.deck].drawCard(args.args.card.id);
@@ -494,7 +493,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       //   }
       //   break;
     }
-    this.firstRender = false;
   },
 
   // onLeavingState: this method is called each time we are leaving a game state.
@@ -578,6 +576,23 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
               } else if (actionId === 'actPlaceTile') {
                 this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
+              } else if (actionId === 'actSwapItem') {
+                this.bgaPerformAction('actInitSwapItem');
+                // this.clearActionButtons();
+                // this.itemsScreen.show(this.gamedatas);
+                // this.statusBar.addActionButton(this.getActionMappings().actSwapItem + `${suffix}`, () => {
+                //   this.bgaPerformAction('actSwapItem', this.itemsScreen.getSelection())
+                //     .then(() => this.itemsScreen.hide())
+                //     .catch(console.error);
+                // });
+                // this.statusBar.addActionButton(
+                //   _('Cancel'),
+                //   () => {
+                //     this.onUpdateActionButtons(stateName, args);
+                //     this.itemsScreen.hide();
+                //   },
+                //   { color: 'secondary' },
+                // );
               } else if (actionId === 'actMove') {
                 this.clearActionButtons();
                 this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
@@ -643,14 +658,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           );
       };
       switch (stateName) {
-        case 'eatSelection':
-          this.statusBar.addActionButton(args.selectionState?.title ? _(args.selectionState.title) : _('Eat'), () => {
-            this.bgaPerformAction('actSelectEat', {
-              resourceType: this.eatScreen.getSelectedId(),
-            });
-          });
-          addSelectionCancelButton();
-          break;
         case 'characterSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCharacter, () => {
             this.bgaPerformAction('actSelectCharacter', { characterId: this.characterSelectionScreen.getSelectedId() });
@@ -665,16 +672,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'itemSelection':
           this.statusBar.addActionButton(_('Select Item'), () => {
-            this.bgaPerformAction('actSelectItem', { ...this.itemsScreen.getSelection() });
+            this.bgaPerformAction('actSelectItem', { itemId: this.itemsScreen.getSelection()?.id });
           });
           addSelectionCancelButton();
           break;
         case 'interrupt':
           if (!this.gamedatas.availableSkills.some((d) => d.cancellable === false))
             this.statusBar.addActionButton(_('Skip'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
-          break;
-        case 'dayEvent':
-          // No Cancel Button
           break;
         case 'postEncounter':
           this.statusBar.addActionButton(_('Done'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });

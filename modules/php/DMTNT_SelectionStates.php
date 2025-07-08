@@ -29,22 +29,69 @@ class DMTNT_SelectionStates
         }
         $this->initiatePendingState();
     }
-    public function actSelectItem(?string $itemId = null, ?string $characterId = null): void
+    public function actSelectItem(?string $itemId = null): void
     {
         if (!$itemId) {
             throw new BgaUserException(clienttranslate('Select an item'));
         }
         $stateData = $this->getState(null);
-        $stateData['selectedItemId'] = $itemId;
-        $stateData['selectedCharacterId'] = $characterId;
-        $this->setState(null, $stateData);
+        $characterId = $stateData['characterId'];
+        $took = false;
+        $tookCharacterId = '';
+        $this->game->character->updateAllCharacterData(function (&$d) use ($characterId, $itemId, &$took, &$tookCharacterId) {
+            if ($characterId === $d['id']) {
+                $d['item'] = $itemId;
+            } elseif ($d['item']['id'] === $itemId) {
+                $tookCharacterId = $d['id'];
+                $d['item'] = null;
+                $took = true;
+            }
+        });
+        if ($took) {
+            $this->game->eventLog(clienttranslate('${character_name} took the ${item}'), [
+                'usedActionId' => 'actPickupToken',
+                'item' => $this->game->data->getItems()[$itemId]['name'],
+            ]);
+            $equippedItems = array_map(
+                function ($d) {
+                    return ['id' => $d['item']['id'], 'characterId' => $d['id'], 'isActive' => $d['isActive']];
+                },
+                array_filter($this->game->character->getAllCharacterData(true), function ($d) {
+                    return $d['item'];
+                })
+            );
+            $items = [...$this->game->data->getItems()];
+            array_walk($equippedItems, function ($d, $k) use (&$items, &$equippedItems) {
+                unset($items[$d['id']]);
+                if ($d['isActive']) {
+                    unset($equippedItems[$k]);
+                }
+            });
+            $items = array_map(function ($d) {
+                return ['id' => $d];
+            }, array_values(toId($items)));
+
+            $this->initiateState(
+                'itemSelection',
+                [
+                    'items' => $items,
+                    'id' => 'actInitSwapItem',
+                ],
+                $tookCharacterId,
+                false
+            );
+        } else {
+            $this->game->eventLog(clienttranslate('${character_name} picked up ${item}'), [
+                'usedActionId' => 'actPickupToken',
+                'item' => $this->game->data->getItems()[$itemId]['name'],
+            ]);
+        }
         $data = [
             'itemId' => $itemId,
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
         ];
-        $this->game->hooks->onItemSelection($data);
         $this->completeSelectionState($data);
     }
     public function cancelState(?string $stateName): void
@@ -77,7 +124,7 @@ class DMTNT_SelectionStates
         $result = [
             'actions' => [],
             'selectionState' => $this->game->gameData->get($stateName),
-            'character_id' => $this->game->getCharacterHTML($state['characterId']),
+            'character_name' => $this->game->getCharacterHTML($state['characterId']),
             'activeTurnPlayerId' => 0,
         ];
         // TODO this fixes the bug with day event selections, can be removed later

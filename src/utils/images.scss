@@ -74,6 +74,10 @@
 .token-card {
   background-image: url(img/token-spritesheet.png);
   border-radius: 50%;
+  &-base {
+    border-radius: 50%;
+    box-shadow: 0px 0px 2px 6px var(--color);
+  }
 }
 
 .tooltip-text {

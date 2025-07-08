@@ -76,10 +76,10 @@ if (!function_exists('addId')) {
         $name = $obj['name'];
         $dataId = $obj['dataId'];
         $dataType = $obj['dataType'];
-        if (!array_search($dataType, ['character', 'item', 'hindrance', 'unlock', 'day-event', 'night-event', 'card'])) {
+        if (!array_search($dataType, ['character', 'item', 'revenge', 'card'])) {
             throw new Exception('Bad dataType');
         }
-        return "<span class=\"dlid__log-button\" data-id=\"$dataId\" data-type=\"$dataType\">$name</span>";
+        return "<span class=\"dmtnt__log-button\" data-id=\"$dataId\" data-type=\"$dataType\">$name</span>";
     }
     function notifyButtons($arr): string
     {
@@ -89,6 +89,37 @@ if (!function_exists('addId')) {
                 return notifyTextButton($obj);
             }, $arr)
         );
+    }
+    function buildSelectQuery(array $rows)
+    {
+        $keys = [];
+        foreach ($rows[0] as $key => $value) {
+            array_push($keys, "`{$key}`");
+        }
+        $values = [];
+        foreach ($rows as $row) {
+            $v = [];
+            foreach ($row as $value) {
+                if ($value == null) {
+                    array_push($v, 'NULL');
+                } else {
+                    array_push($v, "'{$value}'");
+                }
+            }
+            array_push($values, 'ROW(' . implode(',', $v) . ')');
+        }
+        $keys = implode(
+            ',',
+            array_map(
+                function ($i, $k) {
+                    return "{$k}_{$i}";
+                },
+                array_keys($keys),
+                $keys
+            )
+        );
+        $values = implode(',', $values);
+        return "SELECT $keys FROM (VALUES $values) AS generated_rows";
     }
     function buildInsertQuery(string $table, array $rows)
     {

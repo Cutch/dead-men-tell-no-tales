@@ -41,6 +41,7 @@ class DMTNT_GameData
         'activateCharacters' => [],
         'actInterruptState' => [],
         'characterPositions' => [],
+        'tokenPositions' => [],
         'explosions' => 0,
         'newTile' => [],
         'newTileCount' => 0,

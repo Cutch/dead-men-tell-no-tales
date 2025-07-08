@@ -91,6 +91,9 @@ class DMTNT_Decks
     }
     public function getCard(string $id): array
     {
+        if (!array_key_exists($id, $this->game->data->getDecks())) {
+            return [];
+        }
         $card = $this->game->data->getDecks()[$id];
         $name = '';
         if (array_key_exists('name', $card)) {
@@ -241,12 +244,28 @@ class DMTNT_Decks
         unset($this->cachedData[$deck]);
         return $card;
     }
+    public function pickCardWithoutLookup(string $deck): array
+    {
+        // $partials = $this->game->gameData->get('partials');
+        // if (!array_key_exists($deck, $partials)) {
+        // Would need to store all the decks in the undo data
+        $this->game->markRandomness();
+        // }
+
+        $topCard = $this->getDeck($deck)->getCardOnTop('deck');
+        if (!$topCard) {
+            $this->shuffleInDiscard($deck);
+            $topCard = $this->getDeck($deck)->getCardOnTop('deck');
+        }
+        $this->getDeck($deck)->insertCardOnExtremePosition($topCard['id'], 'discard', true);
+        return $topCard;
+    }
     public function discardCards(string $deck, $callback): void
     {
         $deckCount = $this->getDeck($deck)->countCardsInLocation('deck');
         $cards = $this->getDeck($deck)->getCardsOnTop($deckCount, 'deck');
         $cards = array_filter($cards, function ($card) use ($callback) {
-            return $callback($this->getCard($card['type_arg']));
+            return $callback($this->getCard($card['type_arg']), $card);
         });
         array_walk($cards, function ($card) use ($deck) {
             $this->getDeck($deck)->insertCardOnExtremePosition($card['id'], 'discard', true);

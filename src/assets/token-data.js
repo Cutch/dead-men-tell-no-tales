@@ -1,7 +1,7 @@
 export default {
   getData: () => ({
     sprites: {
-      'captain-4': {
+      'captain-4-token': {
         frame: {
           x: 0,
           y: 0,
@@ -9,7 +9,7 @@ export default {
           h: 150,
         },
       },
-      'captain-8': {
+      'captain-8-token': {
         frame: {
           x: 150,
           y: 0,
@@ -17,7 +17,7 @@ export default {
           h: 150,
         },
       },
-      'deckhand-5': {
+      'crew-5-token': {
         frame: {
           x: 300,
           y: 0,
@@ -41,7 +41,7 @@ export default {
           h: 150,
         },
       },
-      'guard-6': {
+      'guard-6-token': {
         frame: {
           x: 150,
           y: 150,
@@ -49,7 +49,7 @@ export default {
           h: 150,
         },
       },
-      'guard-7': {
+      'guard-7-token': {
         frame: {
           x: 300,
           y: 150,
@@ -57,7 +57,7 @@ export default {
           h: 150,
         },
       },
-      'guard-8': {
+      'guard-8-token': {
         frame: {
           x: 450,
           y: 150,
@@ -65,7 +65,7 @@ export default {
           h: 150,
         },
       },
-      cutlass: {
+      'cutlass-token': {
         frame: {
           x: 0,
           y: 300,
@@ -73,7 +73,7 @@ export default {
           h: 150,
         },
       },
-      'rum-4': {
+      'rum-4-token': {
         frame: {
           x: 150,
           y: 300,
@@ -81,7 +81,7 @@ export default {
           h: 150,
         },
       },
-      'rum-5': {
+      'rum-5-token': {
         frame: {
           x: 300,
           y: 300,
@@ -89,7 +89,7 @@ export default {
           h: 150,
         },
       },
-      'token-3': {
+      'crew-3-token': {
         frame: {
           x: 450,
           y: 300,
@@ -97,7 +97,7 @@ export default {
           h: 150,
         },
       },
-      'token-4': {
+      'crew-4-token': {
         frame: {
           x: 0,
           y: 450,
@@ -121,7 +121,7 @@ export default {
           h: 150,
         },
       },
-      treasure: {
+      'treasure-token': {
         frame: {
           x: 450,
           y: 450,

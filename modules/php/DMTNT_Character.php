@@ -193,29 +193,6 @@ class DMTNT_Character
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
         }
     }
-    public function equipItem(string $characterId, array $items): void
-    {
-        $this->updateCharacterData($characterId, function (&$data) use ($items) {
-            $equippedIds = array_map(function ($d) {
-                return $d['itemId'];
-            }, $data['item']);
-            $item = [...$equippedIds, ...$items];
-            $data['item'] = $item;
-        });
-    }
-    public function unequipItem(string $characterId, array $items, bool $sendToCamp = false): void
-    {
-        $this->updateCharacterData($characterId, function (&$data) use ($items, $sendToCamp) {
-            $equippedIds = array_map(function ($d) {
-                return $d['itemId'];
-            }, $data['item']);
-            $item = array_diff($equippedIds, array_intersect($equippedIds, $items));
-            $data['item'] = $item;
-            if ($sendToCamp) {
-                $this->game->gameData->set('campItem', [...$this->game->gameData->get('campItem'), ...$items]);
-            }
-        });
-    }
     public function setCharacterItem(string $characterId, array $item): void
     {
         $this->updateCharacterData($characterId, function (&$data) use ($item) {
@@ -396,8 +373,8 @@ class DMTNT_Character
                 'playerColor' => $char['player_color'],
                 'characterColor' => $char['color'],
                 'playerId' => $char['playerId'],
-                'actions' => $char['actions'] + $this->game->gameData->get('tempActions'),
-                'maxActions' => $char['maxActions'] + $this->game->gameData->get('tempActions'),
+                'actions' => $char['actions'] + ($char['isActive'] ? $this->game->gameData->get('tempActions') : 0),
+                'maxActions' => $char['maxActions'] + ($char['isActive'] ? $this->game->gameData->get('tempActions') : 0),
                 'maxFatigue' => $char['maxFatigue'],
                 'fatigue' => $char['fatigue'],
                 'pos' => $char['pos'],

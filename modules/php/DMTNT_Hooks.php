@@ -155,7 +155,7 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onNightDrawCard(&$data, array $args = [])
+    function onDrawRevengeCard(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

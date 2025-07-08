@@ -55,7 +55,7 @@ $initializeTile = 7;
 $placeTile = 8;
 $finalizeTile = 9;
 $playerTurn = 10;
-$drawCard = 11;
+$drawRevengeCard = 11;
 $nextCharacter = 15;
 $characterSelection = 16;
 $cardSelection = 17;
@@ -68,7 +68,7 @@ $changeZombiePlayer = 97;
 $gameEnd = 99;
 
 $interruptScreens = [
-    'drawCard' => $drawCard,
+    'drawRevengeCard' => $drawRevengeCard,
     'characterSelection' => $characterSelection,
     'itemSelection' => $itemSelection,
     'interrupt' => $interrupt,
@@ -155,12 +155,12 @@ $machinestates = [
             'actIncreaseBattleStrength',
             'actDrop',
             'actSwapItem',
+            'actInitSwapItem',
         ],
         'transitions' => [
-            'placeTile' => $placeTile,
+            // 'placeTile' => $placeTile,
             'endGame' => $gameEnd,
-            'drawCard' => $drawCard,
-            'endTurn' => $nextCharacter,
+            'drawRevengeCard' => $drawRevengeCard,
             'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
@@ -170,18 +170,17 @@ $machinestates = [
         'type' => 'game',
         'transitions' => [],
     ],
-    $drawCard => [
-        'name' => 'drawCard',
-        'description' => clienttranslate('Drawing Card'),
-        'descriptionmyturn' => clienttranslate('Drawing Card'),
+    $drawRevengeCard => [
+        'name' => 'drawRevengeCard',
+        'description' => clienttranslate('Skelit\'s Revenge'),
+        'descriptionmyturn' => clienttranslate('Skelit\'s Revenge'),
         'type' => 'game',
-        'args' => 'argDrawCard',
-        'action' => 'stDrawCard',
+        'args' => 'argDrawRevengeCard',
+        'action' => 'stDrawRevengeCard',
         'transitions' => [
             'endGame' => $gameEnd,
-            'resolveEncounter' => $resolveEncounter,
-            'playerTurn' => $playerTurn,
-            'drawCard' => $drawCard,
+            'nextCharacter' => $nextCharacter,
+            'drawRevengeCard' => $drawRevengeCard,
         ],
     ],
     $nextCharacter => [
@@ -190,7 +189,7 @@ $machinestates = [
         'type' => 'game',
         'action' => 'stNextCharacter',
         'updateGameProgression' => true,
-        'transitions' => ['endGame' => $gameEnd, 'playerTurn' => $playerTurn],
+        'transitions' => ['endGame' => $gameEnd, 'initializeTile' => $initializeTile],
     ],
     $characterSelection => [
         'name' => 'characterSelection',
@@ -245,7 +244,7 @@ $machinestates = [
         'transitions' => [
             'endGame' => $gameEnd,
             'playerTurn' => $playerTurn,
-            'drawCard' => $drawCard,
+            'drawRevengeCard' => $drawRevengeCard,
             'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
@@ -260,7 +259,7 @@ $machinestates = [
         'transitions' => [
             'endGame' => $gameEnd,
             'playerTurn' => $playerTurn,
-            'drawCard' => $drawCard,
+            'drawRevengeCard' => $drawRevengeCard,
             'endTurn' => $nextCharacter,
             'characterSelection' => $characterSelection,
             'cardSelection' => $cardSelection,
@@ -290,7 +289,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [$resolveEncounter, $postEncounter, $drawCard, $playerTurn];
+$interruptableScreens = [$resolveEncounter, $postEncounter, $drawRevengeCard, $playerTurn];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];

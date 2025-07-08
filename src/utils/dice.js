@@ -28,9 +28,11 @@ export class Dice {
   _show() {
     this.container.style['visibility'] = 'unset';
     this.dice.classList.add('no-roll');
+    this.container.querySelectorAll('.side-wrapper .image').forEach((d) => (d.style['visibility'] = ''));
   }
   _hide() {
-    this.container.style['visibility'] = 'hidden';
+    this.container.querySelectorAll('.side-wrapper .image').forEach((d) => (d.style['visibility'] = 'hidden'));
+    // this.container.style['visibility'] = 'hidden';
   }
   _set({ roll }) {
     this.dice.style['transition'] = 'transform 0.75s';
