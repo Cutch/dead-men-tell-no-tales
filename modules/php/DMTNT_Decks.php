@@ -54,6 +54,9 @@ class DMTNT_Decks
         $cards = [];
         if ($type === 'bag') {
             array_walk($filtered_cards, function ($v, $k) use (&$cards) {
+                if (str_contains($k, 'captain') && !$this->game->gameData->get('captainFromm')) {
+                    return;
+                }
                 if (array_key_exists('rewards', $v)) {
                     foreach ($v['rewards'] as $name => $count) {
                         $cards[] = [
@@ -68,7 +71,7 @@ class DMTNT_Decks
                         'type' => $v['deck'],
                         'card_location' => 'deck',
                         'type_arg' => $k,
-                        'nbr' => 1,
+                        'nbr' => $v['count'],
                     ];
                 }
             });

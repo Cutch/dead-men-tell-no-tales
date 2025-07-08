@@ -90,13 +90,37 @@ if (!function_exists('addId')) {
             }, $arr)
         );
     }
+    // Only works with mysql 8
+    // function buildSelectQuery(array $rows)
+    // {
+    //     $rows = array_values($rows);
+    //     $keys = [];
+    //     $i = 0;
+    //     foreach ($rows[0] as $key => $values) {
+    //         array_push($keys, "column_{$i} as $key");
+    //         $i++;
+    //     }
+    //     $values = [];
+    //     foreach ($rows as $row) {
+    //         $v = [];
+    //         foreach ($row as $value) {
+    //             if ($value == null) {
+    //                 array_push($v, 'NULL');
+    //             } else {
+    //                 array_push($v, "'{$value}'");
+    //             }
+    //         }
+    //         array_push($values, 'ROW(' . implode(',', $v) . ')');
+    //     }
+    //     $keys = implode(',', $keys);
+    //     $values = implode(',', $values);
+    //     return "SELECT $keys FROM (VALUES $values) AS generated_rows";
+    // }
     function buildSelectQuery(array $rows)
     {
-        $keys = [];
-        foreach ($rows[0] as $key => $value) {
-            array_push($keys, "`{$key}`");
-        }
+        $rows = array_values($rows);
         $values = [];
+        $rowI = 0;
         foreach ($rows as $row) {
             $v = [];
             foreach ($row as $value) {
@@ -106,20 +130,17 @@ if (!function_exists('addId')) {
                     array_push($v, "'{$value}'");
                 }
             }
-            array_push($values, 'ROW(' . implode(',', $v) . ')');
+            if ($rowI === 0) {
+                $i = 0;
+                foreach ($rows[0] as $key => $x) {
+                    $v[$i] = $v[$i] . " AS $key";
+                    $i++;
+                }
+            }
+            array_push($values, 'SELECT ' . implode(',', $v));
+            $rowI++;
         }
-        $keys = implode(
-            ',',
-            array_map(
-                function ($i, $k) {
-                    return "{$k}_{$i}";
-                },
-                array_keys($keys),
-                $keys
-            )
-        );
-        $values = implode(',', $values);
-        return "SELECT $keys FROM (VALUES $values) AS generated_rows";
+        return implode(' UNION ALL ', $values);
     }
     function buildInsertQuery(string $table, array $rows)
     {

@@ -100,7 +100,6 @@ class DMTNT_CharacterSelection
         } else {
             $turnOrder[$playerNo] = array_key_exists(0, $selectedCharacters) ? $selectedCharacters[0] : null;
         }
-        // var_dump($turnOrder);
         $this->game->gameData->set('turnOrder', $turnOrder);
     }
     public function randomCharacters(): void

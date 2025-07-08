@@ -372,6 +372,8 @@ class Game extends \Table
         if ($this->gameData->get('round') == 1 && $this->gameData->get('newTileCount') < 2) {
             $this->nextState('initializeTile');
         } else {
+            $this->gameData->set('newTile', null);
+            $this->gameData->set('newTileCount', 0);
             $this->nextState('playerTurn');
         }
     }
@@ -406,9 +408,9 @@ class Game extends \Table
             true
         );
     }
-    public function actMove(?int $x = null, ?int $y = null): void
+    public function actMove(?int $x, ?int $y): void
     {
-        if ($x == null || $y == null) {
+        if ($x === null || $y === null) {
             throw new BgaUserException(clienttranslate('Select a location'));
         }
         $character = $this->character->getTurnCharacter();
@@ -715,6 +717,11 @@ class Game extends \Table
     {
         $this->selectionStates->actSelectItem($itemId);
     }
+    public function crewMove(): void
+    {
+        $this->map->crewMove();
+        $this->completeAction();
+    }
     public function stDrawRevengeCard()
     {
         $this->actInterrupt->interruptableFunction(
@@ -730,23 +737,35 @@ class Game extends \Table
             function (Game $_this, bool $finalizeInterrupt, $data) {
                 $card = $data['card'];
                 $_this->hooks->reconnectHooks($card, $_this->decks->getCard($card['id']));
+                if (array_key_exists('action', $card)) {
+                    if ($card['action'] === 'deckhand-spread') {
+                        $this->map->spreadDeckhand();
+                    } elseif ($card['action'] === 'deckhand-spawn') {
+                        $this->map->increaseDeckhand();
+                    } elseif ($card['action'] === 'crew-move') {
+                        $this->map->crewMove();
+                    }
+                }
+                $this->map->increaseFire($card['dice'], $card['color']);
 
-                if (!$data || !array_key_exists('onUse', $data) || $data['onUse'] != false) {
-                    $result = array_key_exists('onUse', $card) ? $card['onUse']($this, $card) : null;
-                }
+                // if (!$data || !array_key_exists('onUse', $data) || $data['onUse'] != false) {
+                //     $result = array_key_exists('onUse', $card) ? $card['onUse']($this, $card) : null;
+                // }
+                // if (
+                //     (!$data || !array_key_exists('notify', $data) || $data['notify'] != false) &&
+                //     (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)
+                // ) {
+                $this->eventLog('${buttons}', [
+                    'buttons' => notifyButtons([
+                        ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
+                    ]),
+                ]);
+                // }
                 if (
-                    (!$data || !array_key_exists('notify', $data) || $data['notify'] != false) &&
-                    (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)
-                ) {
-                    $this->eventLog('${buttons}', [
-                        'buttons' => notifyButtons([
-                            ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
-                        ]),
-                    ]);
-                }
-                if (
-                    (!$data || !array_key_exists('nextState', $data) || $data['nextState'] != false) &&
-                    (!$result || !array_key_exists('nextState', $result) || $result['nextState'] != false)
+                    !$data ||
+                    !array_key_exists('nextState', $data) ||
+                    $data['nextState'] != false // &&
+                    // (!$result || !array_key_exists('nextState', $result) || $result['nextState'] != false)
                 ) {
                     $this->nextState('nextCharacter');
                 }
@@ -918,14 +937,17 @@ class Game extends \Table
     }
     public function getTiles(&$result): void
     {
-        $result['tiles'] = array_values($this->map->getMap());
+        $result['tiles'] = array_map(function ($d) {
+            unset($d['connections']);
+            return $d;
+        }, array_values($this->map->getMap()));
         $result['explosions'] = $this->gameData->get('explosions');
         $result['tokenPositions'] = array_map(function ($tokens) {
             return array_map(function ($d) {
                 if ($d['isTreasure']) {
-                    return ['name' => $d['treasure'], 'type' => 'treasure'];
+                    return ['name' => $d['treasure'], 'id' => $d['id'], 'type' => 'treasure'];
                 } else {
-                    return ['name' => $d['token'], 'type' => 'enemy'];
+                    return ['name' => $d['token'], 'id' => $d['id'], 'type' => 'enemy'];
                 }
             }, $tokens);
         }, $this->gameData->get('tokenPositions'));
@@ -1150,7 +1172,7 @@ class Game extends \Table
 
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));
         $this->gameData->set('difficulty', $this->getGameStateValue('difficulty'));
-        $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm'));
+        $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm') == 1);
         $this->gameData->set(
             'characterCount',
             sizeof($players) === 1
