@@ -57,9 +57,10 @@ $finalizeTile = 9;
 $playerTurn = 10;
 $drawRevengeCard = 11;
 $nextCharacter = 15;
-$resolveEncounter = 20;
-$postEncounter = 21;
-$interrupt = 22;
+$interrupt = 20;
+$battle = 30;
+$battleSelection = 31;
+$postBattle = 32;
 $crewMovement = 70;
 $characterSelection = 71;
 $cardSelection = 72;
@@ -145,6 +146,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('${character_name} can'),
         'type' => 'activeplayer',
         'args' => 'argPlayerState',
+        'action' => 'stPlayerState',
         'possibleactions' => [
             'actTrade',
             'actEndTurn',
@@ -232,32 +234,44 @@ $machinestates = [
         'possibleactions' => ['actSelectItem', 'actCancel'],
         'transitions' => ['playerTurn' => $playerTurn],
     ],
-    $resolveEncounter => [
-        'name' => 'resolveEncounter',
-        'description' => clienttranslate('Resolving Encounter'),
-        'descriptionmyturn' => clienttranslate('Resolving Encounter'),
-        'type' => 'multipleactiveplayer',
-        'action' => 'stResolveEncounter',
-        'args' => 'argResolveEncounter',
+    $battleSelection => [
+        'name' => 'battleSelection',
+        'description' => clienttranslate('${character_name} is Battling'),
+        'descriptionmyturn' => clienttranslate('Battling'),
+        'type' => 'activeplayer',
+        'action' => 'stBattleSelection',
+        'args' => 'argBattleSelection',
+        'possibleactions' => ['actBattleSelection'],
+        'transitions' => [
+            'endGame' => $gameEnd,
+            'changeZombiePlayer' => $changeZombiePlayer,
+            'battle' => $battle,
+        ],
+    ],
+    $battle => [
+        'name' => 'battle',
+        'description' => clienttranslate('${character_name} is Battling'),
+        'descriptionmyturn' => clienttranslate('Battling'),
+        'type' => 'game',
+        'action' => 'stBattle',
+        'args' => 'argBattle',
+        'transitions' => [
+            'endGame' => $gameEnd,
+            'postBattle' => $postBattle,
+        ],
+    ],
+    $postBattle => [
+        'name' => 'postBattle',
+        'description' => clienttranslate('${character_name} is Battling'),
+        'descriptionmyturn' => clienttranslate('Battling'),
+        'type' => 'activeplayer',
+        'action' => 'stPostBattle',
+        'args' => 'argPostBattle',
         'possibleactions' => ['actChooseResource', 'actUseItem'],
         'transitions' => [
             'endGame' => $gameEnd,
-            'postEncounter' => $postEncounter,
-        ],
-    ],
-    $postEncounter => [
-        'name' => 'postEncounter',
-        'description' => clienttranslate('Resolving Encounter'),
-        'descriptionmyturn' => clienttranslate('Resolving Encounter'),
-        'type' => 'activeplayer',
-        'action' => 'stPostEncounter',
-        // 'args' => 'argPostEncounter',
-        'possibleactions' => ['actUseSkill', 'actUseItem', 'actDone'],
-        'transitions' => [
-            'endGame' => $gameEnd,
+            'battleSelection' => $battleSelection,
             'playerTurn' => $playerTurn,
-            'drawRevengeCard' => $drawRevengeCard,
-            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $interrupt => [
@@ -275,8 +289,8 @@ $machinestates = [
             'endTurn' => $nextCharacter,
             'characterSelection' => $characterSelection,
             'cardSelection' => $cardSelection,
-            'resolveEncounter' => $resolveEncounter,
-            'postEncounter' => $postEncounter,
+            'battle' => $battle,
+            'battleSelection' => $battleSelection,
         ],
     ],
     $changeZombiePlayer => [
@@ -301,7 +315,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [$resolveEncounter, $postEncounter, $drawRevengeCard, $playerTurn, $nextCharacter];
+$interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];

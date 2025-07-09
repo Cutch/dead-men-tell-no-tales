@@ -537,8 +537,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   //
   getActionSuffixHTML: function (action) {
     let suffix = '';
-    if (action['name_suffix']) suffix += ` ${action['name_suffix']}`;
-    if (action['skillOption']) suffix += ` (${_(action['skillOption'].name)})`;
+    if (action['targetName']) suffix += ` (${_(action['targetName'])} ${action['targetDie']})`;
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
     if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
@@ -682,7 +681,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           if (!this.gamedatas.availableSkills.some((d) => d.cancellable === false))
             this.statusBar.addActionButton(_('Skip'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
           break;
-        case 'postEncounter':
+        case 'battleSelection':
           this.statusBar.addActionButton(_('Done'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
           break;
         case 'characterSelect':

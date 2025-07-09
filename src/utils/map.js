@@ -323,7 +323,6 @@ export class Map {
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
-    console.log('tiles', tiles ?? this.game.gamedatas.tiles);
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
       ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, escape }) => {
         if (escape == 1) return;
@@ -385,7 +384,6 @@ export class Map {
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
         this.renderDeckhands(deckhandElem, deckhand);
-        console.log(tokenPositions);
         if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
         if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
         if (fire === 0) this.dice[tileKey]._hide();

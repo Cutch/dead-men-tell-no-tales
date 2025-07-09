@@ -145,7 +145,7 @@
         @for $i from 1 through 5 {
           &:nth-child(#{$i}) {
             transform: rotate(calc(360deg * sign(var(--count)) * #{$i - 1} / max(var(--count), 1)))
-              translate(calc(var(--size) / 2 * sign(max(0, var(--count) - 1))))
+              translate(calc(var(--size) / 3 * sign(max(0, var(--count) - 1))))
               rotate(calc(-360deg * sign(var(--count)) * #{$i - 1} / max(var(--count), 1)));
             transition: transform 1s;
           }

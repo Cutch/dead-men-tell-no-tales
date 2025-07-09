@@ -390,22 +390,39 @@ EOD;
             $this->game->lose();
         }
     }
-    public function _findTreeLevel(array $tree, array $nodes, int &$currentLevel): array
+    public function _findTreeLevel(array $tree, array $nodes, int $currentLevel): array
     {
-        return array_merge(
-            ...array_map(function ($n) use (&$currentLevel, $tree) {
-                $currentLevel = $n['level'] - 1;
-                return array_map(function ($id) use ($tree) {
-                    return $tree[$id];
-                }, $n['parents']);
-            }, $nodes)
+        return array_unique_nested(
+            array_filter(
+                array_merge(
+                    ...array_map(function ($n) use ($tree) {
+                        return array_map(function ($id) use ($tree) {
+                            return $tree[$id];
+                        }, $n['parents']);
+                    }, $nodes)
+                ),
+                function ($node) use ($currentLevel) {
+                    return $node['level'] == $currentLevel;
+                }
+            ),
+            'id'
         );
     }
     public function findTreeLevel(array $tree, array $nodes, int $level): array
     {
-        $currentLevel = 99;
-        while ($currentLevel != $level && sizeof($nodes) !== 0) {
-            $nodes = $this->_findTreeLevel($tree, $nodes, $currentLevel);
+        if (sizeof($nodes) > 0) {
+            $currentLevel = max(
+                array_map(function ($d) {
+                    return $d['level'];
+                }, $nodes)
+            );
+            while ($currentLevel != $level && sizeof($nodes) !== 0) {
+                $currentLevel--;
+                $nodes = $this->_findTreeLevel($tree, $nodes, $currentLevel);
+            }
+            $nodes = array_filter($nodes, function ($n) {
+                return $this->getTileById($n['id'])['escape'] != 1;
+            });
         }
         return $nodes;
     }
@@ -416,7 +433,8 @@ EOD;
         array_walk($tokenPositions, function ($tokens, $xy) use (&$crew) {
             foreach ($tokens as $token) {
                 if (!$token['isTreasure']) {
-                    if ($this->game->data->getTreasure()[$token['token']]['deckType'] === 'crew') {
+                    $deckType = $this->game->data->getTreasure()[$token['token']]['deckType'];
+                    if ($deckType === 'crew' || $deckType === 'captain') {
                         $crew[] = ['currentPos' => $xy, 'token' => $token];
                     }
                 }
@@ -451,7 +469,9 @@ EOD;
                     &$nextTiles,
                     $level
                 ) {
-                    $children = array_filter($this->getAdjacentTiles($parent['x'], $parent['y']), function ($child) use ($currentVisited) {
+                    $children = array_filter($this->getValidAdjacentTiles($parent['x'], $parent['y']), function ($child) use (
+                        $currentVisited
+                    ) {
                         return !in_array($child['id'], $currentVisited);
                     });
                     array_push($nextTiles, ...$children);
@@ -459,7 +479,9 @@ EOD;
                     foreach ($children as $child) {
                         $id = $child['id'];
                         $xyId = $this->xy($child['x'], $child['y']);
-                        array_push($visited, $id);
+                        if (in_array($id, $visited)) {
+                            array_push($visited, $id);
+                        }
                         if (!array_key_exists($id, $tree)) {
                             $isChar = in_array($xyId, $characterPositionIds);
                             $tree[$id] = ['parents' => [], 'id' => $id, 'xyId' => $xyId, 'hasChar' => $isChar, 'level' => $level];

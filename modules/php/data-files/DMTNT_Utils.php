@@ -40,6 +40,22 @@ if (!function_exists('addId')) {
 
         return $data;
     }
+    function array_unique_nested(array $data, string $key)
+    {
+        return array_values(
+            array_reduce(
+                $data,
+                function ($accumulator, $item) use ($key) {
+                    $id = $item[$key]; // Assuming 'id' is the inner key you want to make unique
+                    if (!isset($accumulator[$id])) {
+                        $accumulator[$id] = $item;
+                    }
+                    return $accumulator;
+                },
+                []
+            )
+        );
+    }
     function array_orderby()
     {
         $args = func_get_args();

@@ -10,6 +10,7 @@ class DMTNT_TreasureData
     {
         $data = [
             'captain-4' => [
+                'name' => clienttranslate('Captain Fromm'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'captain',
@@ -17,6 +18,7 @@ class DMTNT_TreasureData
                 'battle' => 4,
             ],
             'captain-8' => [
+                'name' => clienttranslate('Captain Fromm'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'captain',
@@ -30,6 +32,7 @@ class DMTNT_TreasureData
                 'count' => 1,
             ],
             'guard-6' => [
+                'name' => clienttranslate('Guard'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'guard',
@@ -38,6 +41,7 @@ class DMTNT_TreasureData
                 'rewards' => ['treasure' => 2],
             ],
             'guard-7' => [
+                'name' => clienttranslate('Guard'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'guard',
@@ -46,6 +50,7 @@ class DMTNT_TreasureData
                 'rewards' => ['treasure' => 2],
             ],
             'guard-8' => [
+                'name' => clienttranslate('Guard'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'guard',
@@ -54,19 +59,23 @@ class DMTNT_TreasureData
                 'rewards' => ['treasure' => 2],
             ],
             'cutlass' => [
+                'name' => clienttranslate('Cutlass'),
                 'count' => 5,
             ],
             'rum-4' => [
+                'name' => clienttranslate('Rum'),
                 'deckType' => 'rum',
                 'count' => 2,
                 'fatigue' => 4,
             ],
             'rum-5' => [
+                'name' => clienttranslate('Rum'),
                 'deckType' => 'rum',
                 'count' => 1,
                 'fatigue' => 5,
             ],
             'crew-3' => [
+                'name' => clienttranslate('Crew'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'crew',
@@ -75,6 +84,7 @@ class DMTNT_TreasureData
                 'battle' => 3,
             ],
             'crew-4' => [
+                'name' => clienttranslate('Crew'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'crew',
@@ -83,6 +93,7 @@ class DMTNT_TreasureData
                 'battle' => 4,
             ],
             'crew-5' => [
+                'name' => clienttranslate('Crew'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'deckType' => 'crew',
@@ -94,11 +105,13 @@ class DMTNT_TreasureData
                 'count' => 1,
             ],
             'trapdoor' => [
+                'name' => clienttranslate('Trapdoor'),
                 'type' => 'deck',
                 'deck' => 'bag',
                 'count' => 6,
             ],
             'treasure' => [
+                'name' => clienttranslate('Treasure'),
                 'count' => 6,
             ],
         ];
