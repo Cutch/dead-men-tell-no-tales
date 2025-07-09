@@ -269,7 +269,7 @@ class Game extends \Table
 
     public function setCharacterPos(string $id, int $x, int $y): void
     {
-        $this->gameData->set('characterPositions', [$this->gameData->get('characterPositions'), $id => [$x, $y]]);
+        $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $id => [$x, $y]]);
         $this->markChanged('player');
     }
     public function actPlaceTile(int $x, int $y, int $rotate): void
@@ -408,6 +408,10 @@ class Game extends \Table
             true
         );
     }
+    public function actMoveCrew(?int $x, ?int $y): void
+    {
+        $this->selectionStates->actMoveCrew($x, $y);
+    }
     public function actMove(?int $x, ?int $y): void
     {
         if ($x === null || $y === null) {
@@ -421,7 +425,7 @@ class Game extends \Table
         }
         $this->character->adjustActiveFatigue($fatigue);
         $this->actions->spendActionCost('actMove');
-        $this->gameData->set('characterPositions', [$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
+        $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
         $this->markChanged('player');
         $this->eventLog(clienttranslate('${character_name} moved'), [
             'usedActionId' => 'actMove',
@@ -689,6 +693,18 @@ class Game extends \Table
         $this->getDecks($result);
         return $result;
     }
+
+    public function argNextCharacter()
+    {
+        $result = [
+            'resolving' => $this->actInterrupt->isStateResolving(),
+            'character_name' => $this->getCharacterHTML(),
+            'activeTurnPlayerId' => 0,
+        ];
+        $this->getAllPlayers($result);
+        $this->getTiles($result);
+        return $result;
+    }
     // public function argPostEncounter()
     // {
     //     return $this->encounter->argPostEncounter();
@@ -737,13 +753,29 @@ class Game extends \Table
             function (Game $_this, bool $finalizeInterrupt, $data) {
                 $card = $data['card'];
                 $_this->hooks->reconnectHooks($card, $_this->decks->getCard($card['id']));
+                $nextState = true;
+                $this->eventLog('${buttons} ${color} ${number}s increase', [
+                    'buttons' => notifyButtons([
+                        ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
+                    ]),
+                    'number' => $card['dice'],
+                    'color' =>
+                        $card['color'] === 'both'
+                            ? clienttranslate('all')
+                            : ($card['color'] === 'red'
+                                ? clienttranslate('red')
+                                : clienttranslate('yellow')),
+                ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
                         $this->map->spreadDeckhand();
+                        $this->eventLog('The deckhands spread', []);
                     } elseif ($card['action'] === 'deckhand-spawn') {
                         $this->map->increaseDeckhand();
+                        $this->eventLog('The deckhands spawn', []);
                     } elseif ($card['action'] === 'crew-move') {
-                        $this->map->crewMove();
+                        $nextState = $this->map->crewMove();
+                        $this->eventLog('The crew moves', []);
                     }
                 }
                 $this->map->increaseFire($card['dice'], $card['color']);
@@ -755,18 +787,8 @@ class Game extends \Table
                 //     (!$data || !array_key_exists('notify', $data) || $data['notify'] != false) &&
                 //     (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)
                 // ) {
-                $this->eventLog('${buttons}', [
-                    'buttons' => notifyButtons([
-                        ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
-                    ]),
-                ]);
                 // }
-                if (
-                    !$data ||
-                    !array_key_exists('nextState', $data) ||
-                    $data['nextState'] != false // &&
-                    // (!$result || !array_key_exists('nextState', $result) || $result['nextState'] != false)
-                ) {
+                if ($nextState) {
                     $this->nextState('nextCharacter');
                 }
             }
@@ -922,7 +944,7 @@ class Game extends \Table
         $result['characterPositions'] = array_reduce(
             $result['characters'],
             function ($arr, $char) {
-                $arr[$char['pos'][0] . 'x' . $char['pos'][1]][] = ['name' => $char['id'], 'type' => 'character'];
+                $arr[$char['pos'][0] . 'x' . $char['pos'][1]][] = ['name' => $char['id'], 'id' => $char['id'], 'type' => 'character'];
                 return $arr;
             },
             []
@@ -1172,7 +1194,7 @@ class Game extends \Table
 
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));
         $this->gameData->set('difficulty', $this->getGameStateValue('difficulty'));
-        $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm') == 1);
+        $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm') == 0);
         $this->gameData->set(
             'characterCount',
             sizeof($players) === 1

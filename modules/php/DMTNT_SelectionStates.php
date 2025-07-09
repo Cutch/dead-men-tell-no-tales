@@ -29,6 +29,42 @@ class DMTNT_SelectionStates
         }
         $this->initiatePendingState();
     }
+    public function actMoveCrew(?int $x, ?int $y): void
+    {
+        if ($x === null || $y === null) {
+            throw new BgaUserException(clienttranslate('Select a location'));
+        }
+
+        $stateData = $this->getState(null);
+        $characterId = $stateData['characterId'];
+        $currentPosId = $stateData['currentPosId'];
+        $crewTokenId = $stateData['crew']['id'];
+
+        $targetPosId = $this->game->map->xy($x, $y);
+        $tokenPositions = $this->game->gameData->get('tokenPositions');
+        $token = array_values(
+            array_filter(array_merge(...array_values($tokenPositions)), function ($d) use ($crewTokenId) {
+                return $d['id'] === $crewTokenId;
+            })
+        )[0];
+        $tokenPositions[$currentPosId] = array_filter($tokenPositions[$currentPosId], function ($d) use ($crewTokenId) {
+            return $d['id'] !== $crewTokenId;
+        });
+        if (!array_key_exists($targetPosId, $tokenPositions)) {
+            $tokenPositions[$targetPosId] = [];
+        }
+        $tokenPositions[$targetPosId][] = $token;
+        // $tokenPositions[$currentPosId]
+        $this->game->gameData->set('tokenPositions', $tokenPositions);
+
+        $this->game->markChanged('map');
+        $data = [
+            'characterId' => $characterId,
+            'nextState' => $stateData['nextState'],
+            'isInterrupt' => $stateData['isInterrupt'],
+        ];
+        $this->completeSelectionState($data);
+    }
     public function actSelectItem(?string $itemId = null): void
     {
         if (!$itemId) {

@@ -469,6 +469,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
         break;
+      case 'nextCharacter':
       case 'finalizeTile':
         this.map.update(this.gamedatas);
         break;
@@ -484,7 +485,11 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         this.updateCharacterSelections(args.args);
         break;
       case 'crewMovement':
-        this.map.showTileSelectionScreen('actMoveCrew', this.gamedatas.selectionState.movePositions);
+        this.map.showTileSelectionScreen(
+          'actMoveCrew',
+          this.gamedatas.selectionState.movePositions,
+          this.gamedatas.selectionState.crew.token,
+        );
         break;
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
@@ -585,21 +590,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
               } else if (actionId === 'actSwapItem') {
                 this.bgaPerformAction('actInitSwapItem');
-                // this.clearActionButtons();
-                // this.itemsScreen.show(this.gamedatas);
-                // this.statusBar.addActionButton(this.getActionMappings().actSwapItem + `${suffix}`, () => {
-                //   this.bgaPerformAction('actSwapItem', this.itemsScreen.getSelection())
-                //     .then(() => this.itemsScreen.hide())
-                //     .catch(console.error);
-                // });
-                // this.statusBar.addActionButton(
-                //   _('Cancel'),
-                //   () => {
-                //     this.onUpdateActionButtons(stateName, args);
-                //     this.itemsScreen.hide();
-                //   },
-                //   { color: 'secondary' },
-                // );
               } else if (actionId === 'actMove') {
                 this.clearActionButtons();
                 this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
@@ -673,9 +663,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'crewMovement':
           this.statusBar.addActionButton(this.getActionMappings().actMoveCrew, () => {
-            this.bgaPerformAction('actMoveCrew', { cardId: this.crewMovementScreen.getSelectedId() });
+            this.bgaPerformAction('actMoveCrew', this.map.getSelectionPosition());
           });
-          addSelectionCancelButton();
           break;
         case 'cardSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCard, () => {

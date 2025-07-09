@@ -29,7 +29,7 @@ export class Map {
       .getElementById('game_play_area')
       .insertAdjacentHTML(
         'beforeend',
-        `<div id="map-wrapper" class="map-wrapper" style="min-height: 70vh;"><div id="map-container" style="width: 0;"></div><div id="new-card-container" style="display: none"></div></div>`,
+        `<div id="map-wrapper" class="map-wrapper" style="min-height: 60vh;"><div id="map-container" style="width: 0;"></div><div id="new-card-container" style="display: none"></div></div>`,
       );
     on($('zoom-in'), 'click', () => this.panzoom.zoomIn());
     on($('zoom-out'), 'click', () => this.panzoom.zoomOut());
@@ -92,7 +92,7 @@ export class Map {
     this.selectionListeners = [];
     this.selectionPosition = null;
   }
-  showTileSelectionScreen(type, selection) {
+  showTileSelectionScreen(type, selection, tokenImage) {
     document.querySelectorAll('.tile-selector').forEach((e) => e.classList.remove('tile-selected'));
     if (Array.isArray(selection)) selection = selection.reduce((acc, d) => ({ ...acc, [d]: d }), {});
     Object.entries(selection).forEach(([tileId, count]) => {
@@ -107,6 +107,15 @@ export class Map {
         dot.style.display = '';
       } else if (type == 'actFightFire') {
         dot.innerHTML = `<div class="fa6 fa6-solid fa6-droplet"></div>`;
+        dot.style.display = '';
+      } else if (type == 'actMoveCrew') {
+        dot.innerHTML = `<div class="token-image"></div>`;
+        renderImage(tokenImage + '-token', this.container.querySelector(`.${tileId}-base .tile-selector .token-image`), {
+          pos: 'append',
+          card: false,
+          scale: 2,
+          styles: { '--color': '#000' },
+        });
         dot.style.display = '';
       } else {
         dot.style.display = 'none';
@@ -262,9 +271,9 @@ export class Map {
     // container.innerHTML = '';
     const id = this.getKey({ x, y });
     container.style.setProperty('--count', positions[id]?.length ?? 0);
-    positions[id]?.forEach(({ name, type }) => {
+    positions[id]?.forEach(({ name, id, type }) => {
       const key = this.getKey({ x, y });
-      const currentElem = this.container.querySelector(`.${name}-token-base`);
+      const currentElem = this.container.querySelector(`.id${id}`);
 
       if (currentElem) {
         if (currentElem.getAttribute('data-data') !== key) {
@@ -301,6 +310,7 @@ export class Map {
           card: false,
           scale: 1.5,
           baseData: this.getKey({ x, y }),
+          baseCss: 'id' + id,
           styles: { '--color': color ?? '#000' },
         });
       }
@@ -313,6 +323,7 @@ export class Map {
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
+    console.log('tiles', tiles ?? this.game.gamedatas.tiles);
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
       ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, escape }) => {
         if (escape == 1) return;
@@ -374,6 +385,7 @@ export class Map {
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
         this.renderDeckhands(deckhandElem, deckhand);
+        console.log(tokenPositions);
         if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
         if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
         if (fire === 0) this.dice[tileKey]._hide();

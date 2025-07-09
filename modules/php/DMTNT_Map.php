@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Bga\Games\DeadMenTellNoTales;
 
 use BgaUserException;
-use PDO;
 
 class DMTNT_Map
 {
@@ -29,12 +28,7 @@ class DMTNT_Map
     public function &getTileByXY($x, $y): array
     {
         return $this->xyMap[$this->xy($x, $y)];
-        // return $this->xyMap[$this->xy($x, $y)];
     }
-    // public function hasTileById($id): bool
-    // {
-    //     return array_key_exists($id, $this->cachedMap);
-    // }
     public function &getTileById($id): array
     {
         return $this->cachedMap[$id];
@@ -60,10 +54,6 @@ class DMTNT_Map
             $this->minMax['minY'] = min($this->minMax['minY'], $d['y']);
             $this->minMax['maxY'] = max($this->minMax['maxY'], $d['y']);
         });
-        // array_walk($this->cachedMap, function ($v, $k) {
-        //     $d = &$this->cachedMap[$k];
-        // $d['connections'] = $this->getAdjacentTiles($d['x'], $d['y']);
-        // });
     }
     public function getAdjacentTiles($x, $y): array
     {
@@ -290,7 +280,6 @@ class DMTNT_Map
         if (!$explosion) {
             $explosion = 'NULL';
         }
-        //  INSERT INTO map (id, x, y, rotate, fire, fire_color, deckhand, has_trapdoor, explosion) VALUES (&#039;tile001&#039;, 0, 0, 0, 4, &#039;yellow&#039;, 0, , NULL)
         $this->game::DbQuery(
             "INSERT INTO map (id, x, y, rotate, fire, fire_color, deckhand, has_trapdoor, explosion, escape) VALUES ('$tileId', $x, $y, $rotate, $fire, '$fire_color', $deckhand, $hasTrapdoor, $explosion, $escape)"
         );
@@ -389,27 +378,18 @@ EOD;
     public function increaseDeckhand(): void
     {
         $total = 0;
-        array_walk($this->cachedMap, function (&$map, &$total) {
+        array_walk($this->cachedMap, function (&$map) use (&$total) {
             if ($map['has_trapdoor']) {
                 $map['deckhand']++;
             }
             $total += $map['deckhand'];
         });
         $this->game::DbQuery('UPDATE `map` SET deckhand=deckhand+1 WHERE has_trapdoor');
-        // $this->updateXYMap();
         $this->game->markChanged('map');
         if ($total > 30) {
             $this->game->lose();
         }
     }
-    // public function iterateConnections(array $tiles, $ignoreList): array
-    // {
-
-    //     $queue = [];
-    //     foreach ($tile['connections'] as $tile) {
-    //         $queue[] = $tile['connections']
-    //     }
-    // }
     public function _findTreeLevel(array $tree, array $nodes, int &$currentLevel): array
     {
         return array_merge(
@@ -429,7 +409,7 @@ EOD;
         }
         return $nodes;
     }
-    public function crewMove(): void
+    public function crewMove(): bool
     {
         $crew = [];
         $tokenPositions = $this->game->gameData->get('tokenPositions');
@@ -443,15 +423,11 @@ EOD;
             }
         });
         $characterPositionIds = array_values(
-            array_map(
-                function ($d) {
-                    return $this->xy($d[0], $d[1]);
-                },
-                array_filter($this->game->gameData->get('characterPositions'), function ($v) {
-                    return sizeof($v) == 2;
-                })
-            )
+            array_map(function ($name) {
+                return $this->xy(...$this->game->getCharacterPos($name));
+            }, $this->game->gameData->get('turnOrder'))
         );
+        $nextState = true;
         foreach ($crew as $token) {
             $currentPosId = $token['currentPos'];
             $currentPos = $this->getXY($token['currentPos']);
@@ -512,19 +488,22 @@ EOD;
                     }, $targetTiles)
                 );
                 $crewToken = $token['token'];
-                // var_dump($targetTilesIds);
                 if (sizeof($targetTilesIds) > 1) {
+                    unset($crewToken['treasure']);
+                    unset($crewToken['isTreasure']);
                     $this->game->selectionStates->initiateState(
                         'crewMovement',
                         [
                             'movePositions' => toId($targetTiles),
                             'id' => 'moveCrew',
                             'crew' => $crewToken,
+                            'currentPosId' => $currentPosId,
                         ],
                         $this->game->character->getTurnCharacterId(),
                         false,
-                        'drawRevengeCard'
+                        'nextCharacter'
                     );
+                    $nextState = false;
                 } elseif (sizeof($targetTilesIds) === 1) {
                     $targetPosId = $targetTilesIds[0];
                     $tokenPositions = $this->game->gameData->get('tokenPositions');
@@ -535,12 +514,12 @@ EOD;
                         $tokenPositions[$targetPosId] = [];
                     }
                     $tokenPositions[$targetPosId][] = $token['token'];
-                    // $tokenPositions[$currentPosId]
                     $this->game->gameData->set('tokenPositions', $tokenPositions);
                 }
             }
         }
         $this->game->markChanged('map');
+        return $nextState;
     }
     public function spreadDeckhand(): void
     {
@@ -550,7 +529,7 @@ EOD;
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTile) {
                     $aTile = &$this->getTileById($aTile['id']);
-                    if ($currentDeckhand > $aTile['deckhand']) {
+                    if ($currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
                         $aTile['deckhand']++;
                     }
                 }
@@ -572,11 +551,6 @@ EOD;
         $tile['deckhand'] = max($tile['deckhand'] - 1, 0);
         $tileId = $tile['id'];
         $this->game::DbQuery("UPDATE `map` SET deckhand=GREATEST(deckhand-1,0) WHERE id='$tileId'");
-        // $this->updateXYMap();
         $this->game->markChanged('map');
-    }
-    public function costToMove(): int|null
-    {
-        return null;
     }
 }

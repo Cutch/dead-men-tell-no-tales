@@ -190,6 +190,7 @@ $machinestates = [
         'description' => '',
         'type' => 'game',
         'action' => 'stNextCharacter',
+        'args' => 'argNextCharacter',
         'updateGameProgression' => true,
         'transitions' => ['endGame' => $gameEnd, 'initializeTile' => $initializeTile],
     ],
@@ -300,7 +301,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [$resolveEncounter, $postEncounter, $drawRevengeCard, $playerTurn];
+$interruptableScreens = [$resolveEncounter, $postEncounter, $drawRevengeCard, $playerTurn, $nextCharacter];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];
