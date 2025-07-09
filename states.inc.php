@@ -57,12 +57,13 @@ $finalizeTile = 9;
 $playerTurn = 10;
 $drawRevengeCard = 11;
 $nextCharacter = 15;
-$characterSelection = 16;
-$cardSelection = 17;
-$itemSelection = 19;
 $resolveEncounter = 20;
 $postEncounter = 21;
 $interrupt = 22;
+$crewMovement = 70;
+$characterSelection = 71;
+$cardSelection = 72;
+$itemSelection = 73;
 $undo = 96;
 $changeZombiePlayer = 97;
 $gameEnd = 99;
@@ -73,6 +74,7 @@ $interruptScreens = [
     'itemSelection' => $itemSelection,
     'interrupt' => $interrupt,
     'cardSelection' => $cardSelection,
+    'crewMovement' => $crewMovement,
     'undo' => $undo,
 ];
 
@@ -209,6 +211,15 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectCard', 'actCancel'],
+        'transitions' => ['playerTurn' => $playerTurn],
+    ],
+    $crewMovement => [
+        'name' => 'crewMovement',
+        'description' => clienttranslate('The crew is moving'),
+        'descriptionmyturn' => clienttranslate('${character_name} Select where the crew moves'),
+        'type' => 'multipleactiveplayer',
+        'args' => 'argSelectionState',
+        'possibleactions' => ['actMoveCrew'],
         'transitions' => ['playerTurn' => $playerTurn],
     ],
     $itemSelection => [

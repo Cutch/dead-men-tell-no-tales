@@ -512,13 +512,14 @@ EOD;
                     }, $targetTiles)
                 );
                 $crewToken = $token['token'];
+                // var_dump($targetTilesIds);
                 if (sizeof($targetTilesIds) > 1) {
                     $this->game->selectionStates->initiateState(
-                        'crewSelection',
+                        'crewMovement',
                         [
-                            'movePositions' => $targetTilesIds,
+                            'movePositions' => toId($targetTiles),
                             'id' => 'moveCrew',
-                            'crewId' => $crewToken['id'],
+                            'crew' => $crewToken,
                         ],
                         $this->game->character->getTurnCharacterId(),
                         false,
@@ -528,7 +529,7 @@ EOD;
                     $targetPosId = $targetTilesIds[0];
                     $tokenPositions = $this->game->gameData->get('tokenPositions');
                     $tokenPositions[$currentPosId] = array_filter($tokenPositions[$currentPosId], function ($d) use ($crewToken) {
-                        return $d['id'] == $crewToken['id'];
+                        return $d['id'] !== $crewToken['id'];
                     });
                     if (!array_key_exists($targetPosId, $tokenPositions)) {
                         $tokenPositions[$targetPosId] = [];
