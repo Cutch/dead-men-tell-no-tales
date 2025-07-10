@@ -1,5 +1,6 @@
 const sideNames = ['one', 'two', 'three', 'four', 'five', 'six'];
 import dojo from 'dojo';
+import { renderImage } from './images';
 export class Dice {
   constructor(game, div, color = 'black') {
     this.game = game;
@@ -15,7 +16,7 @@ export class Dice {
       html += `<div class="image"></div>`;
       html += `</div></div>`;
     }
-    html += `</div></div></div>`;
+    html += `</div></div><div class="dice-container-character"></div></div>`;
     this.div.insertAdjacentHTML('beforeend', html);
     this.container = this.div.querySelector('.dice-container');
     this.diceBase = this.div.querySelector('.dice-mover');
@@ -63,11 +64,21 @@ export class Dice {
     this.diceBase.style['left'] = '20%';
     this.diceBase.style['top'] = '20%';
 
+    if (args.characterId) {
+      const color = this.game.gamedatas.characters.find((d) => d.id === args.characterId)?.characterColor;
+      renderImage(args.characterId + '-token', this.div.querySelector('.dice-container-character'), {
+        scale: 1,
+        pos: 'replace',
+        card: false,
+        styles: { '--color': color ?? '#000' },
+      });
+    }
     const animation = new dojo.Animation({
       curve: [0, 1],
       duration: 3000,
       onEnd: () => {
         this.container.style['visibility'] = 'hidden';
+        this.div.querySelector('.dice-container-character').innerHTML = '';
         this.dice.style['transition'] = 'unset';
         this.diceBase.style['transition'] = 'unset';
         this.diceBase.style['left'] = '80%';

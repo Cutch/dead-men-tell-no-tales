@@ -107,8 +107,8 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Sword'),
                 'actions' => 0,
-                'onGetStrength' => function (Game $game, $item, &$data) {
-                    $data['strength']++;
+                'onGetAttack' => function (Game $game, $item, &$data) {
+                    $data['attack']++;
                 },
             ],
         ];

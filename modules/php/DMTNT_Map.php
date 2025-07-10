@@ -73,7 +73,7 @@ class DMTNT_Map
     {
         $currentTile = $this->xyMap[$this->xy($x, $y)];
         return array_filter($this->getAdjacentTiles($x, $y), function ($tile) use ($currentTile) {
-            return !$currentTile || $this->testTouchPoints($currentTile, $tile);
+            return !$currentTile || ($this->testTouchPoints($currentTile, $tile) && $tile['destroyed'] == 0);
         });
     }
     public function getTouchPoints(string $id)
@@ -159,7 +159,20 @@ class DMTNT_Map
             }
         }
     }
-    public function calculateMoves(): array
+    public function checkIfCanMove($currentTile, $tile): bool
+    {
+        $badFatigueValues = $this->convertFatigueToDie();
+        $fire = $tile['fire'];
+        $deckhand = $tile['deckhand'];
+
+        return !(
+            ($currentTile && !$this->testTouchPoints($currentTile, $tile)) ||
+            $fire >= $badFatigueValues ||
+            $deckhand >= 3 ||
+            $tile['destroyed'] == 1
+        );
+    }
+    public function calculateMoves(bool $canRun = true): array
     {
         [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
         $currentFire = 0;
@@ -175,21 +188,12 @@ class DMTNT_Map
         $data = ['hasTreasure' => $hasTreasure];
         $this->game->hooks->onCalculateMovesHasTreasure($data);
         $hasTreasure = $data['hasTreasure'];
-        $badFatigueValues = $this->convertFatigueToDie();
         $fatigueList = [];
-        array_walk($moveList, function ($firstTile) use (
-            $currentTile,
-            $moveIds,
-            $hasTreasure,
-            $currentFire,
-            $badFatigueValues,
-            &$fatigueList
-        ) {
-            $fire = $firstTile['fire'];
-            $deckhand = $firstTile['deckhand'];
-            if (($currentTile && !$this->testTouchPoints($currentTile, $firstTile)) || $fire >= $badFatigueValues || $deckhand >= 3) {
+        array_walk($moveList, function ($firstTile) use ($canRun, $currentTile, $moveIds, $hasTreasure, $currentFire, &$fatigueList) {
+            if (!$this->checkIfCanMove($currentTile, $firstTile)) {
                 return;
             }
+            $fire = $firstTile['fire'];
             $x = $firstTile['x'];
             $y = $firstTile['y'];
             $id = $firstTile['id'];
@@ -198,32 +202,29 @@ class DMTNT_Map
             } else {
                 $fatigueList[$id] = max($fire - $currentFire, 0);
             }
-            // TODO skip being able to run to adjacent if enemy exists, except garret
-            $tempList = $this->getAdjacentTiles($x, $y);
-            foreach ($tempList as $tempTile) {
-                $id = $tempTile['id'];
-                if (
-                    in_array($id, $moveIds) ||
-                    !$this->testTouchPoints($firstTile, $tempTile) ||
-                    $tempTile['fire'] >= $badFatigueValues ||
-                    $tempTile['deckhand'] >= 3
-                ) {
-                    continue;
-                }
-                if ($hasTreasure) {
-                    $f = $currentFire + $tempTile['fire'] + $fire + 2;
-                    if (array_key_exists($id, $fatigueList)) {
-                        $fatigueList[$id] = min($f, $fatigueList[$id]);
-                    } else {
-                        $fatigueList[$id] = $f;
+            if ($canRun) {
+                // TODO skip being able to run to adjacent if enemy exists, except garret
+                $tempList = $this->getAdjacentTiles($x, $y);
+                foreach ($tempList as $tempTile) {
+                    $id = $tempTile['id'];
+                    if (in_array($id, $moveIds) || !$this->checkIfCanMove($currentTile, $tempTile)) {
+                        continue;
                     }
-                } else {
-                    $f = max($fire - $currentFire, 0);
-                    $f = max($tempTile['fire'] - $fire, 0) + $f;
-                    if (array_key_exists($id, $fatigueList)) {
-                        $fatigueList[$id] = min($f + 2, $fatigueList[$id]);
+                    if ($hasTreasure) {
+                        $f = $currentFire + $tempTile['fire'] + $fire + 2;
+                        if (array_key_exists($id, $fatigueList)) {
+                            $fatigueList[$id] = min($f, $fatigueList[$id]);
+                        } else {
+                            $fatigueList[$id] = $f;
+                        }
                     } else {
-                        $fatigueList[$id] = $f + 2;
+                        $f = max($fire - $currentFire, 0);
+                        $f = max($tempTile['fire'] - $fire, 0) + $f;
+                        if (array_key_exists($id, $fatigueList)) {
+                            $fatigueList[$id] = min($f + 2, $fatigueList[$id]);
+                        } else {
+                            $fatigueList[$id] = $f + 2;
+                        }
                     }
                 }
             }
@@ -339,8 +340,12 @@ EOD;
     }
     public function checkExplosion(array &$tile)
     {
-        if (!$tile['destroyed'] && $tile['fire'] === 6) {
+        if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
             $map['destroyed'] = 1;
+            $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
+            if ($this->game->gameData->get('explosion') == 6) {
+                $this->game->lose();
+            }
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             foreach ($adjacentTiles as $aTile) {
                 $aTile = &$this->getTileById($aTile['id']);
@@ -348,8 +353,17 @@ EOD;
                 $this->checkExplosion($aTile);
             }
         }
-        if (!$tile['exploded'] && array_key_exists('explosion', $tile) && $tile['explosion'] > 0 && $tile['fire'] === $tile['explosion']) {
+        if (
+            $tile['exploded'] == 0 &&
+            array_key_exists('explosion', $tile) &&
+            $tile['explosion'] > 0 &&
+            $tile['fire'] === $tile['explosion']
+        ) {
             $map['exploded'] = 1;
+            $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
+            if ($this->game->gameData->get('explosion') == 6) {
+                $this->game->lose();
+            }
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             $directions = [];
             $start = $tile['rotate'] + 2; // All kegs start at rotation 2

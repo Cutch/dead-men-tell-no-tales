@@ -85,10 +85,6 @@ class DMTNT_Hooks
                 }
             }
         }
-        // Post
-        // if ($functionName == 'onEncounter') {
-        //     throw new BgaUserException(json_encode($args));
-        // }
         if (!array_key_exists('suffix', $args) || $args['suffix'] == 'Post') {
             foreach ($hooks as $object) {
                 if (array_key_exists($functionName . 'Post', $object)) {
@@ -140,21 +136,6 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onMorning(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onMorningAfter(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onNight(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
     function onDrawRevengeCard(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
@@ -164,18 +145,9 @@ class DMTNT_Hooks
     {
         $this->callHooks(__FUNCTION__, $args, $data);
     }
-    function onActDraw(&$data, array $args = [])
+    function onGetAttack(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
-    }
-    function onResolveDraw(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-    }
-    function onEncounter(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
     }
     function onUseSkill(&$data, array $args = [])
     {

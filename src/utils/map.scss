@@ -4,6 +4,10 @@
 .map-buttons-wrapper {
   display: flex;
   justify-content: center;
+  position: absolute;
+  top: 0.5rem;
+  right: 0px;
+  left: 0;
 }
 .map-buttons {
   display: flex;
@@ -38,7 +42,7 @@
   }
 }
 .map-wrapper {
-  margin: 1rem 0;
+  margin-bottom: 1rem;
   border: 1px solid;
   box-shadow: 0px 0px 2px;
   position: relative;
@@ -163,4 +167,39 @@
     left: unset;
     bottom: -25px;
   }
+}
+
+.token-flip {
+  background-color: transparent;
+  perspective: 1000px; /* Remove this if you don't want the 3D effect */
+  position: absolute;
+  transition: transform 0.8s;
+  top: 0;
+  left: 0;
+  &-inner {
+    text-align: center;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+  }
+}
+/* Do an horizontal flip when you move the mouse over the flip box container */
+.flip .token-flip-inner {
+  transform: rotateY(180deg);
+}
+.token-flip-front,
+.token-flip-back {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.token-flip-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+/* Style the back side */
+.token-flip-back {
+  transform: rotateY(180deg);
 }

@@ -29,6 +29,18 @@ class DMTNT_SelectionStates
         }
         $this->initiatePendingState();
     }
+    public function actMoveSelection(?int $x, ?int $y): void
+    {
+        $this->game->actMove($x, $y);
+        $stateData = $this->getState(null);
+        $characterId = $stateData['characterId'];
+        $data = [
+            'characterId' => $characterId,
+            'nextState' => $stateData['nextState'],
+            'isInterrupt' => $stateData['isInterrupt'],
+        ];
+        $this->completeSelectionState($data);
+    }
     public function actMoveCrew(?int $x, ?int $y): void
     {
         if ($x === null || $y === null) {
@@ -152,6 +164,8 @@ class DMTNT_SelectionStates
             return 'cardSelectionState'; // Check
         } elseif ($stateName == 'crewMovement') {
             return 'crewMovementState'; // Check
+        } elseif ($stateName == 'characterMovement') {
+            return 'characterMovementState'; // Check
         } elseif ($stateName == 'itemSelection') {
             return 'itemSelectionState'; // Check
         }

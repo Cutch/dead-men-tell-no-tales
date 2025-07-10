@@ -65,6 +65,7 @@ $crewMovement = 70;
 $characterSelection = 71;
 $cardSelection = 72;
 $itemSelection = 73;
+$characterMovement = 74;
 $undo = 96;
 $changeZombiePlayer = 97;
 $gameEnd = 99;
@@ -76,6 +77,7 @@ $interruptScreens = [
     'interrupt' => $interrupt,
     'cardSelection' => $cardSelection,
     'crewMovement' => $crewMovement,
+    'characterMovement' => $characterMovement,
     'undo' => $undo,
 ];
 
@@ -166,6 +168,7 @@ $machinestates = [
             'endGame' => $gameEnd,
             'drawRevengeCard' => $drawRevengeCard,
             'changeZombiePlayer' => $changeZombiePlayer,
+            'battleSelection' => $battleSelection,
         ],
     ],
     $undo => [
@@ -225,6 +228,15 @@ $machinestates = [
         'possibleactions' => ['actMoveCrew'],
         'transitions' => ['playerTurn' => $playerTurn],
     ],
+    $characterMovement => [
+        'name' => 'characterMovement',
+        'description' => clienttranslate('${character_name} is moving'),
+        'descriptionmyturn' => clienttranslate('${character_name} Select where to move'),
+        'type' => 'activeplayer',
+        'args' => 'argSelectionState',
+        'possibleactions' => ['actMoveSelection'],
+        'transitions' => ['playerTurn' => $playerTurn],
+    ],
     $itemSelection => [
         'name' => 'itemSelection',
         'description' => clienttranslate('${character_name} is selecting an item'),
@@ -246,15 +258,17 @@ $machinestates = [
             'endGame' => $gameEnd,
             'changeZombiePlayer' => $changeZombiePlayer,
             'battle' => $battle,
+            'postBattle' => $postBattle,
+            'playerTurn' => $playerTurn,
         ],
     ],
     $battle => [
         'name' => 'battle',
         'description' => clienttranslate('${character_name} is Battling'),
         'descriptionmyturn' => clienttranslate('Battling'),
-        'type' => 'game',
-        'action' => 'stBattle',
+        'type' => 'activeplayer',
         'args' => 'argBattle',
+        'possibleactions' => ['actUseStrength', 'actDontUseStrength'],
         'transitions' => [
             'endGame' => $gameEnd,
             'postBattle' => $postBattle,
@@ -267,11 +281,12 @@ $machinestates = [
         'type' => 'activeplayer',
         'action' => 'stPostBattle',
         'args' => 'argPostBattle',
-        'possibleactions' => ['actChooseResource', 'actUseItem'],
+        'possibleactions' => ['actRetreat', 'actMakeThemFlee', 'actBattleAgain'],
         'transitions' => [
             'endGame' => $gameEnd,
             'battleSelection' => $battleSelection,
             'playerTurn' => $playerTurn,
+            'postBattle' => $postBattle,
         ],
     ],
     $interrupt => [
@@ -315,7 +330,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter];
+$interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter, $battle, $postBattle];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];

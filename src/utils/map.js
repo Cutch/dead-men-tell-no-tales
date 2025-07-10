@@ -19,17 +19,19 @@ export class Map {
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
+    // this.game.table_id
+    const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`;
+    // document
+    //   .getElementById('game_play_area')
+    //   .insertAdjacentHTML(
+    //     'beforeend',
+    //     buttonHTML
+    //   );
     document
       .getElementById('game_play_area')
       .insertAdjacentHTML(
         'beforeend',
-        `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`,
-      );
-    document
-      .getElementById('game_play_area')
-      .insertAdjacentHTML(
-        'beforeend',
-        `<div id="map-wrapper" class="map-wrapper" style="min-height: 60vh;"><div id="map-container" style="width: 0;"></div><div id="new-card-container" style="display: none"></div></div>`,
+        `<div id="map-wrapper" class="map-wrapper" style="min-height: 60vh;"><div id="map-container" style="width: 0;"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
     on($('zoom-in'), 'click', () => this.panzoom.zoomIn());
     on($('zoom-out'), 'click', () => this.panzoom.zoomOut());
@@ -82,6 +84,23 @@ export class Map {
         startY: (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
       });
     }, 0);
+  }
+  savePanZoom() {
+    const data = JSON.stringify({
+      options: this.panzoom.getOptions(),
+      pan: this.panzoom.getPan(),
+      scale: this.panzoom.getScale(),
+      id: this.game.table_id,
+    });
+    localStorage.setItem('dmtnt_data', data);
+  }
+  loadPanZoom() {
+    if (localStorage.getItem('dmtnt_data')) {
+      const data = JSON.parse(localStorage.getItem('dmtnt_data'));
+      this.panzoom.setOptions(data.options);
+      this.panzoom.pan(data.pan.xdata.pan.x, data.pan.y);
+      this.panzoom.zoom(data.scale);
+    }
   }
   hideTileSelectionScreen() {
     document.querySelectorAll('.tile-selector').forEach((e) => {
@@ -233,10 +252,10 @@ export class Map {
   }
   checkIfAdjacent(x, y) {
     return [
+      [0, -1],
+      [-1, 0],
       [1, 0],
       [0, 1],
-      [-1, 0],
-      [0, -1],
     ].some(([nx, ny]) => {
       return !!this.positions[this.getKey({ x: x + nx, y: y + ny })];
     });
@@ -269,16 +288,15 @@ export class Map {
   }
   renderTokens(container, positions, x, y) {
     // container.innerHTML = '';
-    const id = this.getKey({ x, y });
-    container.style.setProperty('--count', positions[id]?.length ?? 0);
-    positions[id]?.forEach(({ name, id, type }) => {
-      const key = this.getKey({ x, y });
+    const xyId = this.getKey({ x, y });
+    container.style.setProperty('--count', positions[xyId]?.length ?? 0);
+    positions[xyId]?.forEach(({ name, oldName, id, type }) => {
       const currentElem = this.container.querySelector(`.id${id}`);
 
       if (currentElem) {
-        if (currentElem.getAttribute('data-data') !== key) {
+        if (currentElem.getAttribute('data-data') !== xyId) {
           container.insertAdjacentHTML('beforeend', '<div class="temp-mover"></div>');
-          currentElem.setAttribute('data-data', key);
+          currentElem.setAttribute('data-data', xyId);
           const tempMover = container.querySelector('.temp-mover');
           const targetOffset = this.getWindowRelativeOffset(this.container, tempMover);
           const currentOffset = this.getWindowRelativeOffset(this.container, currentElem);
@@ -302,6 +320,37 @@ export class Map {
             currentElem.style.top = '';
           });
           animationId.play();
+        } else if (!this.container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
+          container.innerHTML = `<div class="token-flip"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
+          renderImage(oldName + '-token', container.querySelector('.token-flip-front'), {
+            pos: 'replace',
+            card: false,
+            scale: 1.5,
+            baseData: xyId,
+            baseCss: 'id' + id,
+            styles: { '--color': '#000' },
+          });
+          renderImage(name + '-token', container.querySelector('.token-flip-back'), {
+            pos: 'replace',
+            card: false,
+            scale: 1.5,
+            baseData: xyId,
+            baseCss: 'id' + id,
+            styles: { '--color': '#000' },
+          });
+          setTimeout(() => {
+            container.querySelector('.token-flip').classList.add('flip');
+          }, 0);
+          setTimeout(() => {
+            renderImage(name + '-token', container, {
+              pos: 'replace',
+              card: false,
+              scale: 1.5,
+              baseData: xyId,
+              baseCss: 'id' + id,
+              styles: { '--color': '#000' },
+            });
+          }, 1000);
         }
       } else {
         const color = this.game.gamedatas.characters.find((d) => d.id === name)?.characterColor;
@@ -309,7 +358,7 @@ export class Map {
           pos: 'append',
           card: false,
           scale: 1.5,
-          baseData: this.getKey({ x, y }),
+          baseData: xyId,
           baseCss: 'id' + id,
           styles: { '--color': color ?? '#000' },
         });
