@@ -321,7 +321,7 @@ export class Map {
             currentElem.style.top = '';
           });
           animationId.play();
-        } else if (!container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
+        } else if (container.querySelector(`.id${id}`) && !container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
           container.querySelector(`.id${id}`).outerHTML =
             `<div class="token-flip id${id}"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
 
@@ -368,7 +368,7 @@ export class Map {
       }
     });
   }
-  update({ tiles, explosions, characterPositions, tokenPositions }) {
+  update({ tiles, explosions, characterPositions, tokenPositions, characters }) {
     if (this.newCardPhase) return;
     this.container.querySelectorAll('.ocean-base').forEach((e) => e.remove());
     this.maxX = 0;
@@ -436,6 +436,7 @@ export class Map {
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
         this.renderDeckhands(deckhandElem, deckhand);
+        characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
         if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
         if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
         if (fire === 0) this.dice[tileKey]._hide();

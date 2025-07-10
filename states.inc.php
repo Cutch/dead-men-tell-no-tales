@@ -160,6 +160,7 @@ $machinestates = [
             'actRest',
             'actIncreaseBattleStrength',
             'actDrop',
+            'actDrinkGrog',
             'actSwapItem',
             'actInitSwapItem',
         ],

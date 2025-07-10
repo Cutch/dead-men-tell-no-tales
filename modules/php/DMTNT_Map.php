@@ -164,7 +164,6 @@ class DMTNT_Map
         $badFatigueValues = $this->convertFatigueToDie();
         $fire = $tile['fire'];
         $deckhand = $tile['deckhand'];
-
         return !(
             ($currentTile && !$this->testTouchPoints($currentTile, $tile)) ||
             $fire >= $badFatigueValues ||
@@ -174,6 +173,7 @@ class DMTNT_Map
     }
     public function calculateMoves(bool $canRun = true): array
     {
+        $canRun = $canRun && !$this->game->actions->hasTreasure();
         [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
         $currentFire = 0;
         $currentTile = null;
@@ -207,7 +207,7 @@ class DMTNT_Map
                 $tempList = $this->getAdjacentTiles($x, $y);
                 foreach ($tempList as $tempTile) {
                     $id = $tempTile['id'];
-                    if (in_array($id, $moveIds) || !$this->checkIfCanMove($currentTile, $tempTile)) {
+                    if (in_array($id, $moveIds) || !$this->checkIfCanMove($firstTile, $tempTile)) {
                         continue;
                     }
                     if ($hasTreasure) {

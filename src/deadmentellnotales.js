@@ -97,6 +97,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       // Player side board
       const playerPanel = this.getPlayerPanelElement(character.playerId);
       const item = character.item;
+      const tokenItems = character.tokenItems;
       const characterSideId = `player-side-${character.playerId}-${character.id}`;
       let playerSideContainer = $(characterSideId);
       if (!playerSideContainer) {
@@ -136,7 +137,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       }
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
-      const cutlassCount = character.tokenItems['cutlass'] ?? 0;
+      const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
       const strength = cutlassCount + parseInt(character.tempStrength ?? 0, 10);
       playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
 
@@ -173,6 +174,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 </div>
                 <div class="card-container">
                   <div class="item"></div>
+                  <div class="token-items"></div>
                 </div>
               </div>`,
           );
@@ -214,7 +216,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
         cutlassMarkersElem.innerHTML = '';
         for (let i = 0; i < cutlassCount; i++) {
-          renderImage('cutlass', cutlassMarkersElem, {
+          renderImage('cutlass-token', cutlassMarkersElem, {
             scale,
             pos: 'replace',
             baseCss: 'cutlass-marker',
@@ -241,6 +243,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         } else {
           document.querySelector(`#player-${character.id} .item`).innerHTML = '';
         }
+
+        if (tokenItems != null) {
+          this.renderTokens(
+            document.querySelector(`#player-${character.id} .token-items`),
+            tokenItems.filter((d) => d.treasure !== 'cutlass'),
+          );
+        } else {
+          document.querySelector(`#player-${character.id} .token-items`).innerHTML = '';
+        }
       }
     });
 
@@ -250,6 +261,28 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = this.gamedatas.players[elem.id.replace('overall_player_board_', '')].player_no;
       } else if (elem.id == 'token-container') {
         elem.style.order = 5;
+      }
+    });
+  },
+  renderTokens(container, tokens) {
+    container.style.setProperty('--count', tokens.length ?? 0);
+    if (container.children != (tokens.length ?? 0)) {
+      const existingIds = [...container.children].map((d) => [...d.classList].find((d) => d.includes('id'))?.slice(2)).filter(Boolean);
+      const tokenIds = tokens.map((d) => d.id);
+      const toRemove = existingIds.filter((d) => !tokenIds.includes(d));
+      toRemove.forEach((id) => container.querySelector(`.id${id}`).remove());
+    }
+    tokens.forEach(({ treasure, id }) => {
+      const currentElem = container.querySelector(`.id${id}`);
+
+      if (!currentElem) {
+        renderImage(treasure + '-token', container, {
+          pos: 'append',
+          card: false,
+          scale: 3,
+          baseCss: 'id' + id,
+          styles: { '--color': '#000' },
+        });
       }
     });
   },
@@ -606,14 +639,36 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.bgaPerformAction('actInitSwapItem');
               } else if (actionId === 'actBattleSelection') {
                 this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
+              } else if (actionId === 'actDrop') {
+                this.clearActionButtons();
+
+                const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
+                const items = character.tokenItems;
+                items.forEach(({ id, treasure }) => {
+                  const suffix = treasure.split('-')?.[1];
+                  this.statusBar.addActionButton(
+                    this.getActionMappings().actDrop + ` ${getAllData()[treasure + '-token'].options.name}` + (suffix ? ' ' + suffix : ''),
+                    () => {
+                      this.bgaPerformAction('actDrop', { id });
+                    },
+                  );
+                });
+                this.statusBar.addActionButton(
+                  _('Cancel'),
+                  () => {
+                    this.onUpdateActionButtons(stateName, args);
+                  },
+                  { color: 'secondary' },
+                );
               } else if (actionId === 'actDrinkGrog') {
                 this.clearActionButtons();
-                const rums = Object.keys(this.gamedatas.game.tokenItems)
-                  .filter((d) => d.includes('rum'))
-                  .map((d) => d.split('-')[1]);
-                rums.forEach((amount) => {
-                  this.statusBar.addActionButton(_('Rum') + ` ${amount}`, () => {
-                    this.bgaPerformAction('actDrinkGrog', { amount });
+
+                const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
+                const rums = character.tokenItems.filter((d) => d.treasure.includes('rum'));
+                rums.forEach(({ id, treasure }) => {
+                  const amount = treasure.split('-')[1];
+                  this.statusBar.addActionButton(this.getActionMappings().actDrinkGrog + ` ${amount}`, () => {
+                    this.bgaPerformAction('actDrinkGrog', { id });
                   });
                 });
                 this.statusBar.addActionButton(

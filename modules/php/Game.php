@@ -516,23 +516,27 @@ class Game extends \Table
         $this->completeAction();
     }
 
-    public function actDrinkGrog(int $amount): void
+    public function actDrinkGrog(int $id): void
     {
+        $characterId = $this->character->getTurnCharacterId();
         $tokenItems = $this->gameData->get('tokenItems');
-        $key = array_search('rum-' . $amount, $tokenItems);
+        $key = array_search($id, toId($tokenItems[$characterId]));
         if ($key !== false) {
-            unset($tokenItems[$key]);
+            $amount = $this->data->getTreasure()[$tokenItems[$characterId][$key]['treasure']]['fatigue'];
+            unset($tokenItems[$characterId][$key]);
+            $tokenItems[$characterId] = array_values($tokenItems[$characterId]);
+
+            $this->gameData->set('tokenItems', $tokenItems);
+            $this->actions->spendActionCost('actDrinkGrog');
+            $this->character->adjustActiveFatigue(-$amount);
+            $this->eventLog(clienttranslate('${character_name} drank grog and recovered ${count} fatigue'), [
+                'usedActionId' => 'actDrinkGrog',
+                'count' => $amount,
+            ]);
+            $this->completeAction();
         } else {
             throw new BgaUserException(clienttranslate('Invalid Selection'));
         }
-        $this->gameData->set('tokenItems', array_values($tokenItems));
-        $this->actions->spendActionCost('actDrinkGrog');
-        $this->character->adjustActiveFatigue(-$amount);
-        $this->eventLog(clienttranslate('${character_name} drank grog and recovered ${count} fatigue'), [
-            'usedActionId' => 'actDrinkGrog',
-            'count' => $amount,
-        ]);
-        $this->completeAction();
     }
 
     public function actPickupToken(string $item): void
@@ -540,7 +544,8 @@ class Game extends \Table
         $this->actions->spendActionCost('actPickupToken');
 
         $tokenPositions = $this->gameData->get('tokenPositions');
-        [$x, $y] = $this->getCharacterPos($this->character->getTurnCharacterId());
+        $characterId = $this->character->getTurnCharacterId();
+        [$x, $y] = $this->getCharacterPos($characterId);
         $xyId = $this->map->xy($x, $y);
         $key = array_search(
             $item,
@@ -549,54 +554,62 @@ class Game extends \Table
             }, $tokenPositions[$xyId])
         );
         if ($key !== false) {
+            $token = $tokenPositions[$xyId][$key];
             unset($tokenPositions[$xyId][$key]);
+            $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
+            $this->gameData->set('tokenPositions', $tokenPositions);
+
+            $tokenItems = $this->gameData->get('tokenItems');
+            if (!array_key_exists($characterId, $tokenItems)) {
+                $tokenItems[$characterId] = [];
+            }
+            $tokenItems[$characterId][] = $token;
+            $this->gameData->set('tokenItems', $tokenItems);
+            $this->eventLog(clienttranslate('${character_name} picked up a ${item}'), [
+                'usedActionId' => 'actPickupToken',
+                'item' => $this->data->getTreasure()[$item]['name'],
+            ]);
+            $this->markChanged('map');
+            $this->markChanged('player');
+            $this->completeAction();
         } else {
             throw new BgaUserException(clienttranslate('Invalid Selection'));
         }
-        $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
-        $this->gameData->set('tokenPositions', $tokenPositions);
-
-        $this->gameData->set('tokenItems', [...$this->gameData->get('tokenItems'), $item]);
-        $this->eventLog(clienttranslate('${character_name} picked up a ${item}'), [
-            'usedActionId' => 'actPickupToken',
-            'item' => $this->data->getTreasure()[$item]['name'],
-        ]);
-        $this->markChanged('map');
-        $this->completeAction();
     }
 
-    public function actDrop(string $item): void
+    public function actDrop(string $id): void
     {
-        $this->actions->spendActionCost('actPickupToken');
-        $items = $this->gameData->get('tokenItems');
-
-        $tokenPositions = $this->gameData->get('tokenPositions');
-        [$x, $y] = $this->getCharacterPos($this->character->getTurnCharacterId());
-        $xyId = $this->map->xy($x, $y);
-        $key = array_search($item, $items);
+        $characterId = $this->character->getTurnCharacterId();
+        $tokenItems = $this->gameData->get('tokenItems');
+        $key = array_search($id, toId($tokenItems[$characterId]));
         if ($key !== false) {
-            unset($items[$key]);
+            $token = $tokenItems[$characterId][$key];
+            $treasure = $this->data->getTreasure()[$token['treasure']];
+            unset($tokenItems[$characterId][$key]);
+            $tokenItems[$characterId] = array_values($tokenItems[$characterId]);
+            $this->gameData->set('tokenItems', $tokenItems);
+
+            [$x, $y] = $this->getCharacterPos($characterId);
+            $xyId = $this->map->xy($x, $y);
+            $tokenPositions = $this->gameData->get('tokenPositions');
+            if (!array_key_exists($xyId, $tokenPositions)) {
+                $tokenPositions[$xyId] = [];
+            }
+            $tokenPositions[$xyId][] = $token;
+            $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
+            $this->gameData->set('tokenPositions', $tokenPositions);
+
+            $this->actions->spendActionCost('actDrop');
+            $this->eventLog(clienttranslate('${character_name} dropped a ${item}'), [
+                'usedActionId' => 'actDrop',
+                'item' => $treasure['name'],
+            ]);
+            $this->markChanged('map');
+            $this->markChanged('player');
+            $this->completeAction();
         } else {
             throw new BgaUserException(clienttranslate('Invalid Selection'));
         }
-        if (array_key_exists($xyId, $tokenPositions)) {
-            $tokenPositions[$xyId] = [];
-        }
-        $tokenPositions[$xyId][] = [
-            'id' => '11',
-            'token' => 'crew-4',
-            'treasure' => 'rum-4',
-            'isTreasure' => true,
-        ];
-        $this->gameData->set('tokenPositions', $tokenPositions);
-
-        $this->gameData->set('tokenItems', $items);
-        $this->eventLog(clienttranslate('${character_name} dropped a ${item}'), [
-            'usedActionId' => 'actPickupToken',
-            'item' => $this->data->getTreasure()[$item]['name'],
-        ]);
-        $this->markChanged('map');
-        $this->completeAction();
     }
 
     public function actRest(): void
@@ -1299,6 +1312,7 @@ class Game extends \Table
     {
         $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
         $result['currentPosition'] = $this->map->xy(...$xy);
+        $result['activeCharacter'] = $this->character->getTurnCharacterId();
         $result['characters'] = $this->character->getMarshallCharacters();
         $result['characterPositions'] = array_reduce(
             $result['characters'],
@@ -1562,7 +1576,7 @@ class Game extends \Table
                     ? $this->getGameStateValue('doubleCount')
                     : 1)
         );
-        $this->gameData->set('randomSelection', $this->getGameStateValue('random'));
+        $this->gameData->set('randomSelection', $this->getGameStateValue('random') == 1);
         $this->decks = new DMTNT_Decks($this);
         $this->decks->setup();
         $this->map = new DMTNT_Map($this);

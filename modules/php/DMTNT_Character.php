@@ -160,7 +160,7 @@ class DMTNT_Character
         }
         $tokenItems = $this->game->gameData->get('tokenItems');
         if (array_key_exists($characterId, $tokenItems)) {
-            $characterData['tokenItems'] = array_count_values($tokenItems['characterId']);
+            $characterData['tokenItems'] = $tokenItems[$characterId];
         } else {
             $characterData['tokenItems'] = [];
         }
