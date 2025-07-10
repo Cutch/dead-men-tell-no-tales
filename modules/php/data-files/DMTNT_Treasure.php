@@ -63,13 +63,13 @@ class DMTNT_TreasureData
                 'count' => 5,
             ],
             'rum-4' => [
-                'name' => clienttranslate('Rum'),
+                'name' => clienttranslate('Grog'),
                 'deckType' => 'rum',
                 'count' => 2,
                 'fatigue' => 4,
             ],
             'rum-5' => [
-                'name' => clienttranslate('Rum'),
+                'name' => clienttranslate('Grog'),
                 'deckType' => 'rum',
                 'count' => 1,
                 'fatigue' => 5,

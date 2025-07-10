@@ -2,6 +2,9 @@ export default {
   getData: () => ({
     sprites: {
       'captain-4-token': {
+        options: {
+          name: _('Captain Fromm'),
+        },
         frame: {
           x: 0,
           y: 0,
@@ -10,6 +13,9 @@ export default {
         },
       },
       'captain-8-token': {
+        options: {
+          name: _('Captain Fromm'),
+        },
         frame: {
           x: 150,
           y: 0,
@@ -18,6 +24,9 @@ export default {
         },
       },
       'crew-5-token': {
+        options: {
+          name: _('Crew'),
+        },
         frame: {
           x: 300,
           y: 0,
@@ -42,6 +51,9 @@ export default {
         },
       },
       'guard-6-token': {
+        options: {
+          name: _('Guard'),
+        },
         frame: {
           x: 150,
           y: 150,
@@ -50,6 +62,9 @@ export default {
         },
       },
       'guard-7-token': {
+        options: {
+          name: _('Guard'),
+        },
         frame: {
           x: 300,
           y: 150,
@@ -58,6 +73,9 @@ export default {
         },
       },
       'guard-8-token': {
+        options: {
+          name: _('Guard'),
+        },
         frame: {
           x: 450,
           y: 150,
@@ -66,6 +84,9 @@ export default {
         },
       },
       'cutlass-token': {
+        options: {
+          name: _('Cutlass'),
+        },
         frame: {
           x: 0,
           y: 300,
@@ -74,6 +95,9 @@ export default {
         },
       },
       'rum-4-token': {
+        options: {
+          name: _('Grog'),
+        },
         frame: {
           x: 150,
           y: 300,
@@ -82,6 +106,9 @@ export default {
         },
       },
       'rum-5-token': {
+        options: {
+          name: _('Grog'),
+        },
         frame: {
           x: 300,
           y: 300,
@@ -90,6 +117,9 @@ export default {
         },
       },
       'crew-3-token': {
+        options: {
+          name: _('Crew'),
+        },
         frame: {
           x: 450,
           y: 300,
@@ -98,6 +128,9 @@ export default {
         },
       },
       'crew-4-token': {
+        options: {
+          name: _('Crew'),
+        },
         frame: {
           x: 0,
           y: 450,
@@ -114,6 +147,9 @@ export default {
         },
       },
       trapdoor: {
+        options: {
+          name: _('Trapdoor'),
+        },
         frame: {
           x: 300,
           y: 450,
@@ -122,6 +158,9 @@ export default {
         },
       },
       'treasure-token': {
+        options: {
+          name: _('Treasure'),
+        },
         frame: {
           x: 450,
           y: 450,

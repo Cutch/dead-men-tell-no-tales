@@ -294,6 +294,7 @@ export class Map {
       const currentElem = this.container.querySelector(`.id${id}`);
 
       if (currentElem) {
+        if (currentElem.classList.contains('token-flip')) return;
         if (currentElem.getAttribute('data-data') !== xyId) {
           container.insertAdjacentHTML('beforeend', '<div class="temp-mover"></div>');
           currentElem.setAttribute('data-data', xyId);
@@ -320,8 +321,10 @@ export class Map {
             currentElem.style.top = '';
           });
           animationId.play();
-        } else if (!this.container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
-          container.innerHTML = `<div class="token-flip"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
+        } else if (!container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
+          container.querySelector(`.id${id}`).outerHTML =
+            `<div class="token-flip id${id}"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
+
           renderImage(oldName + '-token', container.querySelector('.token-flip-front'), {
             pos: 'replace',
             card: false,
@@ -342,8 +345,8 @@ export class Map {
             container.querySelector('.token-flip').classList.add('flip');
           }, 0);
           setTimeout(() => {
-            renderImage(name + '-token', container, {
-              pos: 'replace',
+            container.querySelector(`.id${id}`).outerHTML = renderImage(name + '-token', container, {
+              pos: 'return',
               card: false,
               scale: 1.5,
               baseData: xyId,

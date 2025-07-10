@@ -48,6 +48,18 @@ class DMTNT_Actions
                     return true;
                 },
             ],
+            'actDrinkGrog' => [
+                'state' => ['playerTurn'],
+                'actions' => 0,
+                'type' => 'action',
+                'requires' => function (Game $game, $action) {
+                    return sizeof(
+                        array_filter(array_keys($game->character->getTurnCharacter()['tokenItems']), function ($d) {
+                            return str_contains($d, 'rum');
+                        })
+                    ) > 0;
+                },
+            ],
             'actFightFire' => [
                 'state' => ['playerTurn'],
                 'actions' => 1,
@@ -82,7 +94,20 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true && !$this->isSweltering() && !$this->tooManyDeckhands() && !$this->twoDeckhands();
+                    $xy = $game->getCharacterPos($game->character->getTurnCharacterId());
+                    $xyId = $game->map->xy(...$xy);
+                    $tokenPositions = $game->gameData->get('tokenPositions');
+                    if (array_key_exists($xyId, $tokenPositions)) {
+                        return sizeof(
+                            array_filter($tokenPositions[$xyId], function ($d) {
+                                return $d['isTreasure'];
+                            })
+                        ) > 0 &&
+                            !$this->isSweltering() &&
+                            !$this->tooManyDeckhands() &&
+                            !$this->twoDeckhands();
+                    }
+                    return false;
                 },
             ],
             'actRest' => [

@@ -49,6 +49,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       actFightFire: _('Fight Fire'),
       actEliminateDeckhand: _('Eliminate Deckhand'),
       actPickupToken: _('Pickup Token'),
+      actDrinkGrog: _('Drink Grog'),
       actRest: _('Rest'),
       actIncreaseBattleStrength: _('Increase Strength'),
       actDrop: _('Drop'),
@@ -605,6 +606,44 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.bgaPerformAction('actInitSwapItem');
               } else if (actionId === 'actBattleSelection') {
                 this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
+              } else if (actionId === 'actDrinkGrog') {
+                this.clearActionButtons();
+                const rums = Object.keys(this.gamedatas.game.tokenItems)
+                  .filter((d) => d.includes('rum'))
+                  .map((d) => d.split('-')[1]);
+                rums.forEach((amount) => {
+                  this.statusBar.addActionButton(_('Rum') + ` ${amount}`, () => {
+                    this.bgaPerformAction('actDrinkGrog', { amount });
+                  });
+                });
+                this.statusBar.addActionButton(
+                  _('Cancel'),
+                  () => {
+                    this.onUpdateActionButtons(stateName, args);
+                  },
+                  { color: 'secondary' },
+                );
+              } else if (actionId === 'actPickupToken') {
+                this.clearActionButtons();
+                const items = this.gamedatas.tokenPositions[this.gamedatas.currentPosition]
+                  .filter((d) => d.type === 'treasure')
+                  .map((d) => d.name);
+                items.forEach((item) => {
+                  const suffix = item.split('-')?.[1];
+                  this.statusBar.addActionButton(
+                    `${_('Pickup')} ${getAllData()[item + '-token'].options.name}` + (suffix ? ' ' + suffix : ''),
+                    () => {
+                      this.bgaPerformAction('actPickupToken', { item });
+                    },
+                  );
+                });
+                this.statusBar.addActionButton(
+                  _('Cancel'),
+                  () => {
+                    this.onUpdateActionButtons(stateName, args);
+                  },
+                  { color: 'secondary' },
+                );
               } else if (actionId === 'actMove') {
                 this.clearActionButtons();
                 this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
