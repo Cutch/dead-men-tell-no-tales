@@ -68,6 +68,11 @@
     box-shadow: 0px 0px 0px 1px #222222;
   }
 }
+#map-container {
+  .tile-card {
+    height: 300px !important;
+  }
+}
 .ocean-base {
   background: #222222;
 }

@@ -319,7 +319,12 @@ class Game extends \Table
         $newTile['x'] = $x;
         $newTile['y'] = $y;
         $newTile['rotate'] = $rotate;
-        $tiles = $this->map->getAdjacentTiles($x, $y);
+        $tiles = null;
+        if ($newTile['id'] === 'dinghy') {
+            $tiles = $this->map->getAdjacentTiles($x, $y, $this->gameData->get('lastPlacedTileId'));
+        } else {
+            $tiles = $this->map->getAdjacentTiles($x, $y);
+        }
         if (sizeof($tiles) === 0 || $y < 0) {
             throw new BgaUserException(clienttranslate('Tile can\'t be placed there'));
         }
@@ -332,34 +337,38 @@ class Game extends \Table
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
 
-        // Get tokens
-        $card = $this->decks->pickCardWithoutLookup('bag');
-        $trapdoor = false;
-        if ($card['type_arg'] === 'trapdoor') {
-            $trapdoor = true;
+        if ($newTile['id'] === 'dinghy') {
+            $this->map->placeMap($newTile['id'], $x, $y, $rotate, 0, 'both', 0, 0, 0, 1);
         } else {
-            $tokens = [$this->getTokenData($card)];
-            if (str_contains($card['type_arg'], 'captain')) {
-                $this->decks->discardCards('tile', function ($data, $card) {
-                    return str_contains($card['type_arg'], 'captain');
-                });
-                $card2 = $this->decks->pickCardWithoutLookup('bag');
-                $tokens[] = $this->getTokenData($card2);
+            // Get tokens
+            $card = $this->decks->pickCardWithoutLookup('bag');
+            $trapdoor = false;
+            if ($card['type_arg'] === 'trapdoor') {
+                $trapdoor = true;
+            } else {
+                $tokens = [$this->getTokenData($card)];
+                if (str_contains($card['type_arg'], 'captain')) {
+                    $this->decks->discardCards('tile', function ($data, $card) {
+                        return str_contains($card['type_arg'], 'captain');
+                    });
+                    $card2 = $this->decks->pickCardWithoutLookup('bag');
+                    $tokens[] = $this->getTokenData($card2);
+                }
+                $this->gameData->set('tokenPositions', [...$this->gameData->get('tokenPositions'), $this->map->xy($x, $y) => $tokens]);
             }
-            $this->gameData->set('tokenPositions', [...$this->gameData->get('tokenPositions'), $this->map->xy($x, $y) => $tokens]);
-        }
 
-        $this->map->placeMap(
-            $newTile['id'],
-            $x,
-            $y,
-            $rotate,
-            $newTileData['fire'],
-            $newTileData['color'],
-            $trapdoor ? 1 : 0,
-            $trapdoor ? 1 : 0,
-            array_key_exists('barrel', $newTileData) ? $newTileData['barrel'] : 0
-        );
+            $this->map->placeMap(
+                $newTile['id'],
+                $x,
+                $y,
+                $rotate,
+                $newTileData['fire'],
+                $newTileData['color'],
+                $trapdoor ? 1 : 0,
+                $trapdoor ? 1 : 0,
+                array_key_exists('barrel', $newTileData) ? $newTileData['barrel'] : 0
+            );
+        }
 
         $this->nextState('finalizeTile');
     }
@@ -377,6 +386,7 @@ class Game extends \Table
                     'type' => 'action',
                 ],
             ],
+            'lastPlacedTileId' => $this->gameData->get('lastPlacedTileId'),
             'character_name' => $this->getCharacterHTML(),
             'newTile' => $this->gameData->get('newTile'),
         ];
@@ -402,10 +412,16 @@ class Game extends \Table
 
     public function stInitializeTile()
     {
-        $card = $this->decks->pickCard('tile');
-        $this->gameData->set('newTile', $card);
-        $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-        $this->nextState('placeTile');
+        if ($this->decks->getDeck('tile')->getCardOnTop('deck')) {
+            $card = $this->decks->pickCard('tile');
+            $this->gameData->set('newTile', $card);
+            $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+            $this->nextState('placeTile');
+        } else {
+            $this->gameData->set('newTile', null);
+            $this->gameData->set('newTileCount', 0);
+            $this->nextState('playerTurn');
+        }
     }
 
     public function stFinalizeTile()
@@ -1209,21 +1225,33 @@ class Game extends \Table
                     'number' => $card['dice'],
                     'color' =>
                         $card['color'] === 'both'
-                            ? clienttranslate('all')
+                            ? clienttranslate('All')
                             : ($card['color'] === 'red'
-                                ? clienttranslate('red')
-                                : clienttranslate('yellow')),
+                                ? clienttranslate('Red')
+                                : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
                         $this->map->spreadDeckhand();
-                        $this->eventLog('The deckhands spread', []);
+                        $this->eventLog('${buttons} The deckhands spread', [
+                            'buttons' => notifyButtons([
+                                ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
+                            ]),
+                        ]);
                     } elseif ($card['action'] === 'deckhand-spawn') {
                         $this->map->increaseDeckhand();
-                        $this->eventLog('The deckhands spawn', []);
+                        $this->eventLog('${buttons} The deckhands spawn', [
+                            'buttons' => notifyButtons([
+                                ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
+                            ]),
+                        ]);
                     } elseif ($card['action'] === 'crew-move') {
                         $nextState = $this->map->crewMove();
-                        $this->eventLog('The crew moves', []);
+                        $this->eventLog('${buttons} The crew moves', [
+                            'buttons' => notifyButtons([
+                                ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
+                            ]),
+                        ]);
                     }
                 }
                 $this->map->increaseFire($card['dice'], $card['color']);

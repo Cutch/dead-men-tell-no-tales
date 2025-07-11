@@ -55,16 +55,20 @@ class DMTNT_Map
             $this->minMax['maxY'] = max($this->minMax['maxY'], $d['y']);
         });
     }
-    public function getAdjacentTiles($x, $y): array
+    public function getAdjacentTiles($x, $y, ?string $toTileId = null): array
     {
         $tiles = [];
         $pos = [[0, -1], [-1, 0], [1, 0], [0, 1]];
-        array_walk($pos, function ($v) use (&$tiles, $x, $y) {
+        array_walk($pos, function ($v) use (&$tiles, $toTileId, $x, $y) {
             $nx = $v[0];
             $ny = $v[1];
             $key = $this->xy($x + $nx, $y + $ny);
             if (array_key_exists($key, $this->xyMap)) {
-                $tiles[] = $this->xyMap[$key];
+                if ($toTileId && $this->xyMap[$key] === $toTileId) {
+                    $tiles[] = $this->xyMap[$key];
+                } else {
+                    $tiles[] = $this->xyMap[$key];
+                }
             }
         });
         return $tiles;
@@ -136,7 +140,7 @@ class DMTNT_Map
         });
 
         $this->game->decks->discardCards('tile', function ($data, $card) {
-            return (array_key_exists('starter', $data) && $data['starter'] == true) || $data['id'] != 'dinghy';
+            return (array_key_exists('starter', $data) && $data['starter'] == true) || $data['id'] == 'dinghy';
         });
     }
     public function reloadCache()
@@ -176,20 +180,39 @@ class DMTNT_Map
         $canRun = $canRun && !$this->game->actions->hasTreasure();
         [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
         $currentFire = 0;
-        $currentTile = null;
+        $currentTiles = null;
         $key = $this->xy($x, $y);
         $moveList = $this->getAdjacentTiles($x, $y);
         $moveIds = toId($moveList);
         if (array_key_exists($key, $this->xyMap)) {
-            $currentTile = $this->xyMap[$key];
-            $currentFire = $currentTile['fire'];
+            if ($this->xyMap[$key]['escape'] == 1) {
+                $currentTiles = array_values(
+                    array_filter($this->cachedMap, function ($d) {
+                        return $d['escape'] == 1;
+                    })
+                );
+                $moveList = [];
+                array_walk($currentTiles, function ($tile) use (&$moveList) {
+                    array_push($moveList, ...$this->getAdjacentTiles($tile['x'], $tile['y']));
+                });
+                $moveIds = toId($moveList);
+            } else {
+                $currentTiles = [$this->xyMap[$key]];
+                $currentFire = $currentTiles[0]['fire'];
+            }
         }
         $data = ['hasTreasure' => $this->game->actions->hasTreasure()];
         $this->game->hooks->onCalculateMovesHasTreasure($data);
         $hasTreasure = $data['hasTreasure'];
         $fatigueList = [];
-        array_walk($moveList, function ($firstTile) use ($canRun, $currentTile, $moveIds, $hasTreasure, $currentFire, &$fatigueList) {
-            if (!$this->checkIfCanMove($currentTile, $firstTile)) {
+        array_walk($moveList, function ($firstTile) use ($canRun, $currentTiles, $moveIds, $hasTreasure, $currentFire, &$fatigueList) {
+            if (
+                sizeof(
+                    array_filter($currentTiles, function ($currentTile) use ($firstTile) {
+                        return $this->checkIfCanMove($currentTile, $firstTile);
+                    })
+                ) === 0
+            ) {
                 return;
             }
             $fire = $firstTile['fire'];
@@ -228,7 +251,7 @@ class DMTNT_Map
                 }
             }
         });
-        $data = ['fatigueList' => $fatigueList, 'currentTile' => $currentTile, 'x' => $x, 'y' => $y];
+        $data = ['fatigueList' => $fatigueList, 'currentTiles' => $currentTiles, 'x' => $x, 'y' => $y];
 
         $this->game->hooks->onCalculateMoves($data);
 
@@ -297,6 +320,7 @@ class DMTNT_Map
             'destroyed' => false,
             'escape' => $escape,
         ];
+        $this->game->gameData->set('lastPlacedTileId', $tileId);
         $this->updateXYMap();
     }
     public function getFire($x, $y)

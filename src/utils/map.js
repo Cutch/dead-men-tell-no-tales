@@ -186,7 +186,7 @@ export class Map {
     this.placeListeners = [];
     this.container.querySelectorAll('.ocean-base').forEach((elem) => {
       const { x, y } = this.getXY(elem.getAttribute('data-data'));
-      if (!this.checkIfAdjacent(x, y)) return;
+      if (!this.checkIfAdjacent(x, y, id === 'dinghy' ? this.game.gamedatas.lastPlacedTileId : null)) return;
       elem.classList.add('place-new');
 
       this.placeListeners.push(
@@ -265,14 +265,15 @@ export class Map {
   getNewCardPosition() {
     return { rotate: ((((this.cardRotation ?? 0) % 360) + 360) % 360) / 90, ...this.cardPosition };
   }
-  checkIfAdjacent(x, y) {
+  checkIfAdjacent(x, y, toTileId = null) {
     return [
       [0, -1],
       [-1, 0],
       [1, 0],
       [0, 1],
     ].some(([nx, ny]) => {
-      return !!this.positions[this.getKey({ x: x + nx, y: y + ny })];
+      const tileId = this.positions[this.getKey({ x: x + nx, y: y + ny })];
+      return toTileId ? toTileId === tileId : tileId;
     });
   }
   getKey({ x, y }) {
@@ -385,14 +386,14 @@ export class Map {
   }
   update({ tiles, explosions, characterPositions, tokenPositions, characters }) {
     if (this.newCardPhase) return;
-    this.container.querySelectorAll('.ocean-base').forEach((e) => e.remove());
+    this.container.querySelectorAll('.ocean-base:not(.ignore)').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
       ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, escape }) => {
-        if (escape == 1) return;
+        if (name == 'tracker') return;
         this.minX = Math.min(this.minX, x);
         this.maxX = Math.max(this.maxX, x);
         this.minY = Math.min(this.minY, y);
@@ -408,6 +409,14 @@ export class Map {
           tileElem = null;
         }
         if (!tileElem) {
+          if (name === 'dinghy')
+            renderImage('ocean', this.container, {
+              pos: 'append',
+              card: false,
+              scale: 1,
+              baseCss: 'ignore',
+              styles: { left: `${x * 300}px`, bottom: `${y * 300}px`, position: 'absolute' },
+            });
           renderImage(name, this.container, {
             pos: 'append',
             card: false,
@@ -433,9 +442,12 @@ export class Map {
             <div class="tokens characters"></div>
             <div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
           );
-          const diceElem = tileElem.querySelector(`.dice`);
-          const die = new Dice(this.game, diceElem, fireColor);
-          this.dice[tileKey] = die;
+
+          if (name !== 'dinghy') {
+            const diceElem = tileElem.querySelector(`.dice`);
+            const die = new Dice(this.game, diceElem, fireColor);
+            this.dice[tileKey] = die;
+          }
           const trapdoorElem = tileElem.querySelector(`.trapdoor`);
           if (hasTrapdoor == 1 && name !== 'tile004') {
             renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
@@ -454,10 +466,12 @@ export class Map {
         characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
         if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
         if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
-        if (fire === 0) this.dice[tileKey]._hide();
-        else {
-          this.dice[tileKey]._show();
-          this.dice[tileKey]._set({ roll: fire });
+        if (this.dice[tileKey]) {
+          if (fire === 0) this.dice[tileKey]._hide();
+          else {
+            this.dice[tileKey]._show();
+            this.dice[tileKey]._set({ roll: fire });
+          }
         }
       },
     );

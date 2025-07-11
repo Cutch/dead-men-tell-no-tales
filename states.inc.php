@@ -117,6 +117,7 @@ $machinestates = [
         'args' => 'argBasic',
         'transitions' => [
             'placeTile' => $placeTile,
+            'playerTurn' => $playerTurn,
         ],
     ],
     $placeTile => [

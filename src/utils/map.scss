@@ -164,6 +164,10 @@
       // }
     }
   }
+  .dinghy-base > .tokens.characters {
+    left: unset;
+    bottom: unset;
+  }
   .tracker-base > .tokens.characters {
     left: unset;
     bottom: -25px;
