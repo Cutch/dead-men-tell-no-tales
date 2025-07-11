@@ -19,6 +19,10 @@ class DMTNT_Actions
         }
         return false;
     }
+    public function escaped(): bool
+    {
+        return $this->game->gameData->get('escaped');
+    }
     public function hasTreasure(): bool
     {
         return sizeof(
@@ -53,7 +57,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true;
+                    return !$this->escaped();
                 },
             ],
             'actDrinkGrog' => [
@@ -65,7 +69,7 @@ class DMTNT_Actions
                         array_filter($game->character->getTurnCharacter()['tokenItems'], function ($d) {
                             return str_contains($d['treasure'], 'rum');
                         })
-                    ) > 0;
+                    ) > 0 && !$this->escaped();
                 },
             ],
             'actFightFire' => [
@@ -78,7 +82,7 @@ class DMTNT_Actions
                     if ($tile) {
                         return $tile['fire'] > 0 && !$this->tooManyDeckhands() && !$this->hasTreasure();
                     }
-                    return false;
+                    return false && !$this->escaped();
                 },
             ],
             'actEliminateDeckhand' => [
@@ -94,7 +98,7 @@ class DMTNT_Actions
                     array_walk($tiles, function ($tile) use (&$any) {
                         $any = $any || $tile['deckhand'];
                     });
-                    return $any && !$this->isSweltering() && !$this->hasTreasure();
+                    return $any && !$this->isSweltering() && !$this->hasTreasure() && !$this->escaped();
                 },
             ],
             'actPickupToken' => [
@@ -114,7 +118,8 @@ class DMTNT_Actions
                             !$this->isSweltering() &&
                             !$this->tooManyDeckhands() &&
                             !$this->twoDeckhands() &&
-                            !$this->hasTreasure();
+                            !$this->hasTreasure() &&
+                            !$this->escaped();
                     }
                     return false;
                 },
@@ -124,7 +129,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return $game->character->getTurnCharacter()['fatigue'] > 0 && !$this->tooManyDeckhands();
+                    return $game->character->getTurnCharacter()['fatigue'] > 0 && !$this->tooManyDeckhands() && !$this->escaped();
                 },
             ],
             'actDrop' => [
@@ -134,7 +139,8 @@ class DMTNT_Actions
                 'requires' => function (Game $game, $action) {
                     return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0 &&
                         !$this->isSweltering() &&
-                        !$this->tooManyDeckhands();
+                        !$this->tooManyDeckhands() &&
+                        !$this->escaped();
                 },
             ],
             'actIncreaseBattleStrength' => [
@@ -148,7 +154,8 @@ class DMTNT_Actions
                         4 &&
                         !$this->isSweltering() &&
                         !$this->tooManyDeckhands() &&
-                        !$this->hasTreasure();
+                        !$this->hasTreasure() &&
+                        !$this->escaped();
                 },
             ],
             'actSwapItem' => [
@@ -156,7 +163,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true && !$this->isSweltering() && !$this->tooManyDeckhands();
+                    return true && !$this->isSweltering() && !$this->tooManyDeckhands() && !$this->escaped();
                 },
             ],
         ]);

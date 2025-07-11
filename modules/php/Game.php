@@ -119,6 +119,46 @@ class Game extends \Table
             return $args;
         });
     }
+    public function getTreasuresNeeded(): int
+    {
+        $characterCount = sizeof($this->character->getAllCharacterIds());
+        if ($characterCount <= 3) {
+            $treasuresNeeded = [4, 5, 6];
+            return $treasuresNeeded[$this->gameData->get('difficulty')];
+        } else {
+            $treasuresNeeded = [5, 6, 6];
+            return $treasuresNeeded[$this->gameData->get('difficulty')];
+        }
+    }
+    public function hasAllTreasure(): bool
+    {
+        $treasureCount = $this->gameData->get('treasures');
+        return $treasureCount == $this->getTreasuresNeeded();
+    }
+    public function checkWin(): void
+    {
+        $characterCount = sizeof($this->character->getAllCharacterIds());
+        $escaped =
+            sizeof(
+                array_filter(array_values($this->gameData->get('characterPositions')), function ($xy) {
+                    $tile = $this->map->getTileByXY(...$xy);
+                    return !array_key_exists('escape', $tile) || $tile['escape'] == 0;
+                })
+            ) == 0;
+        if (!$escaped) {
+            return;
+        }
+        if ($characterCount >= 4) {
+            $crewCount = sizeof($this->map->getCrew());
+            if ($this->gameData->get('difficulty') === 2 && $crewCount > 0) {
+                return;
+            }
+        }
+        if (!$this->hasAllTreasure()) {
+            return;
+        }
+        $this->win();
+    }
     public function actUndo()
     {
         $this->undo->actUndo();
@@ -186,6 +226,15 @@ class Game extends \Table
     {
         $this->notify('notify', $message, $arg);
     }
+    public function death(string $id)
+    {
+        if ($this->hasAllTreasure()) {
+            $this->lose('untimely');
+        }
+        if ($this->hasAllTreasure()) {
+            $this->lose('noPirates');
+        }
+    }
     public function cardDrawEvent($card, $deck, $arg = [])
     {
         $gameData = [];
@@ -203,7 +252,7 @@ class Game extends \Table
     public function rollBattleDie(string $action, string $characterName): int
     {
         $this->markRandomness();
-        $value = rand(1, 6);
+        $value = 9; //rand(1, 6);
         $notificationSent = false;
         $data = [
             'value' => $value,
@@ -473,7 +522,8 @@ class Game extends \Table
         }
         $character = $this->character->getTurnCharacter();
         $moves = $this->map->calculateMoves();
-        $fatigue = $moves[$this->map->getTileByXY($x, $y)['id']];
+        $tile = $this->map->getTileByXY($x, $y);
+        $fatigue = $moves[$tile['id']];
         if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
             throw new BgaUserException(clienttranslate('Not enough fatigue'));
         }
@@ -481,9 +531,37 @@ class Game extends \Table
         $this->actions->spendActionCost('actMove');
         $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
         $this->markChanged('player');
-        $this->eventLog(clienttranslate('${character_name} moved'), [
-            'usedActionId' => 'actMove',
-        ]);
+        if (array_key_exists('escape', $tile) && $tile['escape'] == 1) {
+            $this->gameData->set('escaped', true);
+            $count = (int) ceil($this->character->getActiveFatigue() / 2);
+            $this->character->adjustActiveFatigue(-$count);
+            $this->eventLog(clienttranslate('${character_name} is taking a breather and recovered ${count} fatigue'), [
+                'usedActionId' => 'actMove',
+                'count' => $count,
+            ]);
+
+            if ($this->actions->hasTreasure()) {
+                $characterId = $this->character->getTurnCharacterId();
+                $tokenItems = $this->gameData->get('tokenItems');
+                $tokenItems[$characterId] = array_values(
+                    array_filter($tokenItems[$characterId], function ($d) {
+                        return $d['treasure'] !== 'treasure';
+                    })
+                );
+                $this->gameData->set('tokenItems', $tokenItems);
+                $this->gameData->set('treasures', $this->gameData->get('treasures') + 1);
+
+                $this->eventLog(clienttranslate('${character_name} looted a treasure'), [
+                    'usedActionId' => 'actMove',
+                ]);
+                $this->markChanged('player');
+            }
+            $this->checkWin();
+        } else {
+            $this->eventLog(clienttranslate('${character_name} moved'), [
+                'usedActionId' => 'actMove',
+            ]);
+        }
         // var_dump($this->getEnemies());
         if (sizeof($this->getEnemies()) > 0) {
             $this->nextState('battleSelection');
@@ -769,7 +847,7 @@ class Game extends \Table
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
         if ($leftOverActions > 0) {
             $this->gameData->set('tempActions', $leftOverActions);
-            $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} actions'), [
+            $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
                 'usedActionId' => 'actEndTurn',
                 'count' => $leftOverActions,
             ]);
@@ -1253,6 +1331,7 @@ class Game extends \Table
     public function stNextCharacter(): void
     {
         $this->character->activateNextCharacter();
+        $this->gameData->set('escaped', false);
         resetPerTurn($this);
         $this->nextState('initializeTile');
         $this->notify('playerTurn', clienttranslate('${character_name} begins their turn'), []);
@@ -1270,10 +1349,24 @@ class Game extends \Table
 
         $score = $eloMapping[$this->gameData->get('difficulty')];
         $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
+        $this->eventLog(clienttranslate('Win!'));
         $this->nextState('endGame');
     }
-    public function lose()
+    public function lose(string $reason)
     {
+        if ($reason === 'explosion') {
+            $this->eventLog(clienttranslate('The ship exploded, the ship is lost'));
+        } elseif ($reason === 'deckhand') {
+            $this->eventLog(clienttranslate('The pirates are overwhelmed by deckhands, the expedition is lost'));
+        } elseif ($reason === 'noPirates') {
+            $this->eventLog(clienttranslate('There are no more replacement pirates, the expedition is lost'));
+        } elseif ($reason === 'untimely') {
+            $this->eventLog(clienttranslate('Untimely death, the other pirates give up'));
+        } elseif ($reason === 'treasure') {
+            $this->eventLog(clienttranslate('The treasure has been lost'));
+        } elseif ($reason === 'trapped') {
+            $this->eventLog(clienttranslate('The ship can\'t be searched, the expedition is lost'));
+        }
         $this->DbQuery('UPDATE player SET player_score=0 WHERE 1=1');
         $this->nextState('endGame');
     }
@@ -1361,6 +1454,8 @@ class Game extends \Table
         array_walk($equippedItems, function ($d) use (&$items) {
             unset($items[$d['id']]);
         });
+        $result['treasuresLooted'] = $this->gameData->get('treasures');
+        $result['treasuresNeeded'] = $this->getTreasuresNeeded();
         $result['availableItems'] = array_values(toId($items));
     }
     public function getGameData(&$result): void
@@ -1391,7 +1486,7 @@ class Game extends \Table
         $expansionList = $this::$expansionList;
         return array_search($expansion, $expansionList) <= $expansionI;
     }
-    public function getDifficulty()
+    public function getDifficulty(): string
     {
         $difficultyMapping = ['normal', 'challenge', 'hard'];
         return $difficultyMapping[$this->gameData->get('difficulty')];

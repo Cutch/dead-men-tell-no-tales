@@ -11,7 +11,7 @@
 
 $gameinfos = [
     // Name of the game in English (will serve as the basis for translation)
-    'game_name' => "Dead Men Tell No Tales",
+    'game_name' => 'Dead Men Tell No Tales',
 
     // Game publisher (use empty string if there is no publisher)
     'publisher' => 'Renegade Game Studios',
@@ -37,7 +37,7 @@ $gameinfos = [
     'not_recommend_player_number' => null, // <= example: this is not recommended to play this game with 2 or 3 players
 
     // Estimated game duration, in minutes (used only for the launch, afterward the real duration is computed)
-    'estimated_duration' => 90,
+    'estimated_duration' => 75,
 
     // Time in second add to a player when "giveExtraTime" is called (speed profile = fast)
     'fast_additional_time' => 90,

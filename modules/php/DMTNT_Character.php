@@ -124,7 +124,8 @@ class DMTNT_Character
         $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterId;
         $characterData['id'] = $characterId;
         $underlyingCharacterData = $this->game->data->getCharacters()[$characterData['id']];
-        $characterData['maxActions'] = $underlyingCharacterData['actions'];
+        $characterData['maxActions'] =
+            $underlyingCharacterData['actions'] + ($characterData['isActive'] ? $this->game->gameData->get('tempActions') : 0);
         $characterData['maxFatigue'] = 16;
         $characterData['pos'] = $this->game->getCharacterPos($characterId);
 
@@ -169,7 +170,9 @@ class DMTNT_Character
             $this->game->hooks->onGetCharacterData($characterData);
         }
         $characterData['fatigue'] = clamp($characterData['fatigue'], 0, $characterData['maxFatigue']);
-        $characterData['actions'] = clamp($characterData['actions'], 0, $characterData['maxActions']);
+        $characterData['actions'] =
+            clamp($characterData['actions'], 0, $characterData['maxActions']) +
+            ($characterData['isActive'] ? $this->game->gameData->get('tempActions') : 0);
         $characterData['playerId'] = $characterData['player_id'];
 
         if (
@@ -296,6 +299,14 @@ class DMTNT_Character
             'maxActions' => $data['maxActions'],
         ];
         $this->game->hooks->onAdjustActions($hookData);
+        $tempActions = $this->game->gameData->get('tempActions');
+        if ($tempActions > 0 && $hookData['change'] < 0) {
+            $newTempActions = max($tempActions + $hookData['change'], 0);
+            $this->game->gameData->set('tempActions', $newTempActions);
+
+            $hookData['change'] -= $newTempActions - $tempActions;
+        }
+
         $data['actions'] = clamp($data['actions'] + $hookData['change'], 0, $data['maxActions']);
         $prev = $data['actions'] - $prev;
         return $prev == 0;
@@ -373,9 +384,10 @@ class DMTNT_Character
                 'playerColor' => $char['player_color'],
                 'characterColor' => $char['color'],
                 'playerId' => $char['playerId'],
-                'actions' => $char['actions'] + ($char['isActive'] ? $this->game->gameData->get('tempActions') : 0),
-                'maxActions' => $char['maxActions'] + ($char['isActive'] ? $this->game->gameData->get('tempActions') : 0),
+                'actions' => $char['actions'],
+                'maxActions' => $char['maxActions'],
                 'maxFatigue' => $char['maxFatigue'],
+                'tempActions' => $char['isActive'] ? $this->game->gameData->get('tempActions') : 0,
                 'fatigue' => $char['fatigue'],
                 'pos' => $char['pos'],
                 'tempStrength' => $char['tempStrength'],

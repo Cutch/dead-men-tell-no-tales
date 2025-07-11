@@ -33,8 +33,22 @@ export class Map {
         'beforeend',
         `<div id="map-wrapper" class="map-wrapper" style="min-height: 60vh;"><div id="map-container" style="width: 0;"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
-    on($('zoom-in'), 'click', () => this.panzoom.zoomIn());
-    on($('zoom-out'), 'click', () => this.panzoom.zoomOut());
+    on($('zoom-in'), 'click', () =>
+      this.panzoom.zoomIn({
+        focal: {
+          x: 0.5,
+          y: 0.5,
+        },
+      }),
+    );
+    on($('zoom-out'), 'click', () =>
+      this.panzoom.zoomOut({
+        focal: {
+          x: 0.5,
+          y: 0.5,
+        },
+      }),
+    );
     on($('reset'), 'click', () => this.panzoom.reset());
     this.wrapper = $('map-wrapper');
     this.container = $('map-container');
@@ -45,6 +59,7 @@ export class Map {
       bounds: true,
       boundsPadding: 0.2,
       startScale: defaultScale,
+      transformOrigin: { x: 0.5, y: 0.5 },
       // transformOrigin: { x: 0.5, y: 0.5 },
     });
     renderImage('tracker', this.container, {
@@ -98,7 +113,7 @@ export class Map {
     if (localStorage.getItem('dmtnt_data')) {
       const data = JSON.parse(localStorage.getItem('dmtnt_data'));
       this.panzoom.setOptions(data.options);
-      this.panzoom.pan(data.pan.xdata.pan.x, data.pan.y);
+      this.panzoom.pan(data.pan.x, data.pan.y);
       this.panzoom.zoom(data.scale);
     }
   }

@@ -136,7 +136,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         });
       }
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
-      playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
+      playerSideContainer.querySelector(`.actions .value`).innerHTML =
+        `${character.actions ?? 0}/${(character.maxActions ?? 0) - (character.tempActions ?? 0)}`;
       const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
       const strength = cutlassCount + parseInt(character.tempStrength ?? 0, 10);
       playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
@@ -263,6 +264,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = 5;
       }
     });
+    const treasure = document.querySelector('.treasure-side-panel .value');
+    if (!treasure)
+      selections.insertAdjacentHTML(
+        'afterend',
+        `<div class="treasure-side-panel"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>`,
+      );
+    else
+      treasure.innerHTML = `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted == this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
   },
   renderTokens(container, tokens) {
     container.style.setProperty('--count', tokens.length ?? 0);

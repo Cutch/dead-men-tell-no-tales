@@ -46,6 +46,8 @@ class DMTNT_GameData
         'newTile' => [],
         'newTileCount' => 0,
         'tempActions' => 0,
+        'escaped' => false,
+        'treasures' => 0,
     ];
     public function __construct(Game $game)
     {

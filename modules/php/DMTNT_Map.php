@@ -136,7 +136,7 @@ class DMTNT_Map
         });
 
         $this->game->decks->discardCards('tile', function ($data, $card) {
-            return array_key_exists('starter', $data) && $data['starter'] == true;
+            return (array_key_exists('starter', $data) && $data['starter'] == true) || $data['id'] != 'dinghy';
         });
     }
     public function reloadCache()
@@ -184,8 +184,7 @@ class DMTNT_Map
             $currentTile = $this->xyMap[$key];
             $currentFire = $currentTile['fire'];
         }
-        $hasTreasure = false;
-        $data = ['hasTreasure' => $hasTreasure];
+        $data = ['hasTreasure' => $this->game->actions->hasTreasure()];
         $this->game->hooks->onCalculateMovesHasTreasure($data);
         $hasTreasure = $data['hasTreasure'];
         $fatigueList = [];
@@ -327,11 +326,8 @@ EOD;
     public function decreaseFire($x, $y): void
     {
         $tile = &$this->getTileByXY($x, $y);
-        $this->game->log($tile['fire']);
         $tile['fire'] = max($tile['fire'] - 1, 0);
         $tile = &$this->getTileByXY($x, $y);
-        $this->game->log($tile['fire']);
-        $this->game->log($this->getTileById($tile['id'])['fire']);
         $tileId = $tile['id'];
         $tile['fire'] = max($tile['fire'] - 1, 0);
         $this->game::DbQuery("UPDATE `map` SET fire=GREATEST(fire-1,0) WHERE id='$tileId'");
@@ -344,7 +340,7 @@ EOD;
             $map['destroyed'] = 1;
             $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
             if ($this->game->gameData->get('explosion') == 6) {
-                $this->game->lose();
+                $this->game->lose('deckhand');
             }
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             foreach ($adjacentTiles as $aTile) {
@@ -359,11 +355,29 @@ EOD;
             $tile['explosion'] > 0 &&
             $tile['fire'] === $tile['explosion']
         ) {
+            $tileXY = $this->xy($tile['x'], $tile['y']);
             $map['exploded'] = 1;
+            // Advance the tracker
             $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
             if ($this->game->gameData->get('explosion') == 6) {
-                $this->game->lose();
+                $this->game->lose('explosion');
             }
+            // Check for and kill players
+            $deadCharacters = array_keys(
+                array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($tileXY) {
+                    return $this->xy(...$xy) === $tileXY;
+                })
+            );
+            foreach ($deadCharacters as $deadCharacter) {
+                $this->game->death($deadCharacter);
+            }
+
+            // Remove tokens
+            $tokenPositions = $this->game->gameData->get('tokenPositions');
+            $tokenPositions[$tileXY] = [];
+            $this->game->gameData->set('tokenPositions', $tokenPositions);
+            // Check for token loss
+
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             $directions = [];
             $start = $tile['rotate'] + 2; // All kegs start at rotation 2
@@ -401,7 +415,7 @@ EOD;
         $this->game::DbQuery('UPDATE `map` SET deckhand=deckhand+1 WHERE has_trapdoor');
         $this->game->markChanged('map');
         if ($total > 30) {
-            $this->game->lose();
+            $this->game->lose('deckhand');
         }
     }
     public function _findTreeLevel(array $tree, array $nodes, int $currentLevel): array
@@ -440,7 +454,7 @@ EOD;
         }
         return $nodes;
     }
-    public function crewMove(): bool
+    public function getCrew(): array
     {
         $crew = [];
         $tokenPositions = $this->game->gameData->get('tokenPositions');
@@ -454,6 +468,11 @@ EOD;
                 }
             }
         });
+        return $crew;
+    }
+    public function crewMove(): bool
+    {
+        $crew = $this->getCrew();
         $characterPositionIds = array_values(
             array_map(function ($name) {
                 return $this->xy(...$this->game->getCharacterPos($name));
@@ -578,7 +597,7 @@ EOD;
         });
         $this->game->markChanged('map');
         if ($total > 30) {
-            $this->game->lose();
+            $this->game->lose('deckhand');
         }
     }
     public function decreaseDeckhand(int $x, int $y): void

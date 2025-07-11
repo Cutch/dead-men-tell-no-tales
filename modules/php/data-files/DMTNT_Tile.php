@@ -13,6 +13,12 @@ class DMTNT_TileData
                 'type' => 'back',
                 'deck' => 'tile',
             ],
+            'dinghy' => [
+                'type' => 'deck',
+                'deck' => 'tile',
+                'color' => 'both',
+                'touchPoints' => [0],
+            ],
             'tracker' => [
                 'type' => 'deck',
                 'deck' => 'tile',
