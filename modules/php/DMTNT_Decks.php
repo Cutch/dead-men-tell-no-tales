@@ -188,7 +188,7 @@ class DMTNT_Decks
             throw new Exception('Missing card id');
         }
     }
-    public function shuffleInCard(string $deck, string $cardName): void
+    public function shuffleInCard(string $deck, string $cardName, bool $notify = true): void
     {
         $cards = array_values(
             array_filter($this->getDeck($deck)->getCardsInLocation('discard'), function ($card) use ($cardName) {
@@ -204,7 +204,9 @@ class DMTNT_Decks
                 'deckName' => $this->getDeckName($deck),
                 'gameData' => $gameData,
             ];
-            $this->game->notify('shuffle', '', $results);
+            if ($notify) {
+                $this->game->notify('shuffle', '', $results);
+            }
         } else {
             throw new Exception('Missing card id');
         }

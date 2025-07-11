@@ -95,35 +95,23 @@ class DMTNT_SelectionStates
                 $took = true;
             }
         });
+        if ($stateData['id'] === 'actSwapItem' && array_key_exists('swap', $stateData) && $stateData['swap'] === 'init') {
+            $this->game->actions->spendActionCost('actSwapItem');
+        }
         if ($took) {
             $this->game->eventLog(clienttranslate('${character_name} took the ${item}'), [
                 'usedActionId' => 'actPickupToken',
                 'item' => $this->game->data->getItems()[$itemId]['name'],
             ]);
-            $equippedItems = array_map(
-                function ($d) {
-                    return ['id' => $d['item']['id'], 'characterId' => $d['id'], 'isActive' => $d['isActive']];
-                },
-                array_filter($this->game->character->getAllCharacterData(true), function ($d) {
-                    return $d['item'];
-                })
-            );
-            $items = [...$this->game->data->getItems()];
-            array_walk($equippedItems, function ($d, $k) use (&$items, &$equippedItems) {
-                unset($items[$d['id']]);
-                if ($d['isActive']) {
-                    unset($equippedItems[$k]);
-                }
-            });
             $items = array_map(function ($d) {
                 return ['id' => $d];
-            }, array_values(toId($items)));
+            }, $this->game->getUnequippedItems());
 
             $this->initiateState(
                 'itemSelection',
                 [
                     'items' => $items,
-                    'id' => 'actInitSwapItem',
+                    'id' => $stateData['id'],
                 ],
                 $tookCharacterId,
                 false

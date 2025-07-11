@@ -185,6 +185,25 @@ class DMTNT_Character
 
         return $characterData;
     }
+    public function swapToCharacter(string $fromCharacterId, string $toCharacterId)
+    {
+        $items = [...$this->game->getUnequippedItems()];
+        $turnOrder = $this->game->gameData->get('turnOrder');
+        $this->game->gameData->set(
+            'turnOrder',
+            array_map(function ($t) use ($fromCharacterId, $toCharacterId) {
+                return $t == $fromCharacterId ? $toCharacterId : $t;
+            }, $turnOrder)
+        );
+
+        $fromCharacterId = $this->game::escapeStringForDB($fromCharacterId);
+        $toCharacterId = $this->game::escapeStringForDB($toCharacterId);
+        shuffle($items);
+        $item = $items[0];
+        $this->game::DbQuery(
+            "UPDATE `character` SET `character_id` = '$toCharacterId', `item` = '$item', `fatigue` = 0, `tempStrength` = 0 WHERE `character_id` = '$fromCharacterId'"
+        );
+    }
     public function getCharacterData(string $name, $_skipHooks = false): array
     {
         if (array_key_exists($name, $this->cachedData)) {

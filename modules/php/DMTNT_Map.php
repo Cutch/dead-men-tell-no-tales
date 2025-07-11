@@ -195,6 +195,7 @@ class DMTNT_Map
                 array_walk($currentTiles, function ($tile) use (&$moveList) {
                     array_push($moveList, ...$this->getAdjacentTiles($tile['x'], $tile['y']));
                 });
+                $moveList = array_unique($moveList);
                 $moveIds = toId($moveList);
             } else {
                 $currentTiles = [$this->xyMap[$key]];
@@ -396,11 +397,11 @@ EOD;
                 $this->game->death($deadCharacter);
             }
 
-            // Remove tokens
+            // Remove tokens from location, must come after character death if they drop
             $tokenPositions = $this->game->gameData->get('tokenPositions');
             $tokenPositions[$tileXY] = [];
             $this->game->gameData->set('tokenPositions', $tokenPositions);
-            // Check for token loss
+            // Check for token loss condition
 
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             $directions = [];

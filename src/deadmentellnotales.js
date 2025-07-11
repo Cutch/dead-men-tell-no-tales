@@ -645,7 +645,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               } else if (actionId === 'actPlaceTile') {
                 this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
               } else if (actionId === 'actSwapItem') {
-                this.bgaPerformAction('actInitSwapItem');
+                this.bgaPerformAction('actSwapItem');
               } else if (actionId === 'actBattleSelection') {
                 this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
               } else if (actionId === 'actDrop') {

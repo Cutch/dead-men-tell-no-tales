@@ -226,14 +226,54 @@ class Game extends \Table
     {
         $this->notify('notify', $message, $arg);
     }
-    public function death(string $id)
+    public function death(string $characterId)
     {
         if ($this->hasAllTreasure()) {
             $this->lose('untimely');
         }
-        if ($this->hasAllTreasure()) {
+
+        $character = $this->character->getCharacterData($characterId);
+        $item = $character['item'];
+        $this->gameData->set('deadCharacters', [...$this->gameData->get('deadCharacters'), $character['id']]);
+        $this->gameData->set('destroyedItems', [...$this->gameData->get('destroyedItems'), $item['itemId']]);
+
+        if (
+            sizeof($this->data->getCharacters()) ===
+            sizeof($this->gameData->get('deadCharacters')) + sizeof($this->character->getAllCharacterIds())
+        ) {
             $this->lose('noPirates');
         }
+
+        // Drop Treasures
+        $treasures = array_filter($character['tokenItems'], function ($d) {
+            return $d['treasure'] === 'treasure';
+        });
+        [$x, $y] = $this->getCharacterPos($characterId);
+        $xyId = $this->map->xy($x, $y);
+        $tokenPositions = $this->gameData->get('tokenPositions');
+        if (!array_key_exists($xyId, $tokenPositions)) {
+            $tokenPositions[$xyId] = [];
+        }
+        foreach ($treasures as $token) {
+            $tokenPositions[$xyId][] = $token;
+        }
+        $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
+        $this->gameData->set('tokenPositions', $tokenPositions);
+
+        $remainingCharacters = array_diff(
+            toId($this->data->getCharacters()),
+            $this->gameData->get('deadCharacters'),
+            $this->character->getAllCharacterIds()
+        );
+        if ($this->gameData->get('randomSelection')) {
+            shuffle($remainingCharacters);
+            $this->character->swapToCharacter($character['id'], $remainingCharacters[0]);
+        } else {
+        }
+        $this->markChanged('player');
+        $this->markChanged('map');
+        $this->markChanged('token');
+        $this->markChanged('actions');
     }
     public function cardDrawEvent($card, $deck, $arg = [])
     {
@@ -313,8 +353,11 @@ class Game extends \Table
         $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $id => [$x, $y]]);
         $this->markChanged('player');
     }
-    public function actPlaceTile(int $x, int $y, int $rotate): void
+    public function actPlaceTile(?int $x, ?int $y, ?int $rotate): void
     {
+        if ($x === null || $y === null) {
+            throw new BgaUserException(clienttranslate('Select a location'));
+        }
         $newTile = $this->gameData->get('newTile');
         $newTile['x'] = $x;
         $newTile['y'] = $y;
@@ -492,36 +535,49 @@ class Game extends \Table
             $this->nextState('battleSelection');
         }
     }
-    public function actInitSwapItem(): void
+    public function getUnequippedItems(): array
+    {
+        $equippedItems = array_map(
+            function ($d) {
+                return $d['item']['id'];
+            },
+            array_filter($this->character->getAllCharacterData(true), function ($d) {
+                return $d['item'] && !in_array($d['item']['id'], $this->gameData->get('destroyedItems'));
+            })
+        );
+        $items = [...$this->data->getItems()];
+        array_walk($equippedItems, function ($id, $k) use (&$items) {
+            unset($items[$id]);
+        });
+        return array_values(toId($items));
+    }
+    public function actSwapItem(): void
     {
         $equippedItems = array_map(
             function ($d) {
                 return ['id' => $d['item']['id'], 'characterId' => $d['id'], 'isActive' => $d['isActive']];
             },
             array_filter($this->character->getAllCharacterData(true), function ($d) {
-                return $d['item'];
+                return $d['item'] && !$d['isActive'];
             })
         );
-        $items = [...$this->data->getItems()];
-        array_walk($equippedItems, function ($d, $k) use (&$items, &$equippedItems) {
-            unset($items[$d['id']]);
-            if ($d['isActive']) {
-                unset($equippedItems[$k]);
-            }
-        });
+
+        $items = $this->getUnequippedItems();
         $items = array_map(function ($d) {
             return ['id' => $d];
-        }, array_values(toId($items)));
+        }, $items);
 
         $this->selectionStates->initiateState(
             'itemSelection',
             [
                 'items' => [...$items, ...array_filter($equippedItems)],
-                'id' => 'actInitSwapItem',
+                'id' => 'actSwapItem',
+                'swap' => 'init',
             ],
             $this->character->getTurnCharacterId(),
             true
         );
+        $this->completeAction();
     }
     public function actMoveCrew(?int $x, ?int $y): void
     {
@@ -671,9 +727,8 @@ class Game extends \Table
         }
     }
 
-    public function actDrop(string $id): void
+    public function drop(string $characterId, string $id): void
     {
-        $characterId = $this->character->getTurnCharacterId();
         $tokenItems = $this->gameData->get('tokenItems');
         $key = array_search($id, toId($tokenItems[$characterId]));
         if ($key !== false) {
@@ -693,17 +748,25 @@ class Game extends \Table
             $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
             $this->gameData->set('tokenPositions', $tokenPositions);
 
-            $this->actions->spendActionCost('actDrop');
             $this->eventLog(clienttranslate('${character_name} dropped a ${item}'), [
                 'usedActionId' => 'actDrop',
                 'item' => $treasure['name'],
+                'character_name' => $this->getCharacterHTML($characterId),
             ]);
             $this->markChanged('map');
             $this->markChanged('player');
-            $this->completeAction();
         } else {
             throw new BgaUserException(clienttranslate('Invalid Selection'));
         }
+    }
+
+    public function actDrop(string $id): void
+    {
+        $characterId = $this->character->getTurnCharacterId();
+
+        $this->actions->spendActionCost('actDrop');
+        $this->drop($characterId, $id);
+        $this->completeAction();
     }
 
     public function actRest(): void
@@ -1062,13 +1125,24 @@ class Game extends \Table
         $isGuard = $battle['target']['type'] == 'guard';
         [$x, $y] = $this->getCharacterPos($this->character->getTurnCharacterId());
         if ($battle['result'] == 'win') {
+            $isCaptain = $battle['target']['type'] == 'captain';
             $tokenPositions = $this->gameData->get('tokenPositions');
-            $tokenPositions[$this->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
-                if ($token['id'] == $battle['target']['id']) {
-                    $token['isTreasure'] = true;
-                }
-                return $token;
-            }, $tokenPositions[$this->map->xy($x, $y)]);
+            if ($isCaptain) {
+                $tokenPositions[$this->map->xy($x, $y)] = array_values(
+                    array_filter($tokenPositions[$this->map->xy($x, $y)], function ($token) {
+                        return $token['type'] != 'captain';
+                    })
+                );
+                $this->decks->shuffleInCard('bag', 'captain-4', false);
+                $this->decks->shuffleInCard('bag', 'captain-8', false);
+            } else {
+                $tokenPositions[$this->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
+                    if ($token['id'] == $battle['target']['id']) {
+                        $token['isTreasure'] = true;
+                    }
+                    return $token;
+                }, $tokenPositions[$this->map->xy($x, $y)]);
+            }
             $this->gameData->set('tokenPositions', $tokenPositions);
             $this->markChanged('map');
             // $this->gameData->set('battle', [...$battle, 'resultRoll' => $resultRoll]);
