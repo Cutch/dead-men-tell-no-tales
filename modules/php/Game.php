@@ -292,7 +292,7 @@ class Game extends \Table
     public function rollBattleDie(string $action, string $characterName): int
     {
         $this->markRandomness();
-        $value = 9; //rand(1, 6);
+        $value = rand(1, 6);
         $notificationSent = false;
         $data = [
             'value' => $value,
@@ -645,13 +645,18 @@ class Game extends \Table
         if (!$data || sizeof($data) == 0) {
             throw new BgaUserException(clienttranslate('Must select a deckhand'));
         }
+        if (sizeof($data) > $this->getDeckhandTargetCount()) {
+            throw new BgaUserException(clienttranslate('Invalid Selection'));
+        }
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
         }
         $this->actions->spendActionCost('actEliminateDeckhand');
-        $this->eventLog(clienttranslate('${character_name} increased their strength by 1'), [
+        $this->eventLog(clienttranslate('${character_name} eliminated ${count} deckhand(s)'), [
             'usedActionId' => 'actEliminateDeckhand',
+            'count' => sizeof($data),
         ]);
+        $this->markChanged('map');
         $this->completeAction();
     }
     public function actIncreaseBattleStrength(): void
@@ -775,18 +780,26 @@ class Game extends \Table
         $this->character->adjustActiveFatigue(-2);
         $this->completeAction();
     }
-    public function actFightFire(int $x, int $y): void
+    public function actFightFire(?int $x, ?int $y, ?int $by = 1): void
     {
+        if ($x === null || $y === null) {
+            throw new BgaUserException(clienttranslate('Select a location'));
+        }
         $tileId = $this->map->getTileByXY($x, $y)['id'];
         $fires = $this->map->calculateFires();
         if (!in_array($tileId, $fires)) {
             throw new BgaUserException(clienttranslate('Invalid Selection'));
         }
+        $data = [
+            'x' => $x,
+            'y' => $y,
+        ];
+        $this->hooks->onFightFire($data);
         $this->actions->spendActionCost('actFightFire');
-        $this->map->decreaseFire($x, $y);
+        $this->map->decreaseFire($x, $y, $by);
         $this->eventLog(clienttranslate('${character_name} lowered a fire by ${count}'), [
             'usedActionId' => 'actFightFire',
-            'count' => 1,
+            'count' => $by,
         ]);
         $this->completeAction();
     }
@@ -925,7 +938,7 @@ class Game extends \Table
         // Notify all players about the choice to pass.
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
         if ($leftOverActions > 0) {
-            $this->gameData->set('tempActions', $leftOverActions);
+            $this->gameData->set('tempActions', $leftOverActions - $this->gameData->get('tempActions'));
             $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
                 'usedActionId' => 'actEndTurn',
                 'count' => $leftOverActions,
@@ -1076,6 +1089,7 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
+            'canUndo' => $this->undo->canUndo(),
             'actions' =>
                 sizeof($enemies) > 0
                     ? array_map(function ($d) {
@@ -1329,6 +1343,17 @@ class Game extends \Table
                     }
                 }
                 $this->map->increaseFire($card['dice'], $card['color']);
+                if (
+                    sizeof(
+                        array_filter($this->decks->listDeckDiscards(['revenge']), function ($d) {
+                            return array_key_exists('dice', $d) && $d['dice'] == 5;
+                        })
+                    ) == 3
+                ) {
+                    $this->decks->shuffleInDiscard('revenge');
+                }
+                // $this->decks->getDeck('revenge')->getCard()
+                // TODO: Shuffle when 3 5s in discard
 
                 // if (!$data || !array_key_exists('onUse', $data) || $data['onUse'] != false) {
                 //     $result = array_key_exists('onUse', $card) ? $card['onUse']($this, $card) : null;
@@ -1449,7 +1474,7 @@ class Game extends \Table
     {
         $eloMapping = [5, 10, 15];
 
-        $score = $eloMapping[$this->gameData->get('difficulty')];
+        $score = $eloMapping[$this->gameData->get('difficulty')] + ($this->gameData->get('captainFromm') ? 2 : 0);
         $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
         $this->eventLog(clienttranslate('Win!'));
         $this->nextState('endGame');
@@ -1611,6 +1636,7 @@ class Game extends \Table
             $this->undo->saveState();
             $this->incStat(1, 'actions_used', $this->character->getSubmittingCharacter()['playerId']);
         }
+        $character = $this->character->getTurnCharacter(true);
         if ($this->changed['token']) {
             $result = [];
             $this->getItemData($result);
@@ -1623,6 +1649,7 @@ class Game extends \Table
                 'activePlayer' => $this->character->getTurnCharacterId(),
                 'moves' => $this->map->calculateMoves(),
                 'fires' => $this->map->calculateFires(),
+                'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
             ];
             $this->getAllPlayers($result);
             $this->getItemData($result);
@@ -1635,6 +1662,7 @@ class Game extends \Table
                 'activePlayer' => $this->character->getTurnCharacterId(),
                 'moves' => $this->map->calculateMoves(),
                 'fires' => $this->map->calculateFires(),
+                'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
             ];
             $this->getAllPlayers($result);
             $this->getTiles($result);
@@ -1646,10 +1674,9 @@ class Game extends \Table
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'availableItemSkills' => $this->actions->getAvailableItemSkills(),
+                'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
+                'canUndo' => $this->undo->canUndo(),
             ];
-            if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
-                $result['canUndo'] = $this->undo->canUndo();
-            }
             $this->notify('updateActionButtons', '', ['gameData' => $result]);
         }
     }
@@ -1663,21 +1690,24 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
         ];
         if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
+            $character = $this->character->getTurnCharacter(true);
             $result = [
                 ...$result,
                 'character_name' => $this->getCharacterHTML(),
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
-                'activeTurnPlayerId' => $this->character->getTurnCharacter(true)['player_id'],
+                'activeTurnPlayerId' => $character['player_id'],
                 'moves' => $this->map->calculateMoves(),
                 'fires' => $this->map->calculateFires(),
+                'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
                 'deckhandTargetCount' => $this->getDeckhandTargetCount(),
+                'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
             ];
             $this->getAllPlayers($result);
             $this->getTiles($result);
         }
-        if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+        if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn', 'battleSelection'])) {
             $result['canUndo'] = $this->undo->canUndo();
         }
         $this->getDecks($result);

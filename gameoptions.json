@@ -66,15 +66,15 @@
         "values": {
             "0": {
                 "name": "Scurvy Dog",
-                "description": "Normal"
+                "description": "Normal<br/>2-3 Players: Loot 4 treasures<br/>4-5 Players: Loot 5 treasures"
             },
             "1": {
                 "name": "Buccaneer",
-                "description": "Challenging"
+                "description": "Challenging<br/>2-3 Players: Loot 5 treasures<br/>4-5 Players: Loot 6 treasures"
             },
             "2": {
                 "name": "Admiral",
-                "description": "Hard"
+                "description": "Hard<br/>2-3 Players: Loot 6 treasures<br/>4-5 Players: Loot 6 treasures and defeat all Skeleton Crew"
             }
         },
         "default": 0

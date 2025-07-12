@@ -221,7 +221,7 @@ class DMTNT_Map
             $y = $firstTile['y'];
             $id = $firstTile['id'];
             if ($hasTreasure) {
-                $fatigueList[$id] = $currentFire + $fire;
+                $fatigueList[$id] = $fire;
             } else {
                 $fatigueList[$id] = max($fire - $currentFire, 0);
             }
@@ -234,7 +234,7 @@ class DMTNT_Map
                         continue;
                     }
                     if ($hasTreasure) {
-                        $f = $currentFire + $tempTile['fire'] + $fire + 2;
+                        $f = $tempTile['fire'] + $fire + 2;
                         if (array_key_exists($id, $fatigueList)) {
                             $fatigueList[$id] = min($f, $fatigueList[$id]);
                         } else {
@@ -348,14 +348,12 @@ SET map.fire = d.fire, map.destroyed = d.destroyed, map.deckhand = d.deckhand, m
 EOD;
         $this->game::DbQuery($query);
     }
-    public function decreaseFire($x, $y): void
+    public function decreaseFire($x, $y, $by): void
     {
         $tile = &$this->getTileByXY($x, $y);
-        $tile['fire'] = max($tile['fire'] - 1, 0);
-        $tile = &$this->getTileByXY($x, $y);
         $tileId = $tile['id'];
-        $tile['fire'] = max($tile['fire'] - 1, 0);
-        $this->game::DbQuery("UPDATE `map` SET fire=GREATEST(fire-1,0) WHERE id='$tileId'");
+        $tile['fire'] = max($tile['fire'] - $by, 0);
+        $this->game::DbQuery("UPDATE `map` SET fire=GREATEST(fire - $by,0) WHERE id='$tileId'");
         // $this->updateXYMap();
         $this->game->markChanged('map');
     }
@@ -627,7 +625,7 @@ EOD;
     }
     public function decreaseDeckhand(int $x, int $y): void
     {
-        $tile = $this->getTileByXY($x, $y);
+        $tile = &$this->getTileByXY($x, $y);
         $tile['deckhand'] = max($tile['deckhand'] - 1, 0);
         $tileId = $tile['id'];
         $this->game::DbQuery("UPDATE `map` SET deckhand=GREATEST(deckhand-1,0) WHERE id='$tileId'");

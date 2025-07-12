@@ -220,8 +220,11 @@ export class Map {
   }
   showDeckhandSelection() {
     const deckhandTargetCount = this.game.gamedatas.deckhandTargetCount;
+    const adjacentTiles = this.game.gamedatas.adjacentTiles;
+    const currentPosition = this.getXY(this.game.gamedatas.currentPosition);
     document.querySelectorAll('.tile-card-base').forEach((baseElem) => {
       const { x, y } = this.getXY(baseElem.getAttribute('data-data'));
+      if (!adjacentTiles.some((d) => d.x == x && d.y == y) && !(currentPosition.x == x && currentPosition.y == y)) return;
       baseElem.querySelectorAll('.deckhand-card').forEach((elem) => {
         elem.classList.add('selectable');
         const uuid = elem.parentNode.getAttribute('data-data');

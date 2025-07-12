@@ -264,14 +264,21 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = 5;
       }
     });
-    const treasure = document.querySelector('.treasure-side-panel .value');
-    if (!treasure)
+    let gameInfoSidePanel = document.querySelector('.game-info-side-panel');
+    if (!gameInfoSidePanel) {
       selections.insertAdjacentHTML(
         'afterend',
-        `<div class="treasure-side-panel"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>`,
+        `<div class="game-info-side-panel">
+        <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
+        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
+        </div>`,
       );
-    else
-      treasure.innerHTML = `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted == this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
+      gameInfoSidePanel = document.querySelector('.game-info-side-panel');
+    }
+    gameInfoSidePanel.querySelector('.treasure .value').innerHTML =
+      `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted == this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
+    gameInfoSidePanel.querySelector('.deckhands .value').innerHTML =
+      `${this.gamedatas.tiles.reduce((acc, d) => acc + parseInt(d.deckhand, 10), 0)}/30`;
   },
   renderTokens(container, tokens) {
     container.style.setProperty('--count', tokens.length ?? 0);
@@ -415,7 +422,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     const characterLookup = this.selectedCharacters.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
     elem.querySelectorAll('.character-card').forEach((card) => {
       const character = characterLookup[card.getAttribute('name')];
-      console.log(character, characterLookup, card.getAttribute('name'));
       if (character) {
         card.style.setProperty('--player-color', '#' + character.playerColor);
         card.classList.add('selected');
@@ -732,6 +738,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                     .then(() => this.map.hideTileSelectionScreen())
                     .catch(console.error);
                 });
+                if (this.gamedatas.canUseBlanket)
+                  this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
+                    this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
+                      .then(() => this.map.hideTileSelectionScreen())
+                      .catch(console.error);
+                  });
+
                 this.statusBar.addActionButton(
                   _('Cancel'),
                   () => {
@@ -806,6 +819,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             this.statusBar.addActionButton(_('Skip'), () => this.bgaPerformAction('actDone'), { color: 'secondary' });
           break;
         case 'battleSelection':
+          if (this.gamedatas.canUndo)
+            this.statusBar.addActionButton(_('Undo'), () => this.bgaPerformAction('actUndo'), { color: 'secondary' });
           break;
         case 'characterSelect':
           this.selectCharacterCount = args.selectionCount;

@@ -48,14 +48,34 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Bucket'),
                 'actions' => 0,
-                'skills' => [
-                    'skill1' => [
-                        'type' => 'item-skill',
-                        'name' => clienttranslate('Lower Adjacent Fire Die'),
-                        'state' => ['playerTurn'],
-                        'perTurn' => 1,
-                    ],
-                ],
+                'onCalculateFires' => function (Game $game, $char, &$data) {
+                    if ($char['isActive'] && getUsePerTurn('bucket', $game) == 0) {
+                        $moveList = $game->map->getValidAdjacentTiles($data['x'], $data['y']);
+                        $currentTile = $data['currentTile'];
+                        array_walk($moveList, function ($firstTile) use ($currentTile, &$data, $game) {
+                            if ($currentTile && !$game->map->testTouchPoints($currentTile, $firstTile)) {
+                                return;
+                            }
+                            if ($firstTile['fire'] > 0) {
+                                $data['fireList'][] = $firstTile['id'];
+                            }
+                        });
+                    }
+                },
+                'onFightFire' => function (Game $game, $char, &$data) {
+                    if ($char['isActive']) {
+                        $moveList = $game->map->getAdjacentTiles(...$game->getCharacterPos($char['id']));
+                        if (
+                            sizeof(
+                                array_filter($moveList, function ($tile) use ($data) {
+                                    return $tile['x'] == $data['x'] && $tile['y'] == $data['y'];
+                                })
+                            ) > 0
+                        ) {
+                            usePerTurn('bucket', $game);
+                        }
+                    }
+                },
             ],
             'blanket' => [
                 'type' => 'item',
@@ -69,7 +89,7 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Compass'),
                 'actions' => 0,
                 'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actMove' && getUsePerTurn('compass', $game)) {
+                    if ($data['action'] == 'actMove' && getUsePerTurn('compass', $game) == 0) {
                         $data['actions'] = 0;
                         usePerTurn('compass', $game);
                     }
@@ -80,7 +100,7 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Dagger'),
                 'actions' => 1,
                 'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actEliminateDeckhand' && getUsePerTurn('dagger', $game)) {
+                    if ($data['action'] == 'actEliminateDeckhand' && getUsePerTurn('dagger', $game) == 0) {
                         $data['actions'] = 0;
                         usePerTurn('dagger', $game);
                     }
@@ -97,7 +117,7 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Rum'),
                 'actions' => 0,
                 'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actRest' && getUsePerTurn('rum', $game)) {
+                    if ($data['action'] == 'actRest' && getUsePerTurn('rum', $game) == 0) {
                         $data['actions'] = 0;
                         usePerTurn('rum', $game);
                     }

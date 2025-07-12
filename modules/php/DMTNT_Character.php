@@ -41,7 +41,8 @@ class DMTNT_Character
             $data['item'] = is_array($data['item']) ? $data['item']['id'] : $data['item'];
         }
         $data['fatigue'] = clamp($data['fatigue'], 0, $data['maxFatigue']);
-        $data['actions'] = clamp($data['actions'], 0, $data['maxActions']);
+        $data['actions'] =
+            clamp($data['actions'], 0, $data['maxActions']) - ($data['isActive'] ? $this->game->gameData->get('tempActions') : 0);
         $values = [];
         foreach ($data as $key => $value) {
             if (in_array($key, self::$characterColumns)) {

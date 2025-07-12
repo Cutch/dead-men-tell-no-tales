@@ -264,12 +264,7 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data, $requires);
         return $requires['requires'];
     }
-    function onCook(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onCookAfter(&$data, array $args = [])
+    function onFightFire(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
@@ -279,37 +274,7 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onDayEvent(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
     function onEndTurn(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onAcquireHindrance(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onMaxHindrance(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onAddFireWood(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onGetMaxBuildingCount(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
-    function onUnlock(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

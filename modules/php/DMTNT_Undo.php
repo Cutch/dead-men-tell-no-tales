@@ -52,6 +52,7 @@ class DMTNT_Undo
                 $this->game::DbQuery(buildInsertQuery($table, $extraTables[$table]));
             }
         }
+        $this->game->map->reloadCache();
         $this->game->markChanged('token');
         $this->game->markChanged('player');
         $this->game->markChanged('map');
