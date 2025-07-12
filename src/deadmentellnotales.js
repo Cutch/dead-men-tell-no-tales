@@ -136,8 +136,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         });
       }
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
-      playerSideContainer.querySelector(`.actions .value`).innerHTML =
-        `${character.actions ?? 0}/${(character.maxActions ?? 0) - (character.tempActions ?? 0)}`;
+      playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
       const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
       const strength = cutlassCount + parseInt(character.tempStrength ?? 0, 10);
       playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
@@ -264,21 +263,28 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = 5;
       }
     });
-    let gameInfoSidePanel = document.querySelector('.game-info-side-panel');
+    const gameInfoSidePanel = document.querySelector('.game-info-side-panel');
     if (!gameInfoSidePanel) {
       selections.insertAdjacentHTML(
         'afterend',
         `<div class="game-info-side-panel">
         <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
         <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
+        <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
         </div>`,
       );
-      gameInfoSidePanel = document.querySelector('.game-info-side-panel');
     }
-    gameInfoSidePanel.querySelector('.treasure .value').innerHTML =
-      `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted == this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
-    gameInfoSidePanel.querySelector('.deckhands .value').innerHTML =
-      `${this.gamedatas.tiles.reduce((acc, d) => acc + parseInt(d.deckhand, 10), 0)}/30`;
+    this.updateSidePanel();
+  },
+  updateSidePanel() {
+    const gameInfoSidePanel = document.querySelector('.game-info-side-panel');
+    if (gameInfoSidePanel) {
+      gameInfoSidePanel.querySelector('.treasure .value').innerHTML =
+        `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted == this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
+      gameInfoSidePanel.querySelector('.deckhands .value').innerHTML =
+        `${this.gamedatas.tiles.reduce((acc, d) => acc + parseInt(d.deckhand, 10), 0)}/30`;
+      gameInfoSidePanel.querySelector('.characters-left .value').innerHTML = `${this.gamedatas.remainingCharacters}`;
+    }
   },
   renderTokens(container, tokens) {
     container.style.setProperty('--count', tokens.length ?? 0);
@@ -1093,6 +1099,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     await this.notificationWrapper(notification);
     if (isStudio()) console.log('notif_updateMap', notification);
     this.map.update(notification.args.gameData);
+    this.updateSidePanel();
   },
   notif_updateCharacterData: async function (notification) {
     await this.notificationWrapper(notification);

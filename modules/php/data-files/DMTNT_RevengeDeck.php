@@ -41,44 +41,45 @@ class DMTNT_RevengeDeckData
                 'color' => 'red',
                 'action' => 'deckhand-spread',
             ],
+
             'revenge005' => [
-                'type' => 'deck',
-                'deck' => 'revenge',
-                'dice' => 4,
-                'color' => 'both',
-                'action' => 'deckhand-spawn',
-            ],
-            'revenge006' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 5,
                 'color' => 'red',
             ],
-            'revenge007' => [
+            'revenge006' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 0,
                 'color' => 'yellow',
                 'action' => 'deckhand-spawn',
             ],
-            'revenge008' => [
+            'revenge007' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 1,
                 'color' => 'yellow',
                 'action' => 'deckhand-spawn',
             ],
-            'revenge009' => [
+            'revenge008' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 2,
                 'color' => 'yellow',
                 'action' => 'deckhand-spread',
             ],
-            'revenge010' => [
+            'revenge009' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 3,
+                'color' => 'yellow',
+                'action' => 'deckhand-spread',
+            ],
+            'revenge010' => [
+                'type' => 'deck',
+                'deck' => 'revenge',
+                'dice' => 4,
                 'color' => 'yellow',
                 'action' => 'deckhand-spread',
             ],
@@ -86,41 +87,41 @@ class DMTNT_RevengeDeckData
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 5,
-                'color' => 'both',
+                'color' => 'yellow',
             ],
             'revenge012' => [
-                'type' => 'deck',
-                'deck' => 'revenge',
-                'dice' => 4,
-                'color' => 'yellow',
-                'action' => 'deckhand-spread',
-            ],
-            'revenge013' => [
-                'type' => 'deck',
-                'deck' => 'revenge',
-                'dice' => 5,
-                'color' => 'yellow',
-            ],
-            'revenge014' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 1,
                 'color' => 'both',
                 'action' => 'crew-move',
             ],
-            'revenge015' => [
+            'revenge013' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 2,
                 'color' => 'both',
                 'action' => 'crew-move',
             ],
-            'revenge016' => [
+            'revenge014' => [
                 'type' => 'deck',
                 'deck' => 'revenge',
                 'dice' => 3,
                 'color' => 'both',
                 'action' => 'crew-move',
+            ],
+            'revenge015' => [
+                'type' => 'deck',
+                'deck' => 'revenge',
+                'dice' => 4,
+                'color' => 'both',
+                'action' => 'deckhand-spawn',
+            ],
+            'revenge016' => [
+                'type' => 'deck',
+                'deck' => 'revenge',
+                'dice' => 5,
+                'color' => 'both',
             ],
             'revenge017' => [
                 'type' => 'deck',

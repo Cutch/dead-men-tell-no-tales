@@ -41,8 +41,8 @@ class DMTNT_Character
             $data['item'] = is_array($data['item']) ? $data['item']['id'] : $data['item'];
         }
         $data['fatigue'] = clamp($data['fatigue'], 0, $data['maxFatigue']);
-        $data['actions'] =
-            clamp($data['actions'], 0, $data['maxActions']) - ($data['isActive'] ? $this->game->gameData->get('tempActions') : 0);
+        $data['actions'] = $data['actions'] - ($data['isActive'] ? $this->game->gameData->get('tempActions') : 0);
+
         $values = [];
         foreach ($data as $key => $value) {
             if (in_array($key, self::$characterColumns)) {
@@ -125,8 +125,7 @@ class DMTNT_Character
         $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterId;
         $characterData['id'] = $characterId;
         $underlyingCharacterData = $this->game->data->getCharacters()[$characterData['id']];
-        $characterData['maxActions'] =
-            $underlyingCharacterData['actions'] + ($characterData['isActive'] ? $this->game->gameData->get('tempActions') : 0);
+        $characterData['maxActions'] = $underlyingCharacterData['actions'];
         $characterData['maxFatigue'] = 16;
         $characterData['pos'] = $this->game->getCharacterPos($characterId);
 
@@ -320,10 +319,11 @@ class DMTNT_Character
         ];
         $this->game->hooks->onAdjustActions($hookData);
         $tempActions = $this->game->gameData->get('tempActions');
+        $data['actions'] -= $tempActions;
+        $prev -= $tempActions;
         if ($tempActions > 0 && $hookData['change'] < 0) {
             $newTempActions = max($tempActions + $hookData['change'], 0);
             $this->game->gameData->set('tempActions', $newTempActions);
-
             $hookData['change'] -= $newTempActions - $tempActions;
         }
 

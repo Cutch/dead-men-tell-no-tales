@@ -76,9 +76,11 @@ class DMTNT_Map
     public function getValidAdjacentTiles($x, $y): array
     {
         $currentTile = $this->xyMap[$this->xy($x, $y)];
-        return array_filter($this->getAdjacentTiles($x, $y), function ($tile) use ($currentTile) {
-            return !$currentTile || ($this->testTouchPoints($currentTile, $tile) && $tile['destroyed'] == 0);
-        });
+        return array_values(
+            array_filter($this->getAdjacentTiles($x, $y), function ($tile) use ($currentTile) {
+                return !$currentTile || ($this->testTouchPoints($currentTile, $tile) && $tile['destroyed'] == 0);
+            })
+        );
     }
     public function getTouchPoints(string $id)
     {
@@ -417,7 +419,7 @@ EOD;
     }
     public function increaseFire($roll, $color): void
     {
-        $this->iterateMap(function ($tile) use ($color, $roll) {
+        $this->iterateMap(function (&$tile) use ($color, $roll) {
             if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll) {
                 $tile['fire'] = min($tile['fire'] + 1, 6);
             }

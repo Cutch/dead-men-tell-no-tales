@@ -225,7 +225,7 @@ class DMTNT_Decks
                 'gameData' => $gameData,
             ];
             if ($notify) {
-                $this->game->notify('shuffle', clienttranslate('The ${deckName} deck is out of cards, shuffling'), $results);
+                $this->game->notify('shuffle', clienttranslate('The ${deckName} deck is shuffled'), $results);
             } else {
                 $this->game->notify('shuffle', '', $results);
             }

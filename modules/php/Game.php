@@ -226,6 +226,14 @@ class Game extends \Table
     {
         $this->notify('notify', $message, $arg);
     }
+    public function getRemainingCharacters()
+    {
+        return array_diff(
+            toId($this->data->getCharacters()),
+            $this->gameData->get('deadCharacters'),
+            $this->character->getAllCharacterIds()
+        );
+    }
     public function death(string $characterId)
     {
         if ($this->hasAllTreasure()) {
@@ -260,11 +268,7 @@ class Game extends \Table
         $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
         $this->gameData->set('tokenPositions', $tokenPositions);
 
-        $remainingCharacters = array_diff(
-            toId($this->data->getCharacters()),
-            $this->gameData->get('deadCharacters'),
-            $this->character->getAllCharacterIds()
-        );
+        $remainingCharacters = $this->getRemainingCharacters();
         if ($this->gameData->get('randomSelection')) {
             shuffle($remainingCharacters);
             $this->character->swapToCharacter($character['id'], $remainingCharacters[0]);
@@ -460,6 +464,14 @@ class Game extends \Table
             $this->gameData->set('newTile', $card);
             $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
             $this->nextState('placeTile');
+        } elseif ($this->gameData->get('dinghyChecked')) {
+            $this->gameData->set('dinghyChecked', true);
+            $this->decks->getDeck('tile')->moveCard($this->decks->getCard('dinghy')['id'], 'deck');
+
+            $card = $this->decks->pickCard('tile');
+            $this->gameData->set('newTile', $card);
+            $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+            $this->nextState('placeTile');
         } else {
             $this->gameData->set('newTile', null);
             $this->gameData->set('newTileCount', 0);
@@ -635,8 +647,10 @@ class Game extends \Table
             ]);
         }
         $this->undo->saveState();
-        if (sizeof($this->getEnemies()) > 0) {
-            $this->nextState('battleSelection');
+        if ($this->gamestate->state(true, false, true)['name'] === 'playerTurn') {
+            if (sizeof($this->getEnemies()) > 0) {
+                $this->nextState('battleSelection');
+            }
         }
         $this->completeAction();
     }
@@ -1534,6 +1548,7 @@ class Game extends \Table
         $result['currentPosition'] = $this->map->xy(...$xy);
         $result['activeCharacter'] = $this->character->getTurnCharacterId();
         $result['characters'] = $this->character->getMarshallCharacters();
+        $result['remainingCharacters'] = sizeof($this->getRemainingCharacters());
         $result['characterPositions'] = array_reduce(
             $result['characters'],
             function ($arr, $char) {

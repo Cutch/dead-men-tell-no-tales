@@ -149,13 +149,13 @@ class DMTNT_SelectionStates
     {
         $stateName = $stateName ?? $this->game->gamestate->state(true, false, true)['name'];
         if ($stateName == 'cardSelection') {
-            return 'cardSelectionState'; // Check
+            return 'cardSelectionState';
         } elseif ($stateName == 'crewMovement') {
-            return 'crewMovementState'; // Check
+            return 'crewMovementState';
         } elseif ($stateName == 'characterMovement') {
-            return 'characterMovementState'; // Check
+            return 'characterMovementState';
         } elseif ($stateName == 'itemSelection') {
-            return 'itemSelectionState'; // Check
+            return 'itemSelectionState';
         }
         return null;
     }
