@@ -435,8 +435,8 @@ EOD;
     {
         if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
             $tile['destroyed'] = 1;
-            $this->game->gameData->set('explosion', $this->game->gameData->get('explosion') + 1);
-            if ($this->game->gameData->get('explosion') == 7) {
+            $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
+            if ($this->game->gameData->get('explosions') == 7) {
                 $this->game->lose('explosion');
             }
             $tileXY = $this->xy($tile['x'], $tile['y']);
@@ -489,8 +489,8 @@ EOD;
         ) {
             $tile['exploded'] = 1;
             // Advance the tracker
-            $this->game->gameData->set('explosion', $this->game->gameData->get('explosion') + 1);
-            if ($this->game->gameData->get('explosion') == 7) {
+            $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
+            if ($this->game->gameData->get('explosions') == 7) {
                 $this->game->lose('explosion');
             }
 
@@ -597,6 +597,11 @@ EOD;
             }, $this->game->gameData->get('turnOrder'))
         );
         $nextState = true;
+        $tileCount = sizeof(
+            array_filter($this->cachedMap, function ($d) {
+                return $d['destroyed'] != 1;
+            })
+        );
         foreach ($crew as $token) {
             $currentPosId = $token['currentPos'];
             $currentPos = $this->getXY($token['currentPos']);
@@ -606,7 +611,7 @@ EOD;
             $tree = [];
             $found = false;
             $level = 1;
-            while (sizeof($visited) < sizeof($this->cachedMap) && !$found && sizeof($tiles) !== 0) {
+            while (sizeof($visited) < $tileCount && !$found && sizeof($tiles) !== 0) {
                 $currentVisited = [...$visited];
                 $hasChildren = false;
                 $nextTiles = [];
@@ -630,7 +635,7 @@ EOD;
                     foreach ($children as $child) {
                         $id = $child['id'];
                         $xyId = $this->xy($child['x'], $child['y']);
-                        if (in_array($id, $visited)) {
+                        if (!in_array($id, $visited)) {
                             array_push($visited, $id);
                         }
                         if (!array_key_exists($id, $tree)) {

@@ -1492,7 +1492,6 @@ class Game extends \Table
     {
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
         if ($leftOverActions > 0) {
-            $leftOverActions -= $this->gameData->get('tempActions');
             $this->gameData->set('tempActions', $leftOverActions);
             $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
                 'usedActionId' => 'actEndTurn',

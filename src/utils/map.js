@@ -85,6 +85,7 @@ export class Map {
         display: gameData.explosions === 0 ? 'none' : '',
         bottom: `-100px`,
         position: 'absolute',
+        transition: '1s left',
       },
     });
     this.explosion = this.container.querySelector('.explosion-base');
@@ -539,8 +540,8 @@ export class Map {
       }
     }
     if (explosions != null) {
-      this.explosion.style.left = `${-325 + 150 * (explosions - 1)}px`;
       this.explosion.style.display = explosions === 0 ? 'none' : '';
+      setTimeout(() => (this.explosion.style.left = `${-325 + 140 * (explosions - 1)}px`), 0);
     }
   }
 }

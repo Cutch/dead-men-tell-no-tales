@@ -8,6 +8,7 @@
   top: 0.5rem;
   right: 0px;
   left: 0;
+  pointer-events: none;
 }
 .map-buttons {
   display: flex;
@@ -15,6 +16,7 @@
   background: #fff;
   padding: 0.75rem 1rem;
   border-radius: 1rem;
+  pointer-events: auto;
 }
 .place-new .ocean {
   cursor: pointer;

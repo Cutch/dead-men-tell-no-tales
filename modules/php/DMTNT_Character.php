@@ -41,7 +41,7 @@ class DMTNT_Character
             $data['item'] = is_array($data['item']) ? $data['item']['id'] : $data['item'];
         }
         $data['fatigue'] = clamp($data['fatigue'], 0, $data['maxFatigue']);
-        $data['actions'] = $data['actions'] - ($data['isActive'] ? $this->game->gameData->get('tempActions') : 0);
+        $data['actions'] = max($data['actions'], 0);
 
         $values = [];
         foreach ($data as $key => $value) {
@@ -169,9 +169,7 @@ class DMTNT_Character
             $this->game->hooks->onGetCharacterData($characterData);
         }
         $characterData['fatigue'] = clamp($characterData['fatigue'], 0, $characterData['maxFatigue']);
-        $characterData['actions'] =
-            clamp($characterData['actions'], 0, $characterData['maxActions']) +
-            ($characterData['isActive'] ? $this->game->gameData->get('tempActions') : 0);
+        $characterData['actions'] = clamp($characterData['actions'], 0, $characterData['maxActions']);
         $characterData['playerId'] = $characterData['player_id'];
 
         if (
@@ -294,6 +292,7 @@ class DMTNT_Character
             $this->game->gameData->set('round', $this->game->gameData->get('round') + 1);
         }
         $turnNo = ($turnNo + 1) % sizeof($turnOrder);
+        $this->adjustActiveActions(10);
         $characterData = $this->getCharacterData($character);
 
         $playerId = (int) $this->game->getActivePlayerId();
@@ -318,7 +317,6 @@ class DMTNT_Character
         ];
         $this->game->hooks->onAdjustActions($hookData);
         $tempActions = $this->game->gameData->get('tempActions');
-        $data['actions'] -= $tempActions;
         $prev -= $tempActions;
         if ($tempActions > 0 && $hookData['change'] < 0) {
             $newTempActions = max($tempActions + $hookData['change'], 0);
@@ -400,7 +398,7 @@ class DMTNT_Character
                 'playerColor' => $char['player_color'],
                 'characterColor' => $char['color'],
                 'playerId' => $char['playerId'],
-                'actions' => $char['actions'],
+                'actions' => $char['actions'] + ($char['isActive'] ? $this->game->gameData->get('tempActions') : 0),
                 'maxActions' => $char['maxActions'],
                 'maxFatigue' => $char['maxFatigue'],
                 'tempActions' => $char['isActive'] ? $this->game->gameData->get('tempActions') : 0,
