@@ -304,7 +304,7 @@ class DMTNT_ActInterrupt
         $state = $this->getLatestInterruptState();
         if (!$state) {
             return [
-                'character_id' => $this->game->getCharacterHTML(),
+                'character_name' => $this->game->getCharacterHTML(),
             ];
         }
         $data = $state['data'];
@@ -326,7 +326,7 @@ class DMTNT_ActInterrupt
         // );
         return [
             ...$data,
-            'character_id' => $this->game->getCharacterHTML(),
+            'character_name' => $this->game->getCharacterHTML(),
             'actions' => [
                 [
                     'action' => 'actUseSkill',

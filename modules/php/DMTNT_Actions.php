@@ -149,9 +149,12 @@ class DMTNT_Actions
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
                     $character = $game->character->getTurnCharacter();
-                    return (array_key_exists('cutlass', $character['tokenItems']) ? $character['tokenItems']['cutlass'] : 0) +
-                        $character['tempStrength'] <
-                        4 &&
+                    $tokens = array_count_values(
+                        array_map(function ($d) {
+                            return $d['treasure'];
+                        }, $character['tokenItems'])
+                    );
+                    return (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0) + $character['tempStrength'] < 4 &&
                         !$this->isSweltering() &&
                         !$this->tooManyDeckhands() &&
                         !$this->hasTreasure() &&

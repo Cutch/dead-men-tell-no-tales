@@ -53,6 +53,7 @@ class DMTNT_Map
             $this->minMax['maxX'] = max($this->minMax['maxX'], $d['x']);
             $this->minMax['minY'] = min($this->minMax['minY'], $d['y']);
             $this->minMax['maxY'] = max($this->minMax['maxY'], $d['y']);
+            unset($d);
         });
     }
     public function getAdjacentTiles($x, $y, ?string $toTileId = null): array
@@ -194,6 +195,7 @@ class DMTNT_Map
                 if ($this->hasTileByXY($x, $y)) {
                     $tile = &$this->getTileByXY($x, $y);
                     $callback($tile);
+                    unset($tile);
                 }
             }
         }
@@ -256,9 +258,9 @@ class DMTNT_Map
             $y = $firstTile['y'];
             $id = $firstTile['id'];
             if ($hasTreasure) {
-                $fatigueList[$id] = $fire;
+                $fatigueList[$id] = (int) $fire;
             } else {
-                $fatigueList[$id] = max($fire - $currentFire, 0);
+                $fatigueList[$id] = (int) max($fire - $currentFire, 0);
             }
             if ($canRun) {
                 // TODO skip being able to run to adjacent if enemy exists, except garret
@@ -271,17 +273,17 @@ class DMTNT_Map
                     if ($hasTreasure) {
                         $f = $tempTile['fire'] + $fire + 2;
                         if (array_key_exists($id, $fatigueList)) {
-                            $fatigueList[$id] = min($f, $fatigueList[$id]);
+                            $fatigueList[$id] = (int) min($f, $fatigueList[$id]);
                         } else {
-                            $fatigueList[$id] = $f;
+                            $fatigueList[$id] = (int) $f;
                         }
                     } else {
                         $f = max($fire - $currentFire, 0);
                         $f = max($tempTile['fire'] - $fire, 0) + $f;
                         if (array_key_exists($id, $fatigueList)) {
-                            $fatigueList[$id] = min($f + 2, $fatigueList[$id]);
+                            $fatigueList[$id] = (int) min($f + 2, $fatigueList[$id]);
                         } else {
-                            $fatigueList[$id] = $f + 2;
+                            $fatigueList[$id] = (int) $f + 2;
                         }
                     }
                 }
@@ -405,6 +407,7 @@ EOD;
                 $aTile = &$this->getTileById($aTile['id']);
                 $aTile['fire'] = min($aTile['fire'] + 1, 6);
                 $this->checkExplosion($aTile);
+                unset($aTile);
             }
         }
         if (
@@ -641,10 +644,11 @@ EOD;
                 $currentDeckhand = $tile['deckhand'];
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTile) {
-                    $aTile = &$this->getTileById($aTile['id']);
+                    $aTile = $this->getTileById($aTile['id']);
                     if ($currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
                         $aTile['deckhand']++;
                     }
+                    unset($aTile);
                 }
             }
         });

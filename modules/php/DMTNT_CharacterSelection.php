@@ -132,7 +132,7 @@ class DMTNT_CharacterSelection
     {
         $playerId = $this->game->getCurrentPlayer();
         $selectedCharacters = array_map(function ($char) {
-            return $char['character_id'];
+            return $char['characterId'];
         }, array_values($this->game->getCollectionFromDb("SELECT character_id FROM `character` WHERE `player_id` = '$playerId'")));
         $selectedCharacters = array_orderby($selectedCharacters, 'character_id', SORT_ASC);
 

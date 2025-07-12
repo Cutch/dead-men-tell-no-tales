@@ -119,7 +119,7 @@ class DMTNT_Character
     {
         extract($this->game->gameData->getAll('turnNo', 'turnOrder'));
         $turnOrder = array_values(array_filter($turnOrder));
-        $characterId = $characterData['character_id'];
+        $characterId = $characterData['characterId'];
         $isActive = $turnOrder[$turnNo ?? 0] == $characterId;
         $characterData['isActive'] = $isActive;
         $characterData['isFirst'] = array_key_exists(0, $turnOrder) && $turnOrder[0] == $characterId;
@@ -153,7 +153,6 @@ class DMTNT_Character
                 'isActive' => $isActive,
                 ...$this->game->data->getItems()[$itemId],
                 'skills' => $skills,
-                'character_id' => $characterId,
                 'characterId' => $characterId,
             ];
         } else {
@@ -210,7 +209,7 @@ class DMTNT_Character
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
         } else {
             $this->cachedData[$name] = $this->game->getCollectionFromDb(
-                "SELECT c.*, player_color, player_zombie FROM `character` c INNER JOIN `player` p ON p.player_id = c.player_id WHERE character_id = '$name'"
+                "SELECT c.*, character_id as characterId, player_color, player_zombie FROM `character` c INNER JOIN `player` p ON p.player_id = c.player_id WHERE character_id = '$name'"
             )[$name];
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
         }
@@ -368,13 +367,13 @@ class DMTNT_Character
 
         if ($data['fatigue'] == $data['maxFatigue']) {
             $this->game->eventLog(clienttranslate('${character_name} has died'), [
-                'character_id' => $this->game->getCharacterHTML($characterId),
+                'character_name' => $this->game->getCharacterHTML($characterId),
             ]);
-            $data['actions'] = 0;
-            $hookData = [
-                'characterId' => $characterId,
-            ];
-            $this->game->hooks->onDeath($hookData);
+            $data['actions'] = min($data['actions'], 5);
+
+            $this->game->death($characterId);
+            $this->game->endTurn();
+            $this->game->gameData->set('battle', [...$this->game->gameData->get('battle'), 'death' => true]);
             return false;
         } else {
             return $prev == 0;
@@ -390,14 +389,14 @@ class DMTNT_Character
     }
     public function adjustActiveFatigue(int $fatigue): int
     {
-        $characterId = $this->getSubmittingCharacter()['character_id'];
+        $characterId = $this->getSubmittingCharacter()['characterId'];
         return $this->adjustFatigue($characterId, $fatigue);
     }
     public function getMarshallCharacters()
     {
         return array_map(function ($char) {
             return [
-                'id' => $char['character_id'],
+                'id' => $char['characterId'],
                 'isFirst' => $char['isFirst'],
                 'isActive' => $char['isActive'],
                 'item' => $char['item'],

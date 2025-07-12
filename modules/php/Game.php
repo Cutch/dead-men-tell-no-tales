@@ -102,8 +102,8 @@ class Game extends \Table
             if (!array_key_exists('player_name', $args) && str_contains($message, '${player_name}')) {
                 if (array_key_exists('playerId', $args)) {
                     $args['player_name'] = $this->getPlayerNameById($args['playerId']);
-                } elseif (array_key_exists('character_id', $args)) {
-                    $playerId = (int) $this->character->getCharacterData($args['character_id'])['playerId'];
+                } elseif (array_key_exists('characterId', $args)) {
+                    $playerId = (int) $this->character->getCharacterData($args['characterId'])['playerId'];
                     $args['player_name'] = $this->getPlayerNameById($playerId);
                 } elseif (array_key_exists('character_name', $args)) {
                     $playerId = (int) $this->character->getCharacterData($args['character_name'])['playerId'];
@@ -278,6 +278,8 @@ class Game extends \Table
         $this->markChanged('map');
         $this->markChanged('token');
         $this->markChanged('actions');
+        $this->markRandomness();
+        $this->completeAction();
     }
     public function cardDrawEvent($card, $deck, $arg = [])
     {
@@ -621,7 +623,7 @@ class Game extends \Table
         $character = $this->character->getTurnCharacter();
         $moves = $this->map->calculateMoves();
         $tile = $this->map->getTileByXY($x, $y);
-        $fatigue = $moves[$tile['id']];
+        $fatigue = (int) $moves[$tile['id']];
         if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
             throw new BgaUserException(clienttranslate('Not enough fatigue'));
         }
@@ -806,6 +808,10 @@ class Game extends \Table
     {
         $this->actions->spendActionCost('actRest');
         $this->character->adjustActiveFatigue(-2);
+        $this->eventLog(clienttranslate('${character_name} rested and recovered ${count} fatigue'), [
+            'usedActionId' => 'actRest',
+            'count' => -2,
+        ]);
         $this->completeAction();
     }
     public function actFightFire(?int $x, ?int $y, ?int $by = 1): void
@@ -964,20 +970,6 @@ class Game extends \Table
     {
         // TODO: Can't end turn early if sweltering
         // Notify all players about the choice to pass.
-        $leftOverActions = $this->character->getTurnCharacter()['actions'];
-        if ($leftOverActions > 0) {
-            $this->gameData->set('tempActions', $leftOverActions - $this->gameData->get('tempActions'));
-            $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
-                'usedActionId' => 'actEndTurn',
-                'count' => $leftOverActions,
-            ]);
-        } else {
-            $this->gameData->set('tempActions', 0);
-            $this->eventLog(clienttranslate('${character_name} ends their turn'), [
-                'usedActionId' => 'actEndTurn',
-            ]);
-        }
-
         // at the end of the action, move to the next state
         $this->endTurn();
         $this->completeAction(false);
@@ -1055,20 +1047,22 @@ class Game extends \Table
                 })
             )[0],
         ];
-        $data = ['attack' => $this->rollBattleDie(clienttranslate('Attack'), $this->character->getTurnCharacterId())];
+        $character = $this->character->getTurnCharacter();
+        $tokens = array_count_values(
+            array_map(function ($d) {
+                return $d['treasure'];
+            }, $character['tokenItems'])
+        );
+        $data = [
+            'attack' =>
+                $this->rollBattleDie(clienttranslate('Attack'), $this->character->getTurnCharacterId()) +
+                (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0),
+        ];
         $this->hooks->onGetAttack($data);
         $result = '';
         if ($battle['target']['battle'] <= $data['attack']) {
             // Win without need for strength
             $result = 'win';
-        } elseif (
-            $this->character->getTurnCharacter()['tempStrength'] > 0 &&
-            $battle['target']['battle'] <= $data['attack'] + $this->character->getTurnCharacter()['tempStrength']
-        ) {
-            // Will need strength
-        } else {
-            // Will result in loss no matter what
-            $result = 'lose';
         }
         $this->gameData->set('battle', [...$battle, 'attack' => $data['attack'], 'result' => $result]);
         if ($result) {
@@ -1083,11 +1077,14 @@ class Game extends \Table
     }
     public function actUseStrength()
     {
-        $characterId = $this->character->getSubmittingCharacter()['character_id'];
+        $character = $this->character->getTurnCharacter();
+        $battle = $this->gameData->get('battle');
+        $battle['attack'] += +$character['tempStrength'];
+        $characterId = $this->character->getSubmittingCharacter()['characterId'];
         $this->character->updateCharacterData($characterId, function (&$data) {
             $data['tempStrength'] = 0;
         });
-        $this->gameData->set('battle', [...$this->gameData->get('battle'), 'result' => 'win']);
+        $this->gameData->set('battle', [...$battle, 'result' => $battle['target']['battle'] <= $battle['attack'] ? 'win' : 'lose']);
         $this->transitionToPostBattle();
     }
     public function actDontUseStrength()
@@ -1143,12 +1140,15 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
+            'attack' => $battle['attack'],
+            'defense' => $battle['target']['battle'],
             'actions' => $battle['result']
                 ? []
                 : [
                     [
                         'action' => 'actUseStrength',
                         'type' => 'action',
+                        'suffix' => '+' . $this->character->getTurnCharacter()['tempStrength'],
                     ],
                     [
                         'action' => 'actDontUseStrength',
@@ -1188,20 +1188,29 @@ class Game extends \Table
             $this->gameData->set('tokenPositions', $tokenPositions);
             $this->markChanged('map');
             // $this->gameData->set('battle', [...$battle, 'resultRoll' => $resultRoll]);
-        } elseif ($battle['result'] == 'lose' && !$isGuard) {
-            $moveList = $this->map->getValidAdjacentTiles($x, $y);
-            $currentTile = $this->map->getTileByXY($x, $y);
-            $hasValidMove = sizeof(
-                array_filter($moveList, function ($tile) use ($currentTile) {
-                    return $this->map->checkIfCanMove($currentTile, $tile);
-                })
-            );
-            while ($resultRoll == 0 || (($resultRoll == 3 || $resultRoll == 4) && !$hasValidMove)) {
-                $resultRoll = $this->rollBattleDie(clienttranslate('Post Battle'), $this->character->getTurnCharacterId());
+        } elseif ($battle['result'] == 'lose') {
+            $this->eventLog(clienttranslate('${character_name} gained ${count} fatigue'), [
+                'count' => $battle['target']['battle'] - $battle['attack'],
+            ]);
+            $this->character->adjustActiveFatigue($battle['target']['battle'] - $battle['attack']);
+            $battle = $this->gameData->get('battle');
+            if (!$isGuard && !array_key_exists('death', $battle)) {
+                $moveList = $this->map->getValidAdjacentTiles($x, $y);
+                $currentTile = $this->map->getTileByXY($x, $y);
+                $hasValidMove = sizeof(
+                    array_filter($moveList, function ($tile) use ($currentTile) {
+                        return $this->map->checkIfCanMove($currentTile, $tile);
+                    })
+                );
+                while ($resultRoll == 0 || (($resultRoll == 3 || $resultRoll == 4) && !$hasValidMove)) {
+                    $resultRoll = $this->rollBattleDie(clienttranslate('Post Battle'), $this->character->getTurnCharacterId());
+                }
             }
         }
         $this->gameData->set('battle', [...$battle, 'resultRoll' => $resultRoll]);
-        $this->nextState('postBattle');
+        if (!array_key_exists('death', $battle)) {
+            $this->nextState('postBattle');
+        }
     }
     public function actBattleAgain()
     {
@@ -1251,14 +1260,19 @@ class Game extends \Table
     public function stPostBattle()
     {
         $battle = $this->gameData->get('battle');
-        if ($battle['resultRoll'] == 0) {
-            $this->nextState('battleSelection');
-        } elseif ($battle['resultRoll'] <= 2) {
-            $this->actMakeThemFlee();
-        } elseif ($battle['resultRoll'] <= 4) {
-            $this->actRetreat();
-        } elseif ($battle['resultRoll'] == 5) {
-            $this->startBattle((int) $battle['target']['id']);
+        $isGuard = $battle['target']['type'] == 'guard';
+        if ($isGuard) {
+            $this->completeAction(false);
+        } else {
+            if ($battle['resultRoll'] == 0) {
+                $this->nextState('battleSelection');
+            } elseif ($battle['resultRoll'] <= 2) {
+                $this->actMakeThemFlee();
+            } elseif ($battle['resultRoll'] <= 4) {
+                $this->actRetreat();
+            } elseif ($battle['resultRoll'] == 5) {
+                $this->startBattle((int) $battle['target']['id']);
+            }
         }
     }
     public function argPostBattle()
@@ -1464,6 +1478,20 @@ class Game extends \Table
     }
     public function endTurn()
     {
+        $leftOverActions = $this->character->getTurnCharacter()['actions'];
+        if ($leftOverActions > 0) {
+            $this->gameData->set('tempActions', $leftOverActions - $this->gameData->get('tempActions'));
+            $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
+                'usedActionId' => 'actEndTurn',
+                'count' => $leftOverActions,
+            ]);
+        } else {
+            $this->gameData->set('tempActions', 0);
+            $this->eventLog(clienttranslate('${character_name} ends their turn'), [
+                'usedActionId' => 'actEndTurn',
+            ]);
+        }
+
         $data = [
             'characterId' => $this->character->getTurnCharacterId(),
         ];
@@ -1612,7 +1640,7 @@ class Game extends \Table
         });
         $result['treasuresLooted'] = $this->gameData->get('treasures');
         $result['treasuresNeeded'] = $this->getTreasuresNeeded();
-        $result['availableItems'] = array_values(toId($items));
+        $result['availableItems'] = array_values(array_diff(array_values(toId($items)), $this->gameData->get('destroyedItems')));
     }
     public function getGameData(&$result): void
     {
@@ -1958,28 +1986,18 @@ class Game extends \Table
     public function resetFatigue()
     {
         $this->character->updateCharacterData($this->character->getSubmittingCharacter()['id'], function (&$data) {
-            $data['fatigue'] = $data['maxFatigue'];
+            $data['fatigue'] = 0;
         });
         $this->completeAction();
     }
-    public function lowFatigue(?string $char = null)
+    public function highFatigue(?string $char = null)
     {
         if (!$char) {
             $char = $this->character->getSubmittingCharacter()['id'];
         }
         $this->character->updateCharacterData($char, function (&$data) {
-            $data['fatigue'] = 1;
+            $data['fatigue'] = 13;
         });
-        $this->completeAction();
-    }
-    public function fatigue()
-    {
-        $this->character->adjustActiveFatigue(-10);
-        $this->completeAction();
-    }
-    public function fatigueChar($character)
-    {
-        $this->character->adjustFatigue($character, -10);
         $this->completeAction();
     }
 }

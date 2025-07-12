@@ -58,7 +58,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       actSelectCard: _('Select Card'),
       actMoveCrew: _('Move Crew'),
       actBattleSelection: _('Battle'),
-      actUseStrength: _('Use Strength'),
+      actUseStrength: _('Use Temporary Strength'),
       actDontUseStrength: _("Don't Use Strength"),
       actBattleAgain: _('Battle'),
       actRetreat: _('Retreat'),
@@ -86,14 +86,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     const characters = gameData?.characters
       ? Object.values(gameData?.characters)
       : Object.values(this.selectedCharacters).sort((a, b) => a.id.localeCompare(b.id));
-    // if (gameData.gamestate?.name === 'characterSelect' || this.refreshCharacters) {
-    //   document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
-    //   document.querySelectorAll('.player-card').forEach((el) => el.remove());
-    //   if (this.gamedatas.characters) characters = this.gamedatas.characters;
-    //   this.refreshCharacters = false;
-    // }
+    if (gameData.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) {
+      document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
+      document.querySelectorAll('.player-card').forEach((el) => el.remove());
+    }
+    this.lastCharacters = characters.map((d) => d.id).join(',');
     const scale = 3;
-    characters.forEach((character, i) => {
+    characters.forEach((character) => {
       // Player side board
       const playerPanel = this.getPlayerPanelElement(character.playerId);
       const item = character.item;
@@ -138,7 +137,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
       const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
-      const strength = cutlassCount + parseInt(character.tempStrength ?? 0, 10);
+      const strength = Math.min(cutlassCount + parseInt(character.tempStrength ?? 0, 10), 4);
       playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
 
       playerSideContainer.querySelector(`.item .value`).innerHTML = item
@@ -215,12 +214,12 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         });
         const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
         cutlassMarkersElem.innerHTML = '';
-        for (let i = 0; i < cutlassCount; i++) {
+        for (let i = 0; i < Math.min(cutlassCount, 4); i++) {
           renderImage('cutlass-token', cutlassMarkersElem, {
             scale,
-            pos: 'replace',
+            pos: 'append',
             baseCss: 'cutlass-marker',
-            styles: { '--color': character.characterColor, left: `${i * 62 + 18}px` },
+            styles: { '--color': '#000', 'box-shadow': '0px 0px 2px 3px var(--color)', left: `${i * 62 + 18}px` },
           });
         }
         document.querySelector(`#player-${character.id} .strength-marker`).style.left = `${strength * 62 + 18}px`;
@@ -245,9 +244,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         }
 
         if (tokenItems != null) {
+          let removed = 0;
           this.renderTokens(
             document.querySelector(`#player-${character.id} .token-items`),
-            tokenItems.filter((d) => d.treasure !== 'cutlass'),
+            tokenItems.filter((d) => {
+              if (d.treasure === 'cutlass' && removed < 4) {
+                removed++;
+                return false;
+              }
+              return true;
+            }),
           );
         } else {
           document.querySelector(`#player-${character.id} .token-items`).innerHTML = '';
@@ -609,6 +615,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (action['targetName']) suffix += ` (${_(action['targetName'])} ${action['targetDie']})`;
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
+    if (action['suffix'] != null) suffix += ` (${action['suffix']})`;
     if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa6 fa6-solid fa6-person-running dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;

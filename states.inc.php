@@ -273,6 +273,7 @@ $machinestates = [
         'transitions' => [
             'endGame' => $gameEnd,
             'postBattle' => $postBattle,
+            'endTurn' => $nextCharacter,
         ],
     ],
     $postBattle => [
@@ -288,6 +289,7 @@ $machinestates = [
             'battleSelection' => $battleSelection,
             'playerTurn' => $playerTurn,
             'postBattle' => $postBattle,
+            'endTurn' => $nextCharacter,
         ],
     ],
     $interrupt => [
