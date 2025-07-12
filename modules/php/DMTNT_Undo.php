@@ -10,8 +10,10 @@ use Exception;
 class DMTNT_Undo
 {
     private Game $game;
+    private bool $stateSaved = false;
     private array $initialState;
     private array $extraTablesList = ['stats', 'map'];
+    private array $validStates = ['playerTurn', 'battleSelection'];
     private ?int $savedMoveId = null;
     private bool $actionWasCleared = false;
     public function __construct(Game $game)
@@ -21,9 +23,6 @@ class DMTNT_Undo
 
     public function actUndo(): void
     {
-        if ($this->game->gamestate->state(true, false, true)['name'] != 'playerTurn') {
-            throw new BgaUserException(clienttranslate('Only player actions can be undone'));
-        }
         if (!$this->canUndo()) {
             throw new BgaUserException(clienttranslate('Nothing left to undo, dice rolls, and deck pulls clear the undo history'));
         }
@@ -59,6 +58,9 @@ class DMTNT_Undo
         $this->game->markChanged('actions');
         $this->game::DbQuery("DELETE FROM `undoState` where pending OR undo_id = $undoId");
         $currentState = $this->game->gamestate->state(true, false, true)['name'];
+        if ($this->game->gamestate->state(true, false, true)['name'] != 'playerTurn') {
+            $currentState = 'playerTurn';
+        }
         $this->game->nextState('undo');
         $this->game->nextState($currentState);
         $this->game->completeAction(false);
@@ -102,13 +104,18 @@ class DMTNT_Undo
             'stateName' => $stateName,
         ];
     }
+
     public function saveState(): void
     {
+        if ($this->stateSaved) {
+            return;
+        }
+        $this->stateSaved = true;
         $char = $this->game->character->getTurnCharacterId();
         if (
             !$this->actionWasCleared &&
             $this->initialState &&
-            $this->initialState['stateName'] == 'playerTurn' &&
+            in_array($this->initialState['stateName'], $this->validStates) &&
             $char == $this->game->character->getSubmittingCharacterId()
         ) {
             if ($this->savedMoveId != null) {
@@ -121,7 +128,7 @@ class DMTNT_Undo
             $this->savedMoveId = $moveId;
 
             $pending = 'false';
-            if ($this->game->gamestate->state(true, false, true)['name'] != 'playerTurn') {
+            if (!in_array($this->game->gamestate->state(true, false, true)['name'], $this->validStates)) {
                 $pending = 'true';
             }
             $this->game::DbQuery(
@@ -132,10 +139,10 @@ class DMTNT_Undo
         if (
             !$this->actionWasCleared &&
             $this->initialState &&
-            $this->initialState['stateName'] != 'playerTurn' &&
+            !in_array($this->initialState['stateName'], $this->validStates) &&
             $char == $this->game->character->getSubmittingCharacterId()
         ) {
-            if ($this->game->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+            if (in_array($this->game->gamestate->state(true, false, true)['name'], $this->validStates)) {
                 $this->game::DbQuery('UPDATE `undoState` SET pending=false WHERE pending=true');
             }
         }

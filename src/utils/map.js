@@ -324,6 +324,7 @@ export class Map {
           currentElem.style.position = 'absolute';
           currentElem.style.left = currentOffset.left + 'px';
           currentElem.style.top = currentOffset.top + 'px';
+          currentElem.style.zIndex = '5';
           const animationId = fx
             .slideTo({
               node: currentElem,

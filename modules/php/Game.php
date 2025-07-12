@@ -634,7 +634,7 @@ class Game extends \Table
                 'usedActionId' => 'actMove',
             ]);
         }
-        // var_dump($this->getEnemies());
+        $this->undo->saveState();
         if (sizeof($this->getEnemies()) > 0) {
             $this->nextState('battleSelection');
         }
