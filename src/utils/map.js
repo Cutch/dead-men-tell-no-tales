@@ -396,7 +396,7 @@ export class Map {
     this.maxY = 0;
     this.minY = 0;
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
-      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, escape }) => {
+      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed }) => {
         if (name == 'tracker') return;
         this.minX = Math.min(this.minX, x);
         this.maxX = Math.max(this.maxX, x);
@@ -407,10 +407,54 @@ export class Map {
         let tileElem = this.container.querySelector(`.${name}-base`);
         if (destroyed == 1) {
           if (tileElem) {
-            tileElem.remove();
+            this.dice[tileKey] = null;
+            tileElem.outerHTML = `<div class="token-flip tile-flip ${name}-base"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
+            tileElem = this.container.querySelector(`.${name}-base`);
+            tileElem.style.left = `${x * 300}px`;
+            tileElem.style.bottom = `${y * 300}px`;
+            tileElem.style.position = 'absolute';
+            renderImage(name, tileElem.querySelector('.token-flip-front'), {
+              pos: 'replace',
+              card: false,
+              scale: 1,
+              rotate: rotate * 90,
+              baseData: tileKey,
+              styles: {
+                '--rotate': rotate * 90,
+              },
+            });
+            renderImage('tile-back', tileElem.querySelector('.token-flip-back'), {
+              pos: 'replace',
+              card: false,
+              scale: 1,
+              rotate: rotate * 90,
+              baseData: tileKey,
+              styles: {
+                '--rotate': rotate * 90,
+              },
+            });
+            setTimeout(() => {
+              tileElem.classList.add('flip');
+            }, 0);
+            setTimeout(() => {
+              tileElem.outerHTML = renderImage('tile-back', tileElem, {
+                pos: 'return',
+                card: false,
+                scale: 1,
+                rotate: rotate * 90,
+                baseData: tileKey,
+                styles: {
+                  left: `${x * 300}px`,
+                  bottom: `${y * 300}px`,
+                  position: 'absolute',
+                  '--rotate': rotate * 90,
+                },
+              });
+            }, 1400);
+          } else {
+            name = 'tile-back';
+            tileElem = null;
           }
-          name = 'tile-back';
-          tileElem = null;
         }
         if (!tileElem) {
           if (name === 'dinghy')
@@ -466,10 +510,10 @@ export class Map {
         const deckhandElem = tileElem.querySelector(`.deckhands`);
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
-        this.renderDeckhands(deckhandElem, deckhand);
-        characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
-        if (characterPositions) this.renderTokens(charactersElem, characterPositions, x, y);
-        if (tokenPositions) this.renderTokens(treasuresElem, tokenPositions, x, y);
+        if (deckhandElem) this.renderDeckhands(deckhandElem, deckhand);
+        if (treasuresElem) characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
+        if (characterPositions && charactersElem) this.renderTokens(charactersElem, characterPositions, x, y);
+        if (tokenPositions && treasuresElem) this.renderTokens(treasuresElem, tokenPositions, x, y);
         if (this.dice[tileKey]) {
           if (fire === 0) this.dice[tileKey]._hide();
           else {

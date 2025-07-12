@@ -79,6 +79,9 @@ class DMTNT_Map
         $currentTile = $this->xyMap[$this->xy($x, $y)];
         $tiles = [];
         $pos = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+        if ($currentTile['destroyed'] == 1) {
+            return [];
+        }
         array_walk($pos, function ($v) use (&$tiles, $currentTile, $x, $y) {
             $nx = $v[0];
             $ny = $v[1];
@@ -100,6 +103,9 @@ class DMTNT_Map
             array_merge(
                 ...array_values(
                     array_map(function ($tile) {
+                        if ($tile['destroyed'] == 1) {
+                            return [];
+                        }
                         return $this->getEmptyAdjacentTiles($tile['x'], $tile['y']);
                     }, $this->cachedMap)
                 )
@@ -295,6 +301,37 @@ class DMTNT_Map
 
         return $data['fatigueList'];
     }
+    public function isStranded(): bool
+    {
+        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        $key = $this->xy($x, $y);
+        if (!array_key_exists($key, $this->xyMap)) {
+            return false;
+        }
+        $currentTile = $this->xyMap[$key];
+        if ($currentTile['escape'] == 1) {
+            return false;
+        }
+        $moveList = $this->getValidAdjacentTiles($x, $y);
+        $moveIds = toId($moveList);
+        $limit = 0;
+        while (sizeof($moveList) > 0 && $limit < 30) {
+            $tile = array_shift($moveList);
+            $limit++;
+            foreach ($this->getValidAdjacentTiles($tile['x'], $tile['y']) as $newTile) {
+                var_dump($newTile);
+                if (!in_array($newTile['id'], $moveIds)) {
+                    array_push($moveIds, $newTile['id']);
+                    array_push($moveList, $newTile);
+                }
+            }
+            if ($tile['escape'] == 1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
     public function convertFatigueToDie(): int
     {
         $fatigue = $this->game->character->getTurnCharacter()['fatigue'];
@@ -397,11 +434,13 @@ EOD;
     public function checkExplosion(array &$tile)
     {
         if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
-            $map['destroyed'] = 1;
-            $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
-            if ($this->game->gameData->get('explosion') == 6) {
-                $this->game->lose('deckhand');
+            $tile['destroyed'] = 1;
+            $this->game->gameData->set('explosion', $this->game->gameData->get('explosion') + 1);
+            if ($this->game->gameData->get('explosion') == 7) {
+                $this->game->lose('explosion');
             }
+            $tileXY = $this->xy($tile['x'], $tile['y']);
+            // Increase fire in adjacent tiles
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             foreach ($adjacentTiles as $aTile) {
                 $aTile = &$this->getTileById($aTile['id']);
@@ -409,20 +448,7 @@ EOD;
                 $this->checkExplosion($aTile);
                 unset($aTile);
             }
-        }
-        if (
-            $tile['exploded'] == 0 &&
-            array_key_exists('explosion', $tile) &&
-            $tile['explosion'] > 0 &&
-            $tile['fire'] === $tile['explosion']
-        ) {
-            $tileXY = $this->xy($tile['x'], $tile['y']);
-            $map['exploded'] = 1;
-            // Advance the tracker
-            $this->game->gameData->get('explosion', $this->game->gameData->get('explosion') + 1);
-            if ($this->game->gameData->get('explosion') == 6) {
-                $this->game->lose('explosion');
-            }
+
             // Check for and kill players
             $deadCharacters = array_keys(
                 array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($tileXY) {
@@ -435,9 +461,38 @@ EOD;
 
             // Remove tokens from location, must come after character death if they drop
             $tokenPositions = $this->game->gameData->get('tokenPositions');
-            $tokenPositions[$tileXY] = [];
-            $this->game->gameData->set('tokenPositions', $tokenPositions);
-            // Check for token loss condition
+            if (array_key_exists($tileXY, $tokenPositions)) {
+                $this->game->gameData->set('destroyedTokens', [
+                    ...$this->game->gameData->get('destroyedTokens'),
+                    ...$tokenPositions[$tileXY],
+                ]);
+                $tokenPositions[$tileXY] = [];
+                $this->game->gameData->set('tokenPositions', $tokenPositions);
+                // Check for token loss condition
+                $destroyedTokenCounts = array_count_values(
+                    array_map(function ($d) {
+                        return $d['treasure'];
+                    }, $this->game->gameData->get('destroyedTokens'))
+                );
+                if (array_key_exists('treasure', $destroyedTokenCounts)) {
+                    if (6 - $destroyedTokenCounts['treasure'] < $this->game->getTreasuresNeeded()) {
+                        $this->game->lose('treasure');
+                    }
+                }
+            }
+        }
+        if (
+            $tile['exploded'] == 0 &&
+            array_key_exists('explosion', $tile) &&
+            $tile['explosion'] > 0 &&
+            $tile['fire'] === $tile['explosion']
+        ) {
+            $tile['exploded'] = 1;
+            // Advance the tracker
+            $this->game->gameData->set('explosion', $this->game->gameData->get('explosion') + 1);
+            if ($this->game->gameData->get('explosion') == 7) {
+                $this->game->lose('explosion');
+            }
 
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             $directions = [];
@@ -446,9 +501,11 @@ EOD;
                 $directions[$this->getTileDirection($tile, $aTile)] = &$this->getTileById($aTile['id']);
             }
             foreach (range($start, $start + 4) as $i) {
+                // var_dump($i);
                 if (array_key_exists($i, $directions)) {
                     $directions[$i]['fire'] = min($directions[$i]['fire'] + 1, 6);
                     $this->checkExplosion($directions[$i]);
+                    break;
                 }
             }
         }

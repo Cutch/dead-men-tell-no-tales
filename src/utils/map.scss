@@ -187,6 +187,12 @@
     transition: transform 0.8s;
     transform-style: preserve-3d;
   }
+  &.tile-flip {
+    top: unset;
+    &-inner {
+      transition: transform 1.2s;
+    }
+  }
 }
 /* Do an horizontal flip when you move the mouse over the flip box container */
 .flip .token-flip-inner {

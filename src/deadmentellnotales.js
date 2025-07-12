@@ -867,6 +867,19 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'playerTurn':
           if (isActive) {
+            if (this.gamedatas.isStranded)
+              this.statusBar.addActionButton(
+                _('Abandon Ship'),
+                () =>
+                  this.confirmationDialog(
+                    _(
+                      'If you abandon ship you will draw a new character and start from the dinghies. If there are no characters left the game will be lost.',
+                    ),
+                    () => this.bgaPerformAction('actAbandonShip'),
+                  ),
+                { color: 'red' },
+              );
+
             if (this.gamedatas.canUndo)
               this.statusBar.addActionButton(_('Undo'), () => this.bgaPerformAction('actUndo'), { color: 'secondary' });
             this.statusBar.addActionButton(

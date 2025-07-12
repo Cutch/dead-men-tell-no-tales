@@ -159,6 +159,11 @@ class Game extends \Table
         }
         $this->win();
     }
+    public function actAbandonShip()
+    {
+        $this->death($this->character->getTurnCharacterId());
+        $this->endTurn();
+    }
     public function actUndo()
     {
         $this->undo->actUndo();
@@ -239,6 +244,9 @@ class Game extends \Table
         if ($this->hasAllTreasure()) {
             $this->lose('untimely');
         }
+        $this->eventLog(clienttranslate('${character_name} has died'), [
+            'character_name' => $this->getCharacterHTML($characterId),
+        ]);
 
         $character = $this->character->getCharacterData($characterId);
         $item = $character['item'];
@@ -271,15 +279,19 @@ class Game extends \Table
         $remainingCharacters = $this->getRemainingCharacters();
         if ($this->gameData->get('randomSelection')) {
             shuffle($remainingCharacters);
-            $this->character->swapToCharacter($character['id'], $remainingCharacters[0]);
+            $newCharacterId = $remainingCharacters[0];
+            $this->character->swapToCharacter($character['id'], $newCharacterId);
         } else {
+            // TODO: Select character on death
         }
+        $this->eventLog(clienttranslate('${character_name} has joined the expedition'), [
+            'character_name' => $this->getCharacterHTML($newCharacterId),
+        ]);
         $this->markChanged('player');
         $this->markChanged('map');
         $this->markChanged('token');
         $this->markChanged('actions');
         $this->markRandomness();
-        $this->completeAction();
     }
     public function cardDrawEvent($card, $deck, $arg = [])
     {
@@ -1480,7 +1492,8 @@ class Game extends \Table
     {
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
         if ($leftOverActions > 0) {
-            $this->gameData->set('tempActions', $leftOverActions - $this->gameData->get('tempActions'));
+            $leftOverActions -= $this->gameData->get('tempActions');
+            $this->gameData->set('tempActions', $leftOverActions);
             $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
                 'usedActionId' => 'actEndTurn',
                 'count' => $leftOverActions,
@@ -1756,6 +1769,7 @@ class Game extends \Table
                 // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
                 'activeTurnPlayerId' => $character['player_id'],
                 'moves' => $this->map->calculateMoves(),
+                'isStranded' => $this->map->isStranded(),
                 'fires' => $this->map->calculateFires(),
                 'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
                 'deckhandTargetCount' => $this->getDeckhandTargetCount(),

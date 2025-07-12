@@ -43,6 +43,7 @@ class DMTNT_GameData
         'characterPositions' => [],
         'deadCharacters' => [],
         'destroyedItems' => [],
+        'destroyedTokens' => [],
         'tokenPositions' => [],
         'explosions' => 0,
         'newTile' => [],

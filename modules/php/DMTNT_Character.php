@@ -366,9 +366,6 @@ class DMTNT_Character
         }
 
         if ($data['fatigue'] == $data['maxFatigue']) {
-            $this->game->eventLog(clienttranslate('${character_name} has died'), [
-                'character_name' => $this->game->getCharacterHTML($characterId),
-            ]);
             $data['actions'] = min($data['actions'], 5);
 
             $this->game->death($characterId);

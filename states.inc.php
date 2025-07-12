@@ -163,6 +163,7 @@ $machinestates = [
             'actDrop',
             'actDrinkGrog',
             'actSwapItem',
+            'actAbandonShip',
         ],
         'transitions' => [
             // 'placeTile' => $placeTile,
