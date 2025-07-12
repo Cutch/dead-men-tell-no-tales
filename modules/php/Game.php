@@ -437,6 +437,12 @@ class Game extends \Table
             'character_name' => $this->getCharacterHTML(),
             'newTile' => $this->gameData->get('newTile'),
         ];
+        if ($this->gameData->get('newTile')['id'] === 'dinghy') {
+            $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
+            $result['validLocations'] = $this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']);
+        } else {
+            $result['validLocations'] = $this->map->getAllEmptyTiles();
+        }
         $this->getTiles($result);
         return $result;
     }
@@ -464,14 +470,22 @@ class Game extends \Table
             $this->gameData->set('newTile', $card);
             $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
             $this->nextState('placeTile');
-        } elseif ($this->gameData->get('dinghyChecked')) {
+        } elseif (!$this->gameData->get('dinghyChecked')) {
             $this->gameData->set('dinghyChecked', true);
-            $this->decks->getDeck('tile')->moveCard($this->decks->getCard('dinghy')['id'], 'deck');
+            $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
 
-            $card = $this->decks->pickCard('tile');
-            $this->gameData->set('newTile', $card);
-            $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-            $this->nextState('placeTile');
+            if (sizeof($this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']))) {
+                $this->decks->shuffleInCard('tile', 'dinghy', false);
+
+                $card = $this->decks->pickCard('tile');
+                $this->gameData->set('newTile', $card);
+                $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+                $this->nextState('placeTile');
+            } else {
+                $this->gameData->set('newTile', null);
+                $this->gameData->set('newTileCount', 0);
+                $this->nextState('playerTurn');
+            }
         } else {
             $this->gameData->set('newTile', null);
             $this->gameData->set('newTileCount', 0);

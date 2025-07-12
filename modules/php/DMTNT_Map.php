@@ -73,6 +73,39 @@ class DMTNT_Map
         });
         return $tiles;
     }
+    public function getEmptyAdjacentTiles($x, $y): array
+    {
+        $currentTile = $this->xyMap[$this->xy($x, $y)];
+        $tiles = [];
+        $pos = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+        array_walk($pos, function ($v) use (&$tiles, $currentTile, $x, $y) {
+            $nx = $v[0];
+            $ny = $v[1];
+            $emptyPosition = ['x' => $x + $nx, 'y' => $y + $ny];
+            $key = $this->xy(...$emptyPosition);
+            if (!array_key_exists($key, $this->xyMap)) {
+                $tileDirection = $this->getTileDirection($currentTile, $emptyPosition);
+                if (in_array($tileDirection, $this->getAdjustedTouchPoints($currentTile))) {
+                    $emptyPosition['id'] = $key;
+                    $tiles[] = $emptyPosition;
+                }
+            }
+        });
+        return $tiles;
+    }
+    public function getAllEmptyTiles(): array
+    {
+        return array_unique_nested(
+            array_merge(
+                ...array_values(
+                    array_map(function ($tile) {
+                        return $this->getEmptyAdjacentTiles($tile['x'], $tile['y']);
+                    }, $this->cachedMap)
+                )
+            ),
+            'id'
+        );
+    }
     public function getValidAdjacentTiles($x, $y): array
     {
         $currentTile = $this->xyMap[$this->xy($x, $y)];

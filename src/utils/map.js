@@ -186,7 +186,7 @@ export class Map {
     this.placeListeners = [];
     this.container.querySelectorAll('.ocean-base').forEach((elem) => {
       const { x, y } = this.getXY(elem.getAttribute('data-data'));
-      if (!this.checkIfAdjacent(x, y, id === 'dinghy' ? this.game.gamedatas.lastPlacedTileId : null)) return;
+      if (!this.game.gamedatas.validLocations.some((d) => d.x == x && d.y == y)) return;
       elem.classList.add('place-new');
 
       this.placeListeners.push(
