@@ -132,7 +132,7 @@ class DMTNT_CharacterSelection
     {
         $playerId = $this->game->getCurrentPlayer();
         $selectedCharacters = array_map(function ($char) {
-            return $char['characterId'];
+            return $char['character_id'];
         }, array_values($this->game->getCollectionFromDb("SELECT character_id FROM `character` WHERE `player_id` = '$playerId'")));
         $selectedCharacters = array_orderby($selectedCharacters, 'character_id', SORT_ASC);
 
@@ -171,6 +171,7 @@ class DMTNT_CharacterSelection
         }
 
         $this->setTurnOrder($playerId, $selectedCharacters);
+
         $results = ['player_id' => $playerId];
         $this->game->getAllPlayers($results);
         // $this->game->initCharacters($playerId);
@@ -181,6 +182,15 @@ class DMTNT_CharacterSelection
         );
         $this->game->markChanged('token');
 
+        if (sizeof($this->game->gamestate->getActivePlayerList()) == 1) {
+            $items = [...$this->game->data->getItems()];
+            shuffle($items);
+            $i = 0;
+            $this->game->character->updateAllCharacterData(function (&$data) use (&$i, $items) {
+                $data['item'] = $items[$i]['id'];
+                $i++;
+            });
+        }
         // Deactivate player, and move to next state if none are active
         $this->game->gamestate->setPlayerNonMultiactive($playerId, 'initializeTile');
     }

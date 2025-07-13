@@ -1598,11 +1598,13 @@ class Game extends \Table
     }
     public function getAllPlayers(&$result): void
     {
-        $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
-        $result['currentPosition'] = $this->map->xy(...$xy);
-        $result['activeCharacter'] = $this->character->getTurnCharacterId();
+        if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
+            $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
+            $result['currentPosition'] = $this->map->xy(...$xy);
+            $result['activeCharacter'] = $this->character->getTurnCharacterId();
+            $result['remainingCharacters'] = sizeof($this->getRemainingCharacters());
+        }
         $result['characters'] = $this->character->getMarshallCharacters();
-        $result['remainingCharacters'] = sizeof($this->getRemainingCharacters());
         $result['characterPositions'] = array_reduce(
             $result['characters'],
             function ($arr, $char) {
@@ -1757,6 +1759,7 @@ class Game extends \Table
             'activeCharacter' => $this->character->getTurnCharacterId(),
             'activeCharacters' => $this->gameData->getAllMultiActiveCharacterIds(),
             'resolving' => $this->actInterrupt->isStateResolving(),
+            'tiles' => [],
         ];
         if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
             $character = $this->character->getTurnCharacter(true);
