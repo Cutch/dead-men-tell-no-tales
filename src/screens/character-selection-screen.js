@@ -15,6 +15,7 @@ export class CharacterSelectionScreen {
   }
   hide() {
     this.game.selector.hide('characterSelection');
+    this.characterSelected = null;
   }
   show(gameData) {
     this.characterSelected = null;

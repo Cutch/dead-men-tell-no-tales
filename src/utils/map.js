@@ -132,7 +132,8 @@ export class Map {
       this.panzoom.zoom(data.scale);
     }
   }
-  hideTileSelectionScreen() {
+  hideTileSelectionScreen(showId) {
+    if (showId && this.showId !== showId) return;
     document.querySelectorAll('.tile-selector').forEach((e) => {
       e.classList.remove('tile-selected');
       e.style.display = 'none';
@@ -142,7 +143,14 @@ export class Map {
     this.selectionPosition = null;
   }
   showTileSelectionScreen(type, selection, tokenImage) {
-    document.querySelectorAll('.tile-selector').forEach((e) => e.classList.remove('tile-selected'));
+    this.showId = v4();
+    document.querySelectorAll('.tile-selector').forEach((e) => {
+      e.classList.remove('tile-selected');
+      e.style.display = 'none';
+    });
+    this.selectionListeners.forEach((d) => d());
+    this.selectionListeners = [];
+    this.selectionPosition = null;
     if (Array.isArray(selection)) selection = selection.reduce((acc, d) => ({ ...acc, [d]: d }), {});
     Object.entries(selection).forEach(([tileId, count]) => {
       // if (tileId == 'tracker') {
@@ -326,7 +334,6 @@ export class Map {
     container.style.setProperty('--count', positions[xyId]?.length ?? 0);
     positions[xyId]?.forEach(({ name, oldName, id, type }) => {
       const currentElem = this.container.querySelector(`.id${id}`);
-
       if (currentElem) {
         if (currentElem.classList.contains('token-flip')) return;
         if (currentElem.getAttribute('data-data') !== xyId) {
@@ -403,7 +410,7 @@ export class Map {
       }
     });
   }
-  update({ tiles, characterPositions, tokenPositions, characters }) {
+  update({ tiles, characters }) {
     if (this.newCardPhase) return;
     // if (this.newCardPhase && !this.game.refreshTiles) return;
     if ((tiles ?? this.game.gamedatas.tiles).length == 0) return;
@@ -533,8 +540,9 @@ export class Map {
         const treasuresElem = tileElem.querySelector(`.treasures`);
         if (deckhandElem) this.renderDeckhands(deckhandElem, deckhand);
         if (treasuresElem) characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
-        if (characterPositions && charactersElem) this.renderTokens(charactersElem, characterPositions, x, y);
-        if (tokenPositions && treasuresElem) this.renderTokens(treasuresElem, tokenPositions, x, y);
+        if (this.game.gamedatas.characterPositions && charactersElem)
+          this.renderTokens(charactersElem, this.game.gamedatas.characterPositions, x, y);
+        if (this.game.gamedatas.tokenPositions && treasuresElem) this.renderTokens(treasuresElem, this.game.gamedatas.tokenPositions, x, y);
         if (this.dice[tileKey]) {
           if (fire === 0) this.dice[tileKey]._hide();
           else {
@@ -545,7 +553,7 @@ export class Map {
       },
     );
     const trackerCharactersElem = this.container.querySelector('.tracker-base .characters');
-    this.renderTokens(trackerCharactersElem, characterPositions, 0, -1);
+    this.renderTokens(trackerCharactersElem, this.game.gamedatas.characterPositions, 0, -1);
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
         if (y <= -1) continue;

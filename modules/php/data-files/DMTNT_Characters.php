@@ -20,6 +20,92 @@ class DMTNT_CharactersData
                 'name' => 'Black Gus Garrett',
                 'color' => '#3c464c',
                 // Garret can run and force deckhands to flee
+                'onMovePre' => function (Game $game, $char, &$data) {
+                    if ($char['isActive']) {
+                        $tile = $data['tile'];
+                        $moves = $game->map->calculateMoves();
+                        if (array_key_exists($tile['id'], $moves['paths'])) {
+                            $paths = $moves['paths'][$tile['id']];
+                            if (sizeof($paths) >= 2) {
+                                $fatigueList = [];
+                                foreach ($paths as $path) {
+                                    $fatigueList[$path['id']] = $path['cost'];
+                                }
+                                $game->selectionStates->initiateState(
+                                    'characterMovement',
+                                    [
+                                        'id' => 'gusMovement',
+                                        'characterId' => $game->character->getTurnCharacterId(),
+                                        'moves' => $fatigueList,
+                                        'title' => clienttranslate('Which path do you take'),
+                                    ],
+                                    $game->character->getTurnCharacterId(),
+                                    false,
+                                    'playerTurn',
+                                    clienttranslate('Which room do you pass through?'),
+                                    true
+                                );
+                                $data['interrupt'] = true;
+                            } elseif (sizeof($paths) == 1) {
+                                $data['path'] = $paths[0]['id'];
+                            }
+                        }
+                    }
+                },
+                'onMoveSelection' => function (Game $game, $char, &$data) {
+                    $selectionState = $game->selectionStates->getState('characterMovement');
+                    if ($selectionState['id'] == 'gusMovement') {
+                        $state = $game->actInterrupt->getState('actMove');
+                        $pathTile = $game->map->getTileByXY($data['x'], $data['y']);
+                        $state['data']['path'] = $pathTile['id'];
+                        $game->actInterrupt->setState('actMove', $state);
+                    }
+                },
+                'onMoveFinalize' => function (Game $game, $char, &$data) {
+                    if ($char['isActive']) {
+                        $makeCrewFlee = function (Game $game, $targetTile, $tokenPositions, $pathTile) {
+                            $targetTiles = toId($game->map->getValidAdjacentTiles($pathTile['x'], $pathTile['y']));
+                            $xy = $game->map->xy($pathTile['x'], $pathTile['y']);
+                            if (array_key_exists($xy, $tokenPositions)) {
+                                $crew = [];
+                                array_walk($tokenPositions[$xy], function ($token) use (&$crew, $xy, $game) {
+                                    if (!$token['isTreasure']) {
+                                        $deckType = $game->data->getTreasure()[$token['token']]['deckType'];
+                                        if ($deckType === 'crew' || $deckType === 'captain') {
+                                            $crew[] = $token;
+                                        }
+                                    }
+                                });
+                                foreach ($crew as $crewToken) {
+                                    $game->selectionStates->initiateState(
+                                        'crewMovement',
+                                        [
+                                            'movePositions' => $targetTiles,
+                                            'id' => 'moveCrew',
+                                            'crew' => $crewToken,
+                                            'currentPosId' => $game->map->xy($pathTile['x'], $pathTile['y']),
+                                            'targetTile' => $targetTile,
+                                        ],
+                                        $game->character->getTurnCharacterId(),
+                                        true,
+                                        'playerTurn',
+                                        clienttranslate('Make them flee'),
+                                        true
+                                    );
+                                }
+                            }
+                        };
+                        $targetTile = $game->map->getTileByXY($data['x'], $data['y']);
+                        $tokenPositions = $game->gameData->get('tokenPositions');
+
+                        if (array_key_exists('path', $data)) {
+                            $pathTile = $game->map->getTileById($data['path']);
+                            $makeCrewFlee($game, $targetTile, $tokenPositions, $pathTile);
+                        }
+                        $pathTile = $game->map->getTileByXY($data['x'], $data['y']);
+                        $makeCrewFlee($game, $targetTile, $tokenPositions, $pathTile);
+                    }
+                },
             ],
             'flynn' => [
                 'type' => 'character',

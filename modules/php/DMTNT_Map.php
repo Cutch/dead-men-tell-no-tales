@@ -249,7 +249,16 @@ class DMTNT_Map
         $this->game->hooks->onCalculateMovesHasTreasure($data);
         $hasTreasure = $data['hasTreasure'];
         $fatigueList = [];
-        array_walk($moveList, function ($firstTile) use ($canRun, $currentTiles, $moveIds, $hasTreasure, $currentFire, &$fatigueList) {
+        $paths = [];
+        array_walk($moveList, function ($firstTile) use (
+            &$paths,
+            $canRun,
+            $currentTiles,
+            $moveIds,
+            $hasTreasure,
+            $currentFire,
+            &$fatigueList
+        ) {
             if (
                 sizeof(
                     array_filter($currentTiles, function ($currentTile) use ($firstTile) {
@@ -285,21 +294,25 @@ class DMTNT_Map
                         }
                     } else {
                         $f = max($fire - $currentFire, 0);
-                        $f = max($tempTile['fire'] - $fire, 0) + $f;
+                        $f = max($tempTile['fire'] - $fire, 0) + $f + 2;
                         if (array_key_exists($id, $fatigueList)) {
-                            $fatigueList[$id] = (int) min($f + 2, $fatigueList[$id]);
+                            $fatigueList[$id] = (int) min($f, $fatigueList[$id]);
                         } else {
-                            $fatigueList[$id] = (int) $f + 2;
+                            $fatigueList[$id] = (int) $f;
                         }
                     }
+                    if (!array_key_exists($id, $paths)) {
+                        $paths[$id] = [];
+                    }
+                    $paths[$id][] = ['id' => $firstTile['id'], 'cost' => $f];
                 }
             }
         });
-        $data = ['fatigueList' => $fatigueList, 'currentTiles' => $currentTiles, 'x' => $x, 'y' => $y];
+        $data = ['fatigueList' => $fatigueList, 'paths' => $paths, 'currentTiles' => $currentTiles, 'x' => $x, 'y' => $y];
 
         $this->game->hooks->onCalculateMoves($data);
 
-        return $data['fatigueList'];
+        return $data;
     }
     public function isStranded(): bool
     {

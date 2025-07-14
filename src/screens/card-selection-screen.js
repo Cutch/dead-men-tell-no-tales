@@ -15,6 +15,7 @@ export class CardSelectionScreen {
   }
   hide() {
     this.game.selector.hide('cardSelection');
+    this.itemSelected = null;
   }
   show(gameData) {
     this.itemSelected = null;

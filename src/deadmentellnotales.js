@@ -737,31 +737,33 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               } else if (actionId === 'actMove') {
                 this.clearActionButtons();
                 this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
+                const showId = this.map.showId;
                 this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
                   this.bgaPerformAction('actMove', this.map.getSelectionPosition())
-                    .then(() => this.map.hideTileSelectionScreen())
+                    .then(() => this.map.hideTileSelectionScreen(showId))
                     .catch(console.error);
                 });
                 this.statusBar.addActionButton(
                   _('Cancel'),
                   () => {
                     this.onUpdateActionButtons(stateName, args);
-                    this.map.hideTileSelectionScreen();
+                    this.map.hideTileSelectionScreen(showId);
                   },
                   { color: 'secondary' },
                 );
               } else if (actionId === 'actFightFire') {
                 this.clearActionButtons();
                 this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
+                const showId = this.map.showId;
                 this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
                   this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
-                    .then(() => this.map.hideTileSelectionScreen())
+                    .then(() => this.map.hideTileSelectionScreen(showId))
                     .catch(console.error);
                 });
                 if (this.gamedatas.canUseBlanket)
                   this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
                     this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
-                      .then(() => this.map.hideTileSelectionScreen())
+                      .then(() => this.map.hideTileSelectionScreen(showId))
                       .catch(console.error);
                   });
 
@@ -769,7 +771,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   _('Cancel'),
                   () => {
                     this.onUpdateActionButtons(stateName, args);
-                    this.map.hideTileSelectionScreen();
+                    this.map.hideTileSelectionScreen(showId);
                   },
                   { color: 'secondary' },
                 );

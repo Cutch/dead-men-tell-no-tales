@@ -14,6 +14,7 @@ export class ItemsScreen {
   }
   hide() {
     this.game.selector.hide('itemsScreen');
+    this.selection = null;
   }
   renderCharacter(container, characterId) {
     container.insertAdjacentHTML('beforeend', `<div class="character-image"></div>`);

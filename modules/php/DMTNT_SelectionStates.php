@@ -31,14 +31,20 @@ class DMTNT_SelectionStates
     }
     public function actMoveSelection(?int $x, ?int $y): void
     {
-        $this->game->actMove($x, $y);
         $stateData = $this->getState(null);
+        if ($stateData['id'] === 'gusMovement') {
+        } else {
+            $this->game->actMove($x, $y);
+        }
         $characterId = $stateData['characterId'];
         $data = [
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
+            'x' => $x,
+            'y' => $y,
         ];
+        $this->game->hooks->onMoveSelection($data);
         $this->completeSelectionState($data);
     }
     public function actMoveCrew(?int $x, ?int $y): void
@@ -59,9 +65,11 @@ class DMTNT_SelectionStates
                 return $d['id'] === $crewTokenId;
             })
         )[0];
-        $tokenPositions[$currentPosId] = array_filter($tokenPositions[$currentPosId], function ($d) use ($crewTokenId) {
-            return $d['id'] !== $crewTokenId;
-        });
+        $tokenPositions[$currentPosId] = array_values(
+            array_filter($tokenPositions[$currentPosId], function ($d) use ($crewTokenId) {
+                return $d['id'] !== $crewTokenId;
+            })
+        );
         if (!array_key_exists($targetPosId, $tokenPositions)) {
             $tokenPositions[$targetPosId] = [];
         }
@@ -187,6 +195,7 @@ class DMTNT_SelectionStates
             'selectionState' => $this->game->gameData->get($stateName),
             'character_name' => $this->game->getCharacterHTML($state['characterId']),
             'activeTurnPlayerId' => 0,
+            'title' => array_key_exists('title', $state) ? $state['title'] : '',
         ];
         // TODO this fixes the bug with day event selections, can be removed later
         if (
