@@ -133,7 +133,7 @@ class Game extends \Table
     public function hasAllTreasure(): bool
     {
         $treasureCount = $this->gameData->get('treasures');
-        return $treasureCount == $this->getTreasuresNeeded();
+        return $treasureCount >= $this->getTreasuresNeeded();
     }
     public function checkWin(): void
     {
@@ -426,7 +426,7 @@ class Game extends \Table
                 $tokens = [$this->getTokenData($card)];
                 if (str_contains($card['type_arg'], 'captain')) {
                     // TODO check this for captain
-                    $this->decks->discardCards('tile', function ($data, $card) {
+                    $this->decks->discardCards('bag', function ($data, $card) {
                         return str_contains($card['type_arg'], 'captain');
                     });
                     $card2 = $this->decks->pickCardWithoutLookup('bag');
@@ -739,7 +739,7 @@ class Game extends \Table
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
         }
-        $this->incStat(sizeof($data), 'treasure_recovered', $this->character->getTurnCharacter()['playerId']);
+        $this->incStat(sizeof($data), 'deckhands_eliminated', $this->character->getTurnCharacter()['playerId']);
         $this->actions->spendActionCost('actEliminateDeckhand');
         $this->eventLog(clienttranslate('${character_name} eliminated ${count} deckhand(s)'), [
             'usedActionId' => 'actEliminateDeckhand',
@@ -1179,7 +1179,7 @@ class Game extends \Table
         $isGuard = $battle['target']['type'] == 'guard';
         [$x, $y] = $this->getCharacterPos($this->character->getTurnCharacterId());
         if ($battle['result'] == 'win') {
-            $this->incStat(1, 'treasure_recovered', $this->character->getTurnCharacter()['playerId']);
+            $this->incStat(1, 'crew_eliminated', $this->character->getTurnCharacter()['playerId']);
 
             $isCaptain = $battle['target']['type'] == 'captain';
             $tokenPositions = $this->gameData->get('tokenPositions');
@@ -1546,6 +1546,7 @@ class Game extends \Table
      */
     public function stNextCharacter(): void
     {
+        $this->incStat(1, 'turn_count');
         $this->character->activateNextCharacter();
         $this->gameData->set('escaped', false);
         resetPerTurn($this);
@@ -1566,7 +1567,8 @@ class Game extends \Table
         $score = $eloMapping[$this->gameData->get('difficulty')] + ($this->gameData->get('captainFromm') ? 2 : 0);
         $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
         $this->eventLog(clienttranslate('Win!'));
-        $this->nextState('endGame');
+        // $this->nextState('endGame');
+        var_dump('win');
     }
     public function lose(string $reason)
     {
@@ -2035,5 +2037,10 @@ class Game extends \Table
             $data['fatigue'] = 13;
         });
         $this->completeAction();
+    }
+    public function checkTreasures()
+    {
+        $this->gameData->set('treasures', $this->gameData->get('treasures') + 3);
+        $this->checkWin();
     }
 }

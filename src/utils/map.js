@@ -528,6 +528,9 @@ export class Map {
           if (hasTrapdoor == 1 && name !== 'tile004') {
             renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
           }
+        } else {
+          tileElem.style.left = `${(x - this.minX + 1) * 300}px`;
+          tileElem.style.bottom = `${(y - this.minY) * 300 + 250}px`;
         }
         if (exploded == 1)
           renderImage('explosion-barrel', tileElem.querySelector(`.barrel-marker`), {

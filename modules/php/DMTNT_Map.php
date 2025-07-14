@@ -502,7 +502,7 @@ EOD;
             $tile['exploded'] == 0 &&
             array_key_exists('explosion', $tile) &&
             $tile['explosion'] > 0 &&
-            $tile['fire'] === $tile['explosion']
+            $tile['fire'] == $tile['explosion']
         ) {
             $tile['exploded'] = 1;
             $this->game->incStat(1, 'explosions');
@@ -704,9 +704,11 @@ EOD;
                 } elseif (sizeof($targetTilesIds) === 1) {
                     $targetPosId = $targetTilesIds[0];
                     $tokenPositions = $this->game->gameData->get('tokenPositions');
-                    $tokenPositions[$currentPosId] = array_filter($tokenPositions[$currentPosId], function ($d) use ($crewToken) {
-                        return $d['id'] !== $crewToken['id'];
-                    });
+                    $tokenPositions[$currentPosId] = array_values(
+                        array_filter($tokenPositions[$currentPosId], function ($d) use ($crewToken) {
+                            return $d['id'] !== $crewToken['id'];
+                        })
+                    );
                     if (!array_key_exists($targetPosId, $tokenPositions)) {
                         $tokenPositions[$targetPosId] = [];
                     }
