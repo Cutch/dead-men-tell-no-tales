@@ -269,11 +269,6 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onDeath(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
     function onEndTurn(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);

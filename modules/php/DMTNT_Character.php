@@ -370,7 +370,10 @@ class DMTNT_Character
             $data['actions'] = min($data['actions'], 5);
 
             $this->game->death($characterId);
-            $this->game->endTurn();
+
+            if ($this->game->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+                $this->game->endTurn();
+            }
             $this->game->gameData->set('battle', [...$this->game->gameData->get('battle'), 'death' => true]);
             return false;
         } else {

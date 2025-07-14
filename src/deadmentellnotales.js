@@ -537,6 +537,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
         break;
+      case 'initializeTile':
       case 'postBattle':
       case 'battle':
       case 'battleSelection':
@@ -550,6 +551,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         break;
       case 'cardSelection':
         if (isActive) this.cardSelectionScreen.show(args.args);
+        break;
+      case 'characterSelection':
+        if (isActive) this.characterSelectionScreen.show(args.args);
         break;
       case 'characterSelect':
         this.selectedCharacters = args.args.characters ?? [];
@@ -598,10 +602,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'characterMovement':
         this.map.hideTileSelectionScreen();
         break;
+      case 'characterSelection':
+        this.characterSelectionScreen.hide();
+        break;
       case 'characterSelect':
         dojo.style('character-selector', 'display', 'none');
         dojo.style('game_play_area', 'display', '');
-        this.refreshCharacters = true;
+        this.refreshTiles = true;
         this.selectedCharacters = [];
         break;
     }
@@ -799,6 +806,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           );
       };
       switch (stateName) {
+        case 'battle':
+          if (!$('pagemaintitletext').querySelector('.battling')) {
+            $('pagemaintitletext').insertAdjacentHTML(
+              'beforeend',
+              ` <span class="battling">${this.gamedatas.attack} <i class="fa6 fa6-solid fa6-user"></i> <i class="fa6 fa6-solid fa6-arrow-right"></i> ${this.gamedatas.defense}</span> <i class="fa6 fa6-solid fa6-skull"></i>`,
+            );
+          }
+          break;
         case 'characterSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCharacter, () => {
             this.bgaPerformAction('actSelectCharacter', { characterId: this.characterSelectionScreen.getSelectedId() });
@@ -991,6 +1006,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     //   // onStart: (notifName, msg, args) => $('pagemaintitletext').innerHTML = `${_('Animation for:')} ${msg}`,
     //   // onEnd: (notifName, msg, args) => $('pagemaintitletext').innerHTML = '',
     // });
+
     // dojo.subscribe('startSelection', this, 'notif_startSelection');
     dojo.subscribe('characterClicked', this, 'notif_characterClicked');
     dojo.subscribe('updateCharacterData', this, 'notif_updateCharacterData');

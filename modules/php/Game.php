@@ -162,7 +162,9 @@ class Game extends \Table
     public function actAbandonShip()
     {
         $this->death($this->character->getTurnCharacterId());
-        $this->endTurn();
+        if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+            $this->endTurn();
+        }
     }
     public function actUndo()
     {
@@ -248,17 +250,20 @@ class Game extends \Table
             'character_name' => $this->getCharacterHTML($characterId),
         ]);
 
+        $characterPositions = $this->gameData->get('characterPositions');
+        unset($characterPositions[$characterId]);
+        $this->gameData->set('characterPositions', $characterPositions);
         $character = $this->character->getCharacterData($characterId);
         $item = $character['item'];
-        $this->gameData->set('deadCharacters', [...$this->gameData->get('deadCharacters'), $character['id']]);
-        $this->gameData->set('destroyedItems', [...$this->gameData->get('destroyedItems'), $item['itemId']]);
-
         if (
             sizeof($this->data->getCharacters()) ===
             sizeof($this->gameData->get('deadCharacters')) + sizeof($this->character->getAllCharacterIds())
         ) {
             $this->lose('noPirates');
         }
+
+        $this->gameData->set('deadCharacters', [...$this->gameData->get('deadCharacters'), $character['id']]);
+        $this->gameData->set('destroyedItems', [...$this->gameData->get('destroyedItems'), $item['itemId']]);
 
         // Drop Treasures
         $treasures = array_filter($character['tokenItems'], function ($d) {
@@ -276,22 +281,33 @@ class Game extends \Table
         $tokenPositions[$xyId] = array_values($tokenPositions[$xyId]);
         $this->gameData->set('tokenPositions', $tokenPositions);
 
-        $remainingCharacters = $this->getRemainingCharacters();
+        $remainingCharacters = array_values($this->getRemainingCharacters());
         if ($this->gameData->get('randomSelection')) {
             shuffle($remainingCharacters);
             $newCharacterId = $remainingCharacters[0];
             $this->character->swapToCharacter($character['id'], $newCharacterId);
+
+            $this->eventLog(clienttranslate('${character_name} has joined the expedition'), [
+                'character_name' => $this->getCharacterHTML($newCharacterId),
+            ]);
+            $this->markChanged('player');
+            $this->markChanged('map');
+            $this->markChanged('token');
+            $this->markChanged('actions');
+            $this->markRandomness();
         } else {
-            // TODO: Select character on death
+            $this->selectionStates->initiateState(
+                'characterSelection',
+                [
+                    'selectableCharacters' => $remainingCharacters,
+                    'currentCharacter' => $character['id'],
+                    'id' => 'death',
+                ],
+                $this->character->getTurnCharacterId(),
+                false,
+                $this->gamestate->state(true, false, true)['name'] == 'drawRevengeCard' ? 'nextCharacter' : 'playerTurn'
+            );
         }
-        $this->eventLog(clienttranslate('${character_name} has joined the expedition'), [
-            'character_name' => $this->getCharacterHTML($newCharacterId),
-        ]);
-        $this->markChanged('player');
-        $this->markChanged('map');
-        $this->markChanged('token');
-        $this->markChanged('actions');
-        $this->markRandomness();
     }
     public function cardDrawEvent($card, $deck, $arg = [])
     {
@@ -435,7 +451,9 @@ class Game extends \Table
     }
     public function getTokenData(array $card)
     {
-        [$token, $treasure] = explode('_', $card['type_arg']);
+        $d = explode('_', $card['type_arg']);
+        $token = $d[0];
+        $treasure = array_key_exists(1, $d) ? $d[0] : '';
         return ['token' => $token, 'treasure' => $treasure, 'id' => $card['id'], 'isTreasure' => false];
     }
     public function argPlaceTile()
@@ -471,10 +489,12 @@ class Game extends \Table
     }
     public function argBasic()
     {
-        return [
+        $result = [
             'actions' => [],
             'character_name' => $this->getCharacterHTML(),
         ];
+        $this->getTiles($result);
+        return $result;
     }
 
     public function stInitializeTile()
@@ -1075,6 +1095,8 @@ class Game extends \Table
         if ($battle['target']['battle'] <= $data['attack']) {
             // Win without need for strength
             $result = 'win';
+        } elseif (!$character['tempStrength']) {
+            $result = 'lose';
         }
         $this->gameData->set('battle', [...$battle, 'attack' => $data['attack'], 'result' => $result]);
         if ($result) {
@@ -1184,11 +1206,12 @@ class Game extends \Table
             if ($isCaptain) {
                 $tokenPositions[$this->map->xy($x, $y)] = array_values(
                     array_filter($tokenPositions[$this->map->xy($x, $y)], function ($token) {
-                        return $token['type'] != 'captain';
+                        return !str_contains($token['token'], 'captain');
                     })
                 );
                 $this->decks->shuffleInCard('bag', 'captain-4', false);
                 $this->decks->shuffleInCard('bag', 'captain-8', false);
+                $this->gameData->set('tokenPositions', $tokenPositions);
             } else {
                 $tokenPositions[$this->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
                     if ($token['id'] == $battle['target']['id']) {
@@ -1339,6 +1362,10 @@ class Game extends \Table
     {
         $this->selectionStates->actSelectItem($itemId);
     }
+    public function actSelectCharacter(?string $characterId = null): void
+    {
+        $this->selectionStates->actSelectCharacter($characterId);
+    }
     public function crewMove(): void
     {
         $this->map->crewMove();
@@ -1346,6 +1373,7 @@ class Game extends \Table
     }
     public function stDrawRevengeCard()
     {
+        $currentState = $this->gamestate->state(true, false, true)['name'];
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
             func_get_args(),
@@ -1356,7 +1384,7 @@ class Game extends \Table
                 $this->cardDrawEvent($card, 'revenge');
                 return ['card' => $card, 'state' => 'revenge'];
             },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
+            function (Game $_this, bool $finalizeInterrupt, $data) use ($currentState) {
                 $card = $data['card'];
                 $_this->hooks->reconnectHooks($card, $_this->decks->getCard($card['id']));
                 $nextState = true;
@@ -1417,7 +1445,7 @@ class Game extends \Table
                 //     (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)
                 // ) {
                 // }
-                if ($nextState) {
+                if ($currentState === $this->gamestate->state(true, false, true)['name']) {
                     $this->nextState('nextCharacter');
                 }
             }
@@ -1491,6 +1519,7 @@ class Game extends \Table
     public function endTurn()
     {
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
+        $this->character->adjustActiveActions(-20);
         if ($leftOverActions > 0) {
             $this->gameData->set('tempActions', $leftOverActions);
             $this->eventLog(clienttranslate('${character_name} ends their turn and passes ${count} action(s)'), [
@@ -1563,7 +1592,8 @@ class Game extends \Table
             $this->eventLog(clienttranslate('The ship can\'t be searched, the expedition is lost'));
         }
         $this->DbQuery('UPDATE player SET player_score=0 WHERE 1=1');
-        $this->nextState('endGame');
+        // $this->nextState('endGame');
+        var_dump('loss');
     }
 
     /**

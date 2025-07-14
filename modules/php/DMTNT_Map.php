@@ -319,7 +319,6 @@ class DMTNT_Map
             $tile = array_shift($moveList);
             $limit++;
             foreach ($this->getValidAdjacentTiles($tile['x'], $tile['y']) as $newTile) {
-                var_dump($newTile);
                 if (!in_array($newTile['id'], $moveIds)) {
                     array_push($moveIds, $newTile['id']);
                     array_push($moveList, $newTile);
@@ -435,6 +434,7 @@ EOD;
     {
         if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
             $tile['destroyed'] = 1;
+            $tile['deckhand'] = 0;
             $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
             if ($this->game->gameData->get('explosions') == 7) {
                 $this->game->lose('explosion');
@@ -444,8 +444,10 @@ EOD;
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             foreach ($adjacentTiles as $aTile) {
                 $aTile = &$this->getTileById($aTile['id']);
-                $aTile['fire'] = min($aTile['fire'] + 1, 6);
-                $this->checkExplosion($aTile);
+                if ($aTile['escape'] != 1) {
+                    $aTile['fire'] = min($aTile['fire'] + 1, 6);
+                    $this->checkExplosion($aTile);
+                }
                 unset($aTile);
             }
 
@@ -498,10 +500,11 @@ EOD;
             $directions = [];
             $start = $tile['rotate'] + 2; // All kegs start at rotation 2
             foreach ($adjacentTiles as $aTile) {
-                $directions[$this->getTileDirection($tile, $aTile)] = &$this->getTileById($aTile['id']);
+                if ($aTile['escape'] != 1) {
+                    $directions[$this->getTileDirection($tile, $aTile)] = &$this->getTileById($aTile['id']);
+                }
             }
             foreach (range($start, $start + 4) as $i) {
-                // var_dump($i);
                 if (array_key_exists($i, $directions)) {
                     $directions[$i]['fire'] = min($directions[$i]['fire'] + 1, 6);
                     $this->checkExplosion($directions[$i]);

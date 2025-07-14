@@ -6,6 +6,7 @@ import { Dice } from './dice';
 import { addClickListener } from './clickable';
 import dojo from 'dojo';
 import { v4 } from 'uuid';
+import { addPassiveListener } from './utils';
 export class Map {
   constructor(game, gameData) {
     this.game = game;
@@ -31,75 +32,88 @@ export class Map {
       .getElementById('game_play_area')
       .insertAdjacentHTML(
         'beforeend',
-        `<div id="map-wrapper" class="map-wrapper" style="min-height: 60vh;"><div id="map-container" style="width: 0;"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
+        `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;"><div id="map-container"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
     on($('zoom-in'), 'click', () =>
       this.panzoom.zoomIn({
-        focal: {
-          x: 0.5,
-          y: 0.5,
-        },
+        // focal: this.getMapCenter(),
       }),
     );
-    on($('zoom-out'), 'click', () =>
-      this.panzoom.zoomOut({
-        focal: {
-          x: 0.5,
-          y: 0.5,
-        },
-      }),
-    );
+    on($('zoom-out'), 'click', () => this.panzoom.zoomOut({}));
     on($('reset'), 'click', () => this.panzoom.reset());
     this.wrapper = $('map-wrapper');
     this.container = $('map-container');
     this.newCardContainer = $('new-card-container');
     const defaultScale = 0.5;
-    this.panzoom = Panzoom(this.container, {
-      maxScale: 5,
-      bounds: true,
-      boundsPadding: 0.2,
+    this.panzoom = new Panzoom(this.container, {
+      maxScale: 0.75,
+      minScale: 0.25,
       startScale: defaultScale,
-      transformOrigin: { x: 0.5, y: 0.5 },
-      // transformOrigin: { x: 0.5, y: 0.5 },
+      canvas: true,
+      // origin: { x: 50, y: 0 },
+      // contain: 'outside',
+      // focal: {x, y}
+
+      // origin: '0 0',
+    });
+    addPassiveListener('resize', () => {
+      this.setPanOptions();
     });
     renderImage('tracker', this.container, {
       pos: 'append',
       card: false,
       scale: 1,
       baseData: this.getKey({ x: 0, y: -1 }),
-      styles: { left: `-400px`, bottom: `-192px`, position: 'absolute' },
+      styles: { position: 'absolute' },
     });
     this.container
       .querySelector('.tracker-base')
       .insertAdjacentHTML(
         'beforeend',
-        `<div class="tokens characters"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
+        `<div class="tokens characters"></div><div class="explosions-marker"></div><div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
       );
 
-    renderImage('explosion', this.container, {
-      pos: 'append',
+    renderImage('explosion', this.container.querySelector('.explosions-marker'), {
+      pos: 'replace',
       card: false,
       scale: 1.5,
       styles: {
-        left: `${-325 + 150 * (gameData.explosions - 1)}px`,
-        display: gameData.explosions === 0 ? 'none' : '',
-        bottom: `-100px`,
+        left: `${80 + 140 * ((this.game.gamedatas.explosions ?? 0) - 1)}px`,
+        display: (this.game.gamedatas.explosions ?? 0) == 0 ? 'none' : '',
+        top: `2px`,
         position: 'absolute',
         transition: '1s left',
       },
     });
     this.explosion = this.container.querySelector('.explosion-base');
     this.update(gameData);
-    setTimeout(() => {
-      this.panzoom.pan(
-        ((this.minX - 1) * 300) / 2 + this.wrapper.getBoundingClientRect().width,
-        (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
-      );
-      this.panzoom.setOptions({
-        startX: ((this.minX - 1) * 300) / 2 + this.wrapper.getBoundingClientRect().width,
-        startY: (this.minY * 300) / 2 + this.wrapper.getBoundingClientRect().height,
-      });
-    }, 0);
+    this.panzoom.pan(this.panzoom.getOptions().startX, this.panzoom.getOptions().startY);
+  }
+  setPanOptions() {
+    const zoom = this.panzoom.getScale();
+    const currentCharacter = this.game.gamedatas.characters.find((d) => d.id == this.game.gamedatas.activeCharacter);
+    const wrapperBox = this.wrapper.getBoundingClientRect();
+
+    const center = this.getMapCenter();
+    this.panzoom.setOptions({
+      startX: center.x,
+      startY: center.y,
+    });
+  }
+  getMapSize() {
+    return {
+      width: (Math.abs(this.minX) + Math.abs(this.maxX) + 3) * 300,
+      height: (Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300 + 250,
+    };
+  }
+  getCharacterCenter() {}
+  getMapCenter() {
+    const wrapperBox = this.wrapper.getBoundingClientRect();
+    const mapSize = this.getMapSize();
+
+    const pan = this.panzoom.getPan();
+    const zoom = this.panzoom.getScale();
+    return { x: wrapperBox.width * 2 - mapSize.width * 2, y: wrapperBox.height * 2 - mapSize.height * 2 };
   }
   savePanZoom() {
     const data = JSON.stringify({
@@ -389,20 +403,26 @@ export class Map {
       }
     });
   }
-  update({ tiles, explosions, characterPositions, tokenPositions, characters }) {
+  update({ tiles, characterPositions, tokenPositions, characters }) {
     if (this.newCardPhase) return;
+    // if (this.newCardPhase && !this.game.refreshTiles) return;
+    if ((tiles ?? this.game.gamedatas.tiles).length == 0) return;
+    this.refreshTiles = false;
     this.container.querySelectorAll('.ocean-base:not(.ignore)').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
+    (tiles ?? this.game.gamedatas.tiles)?.forEach(({ id: name, x, y }) => {
+      if (name == 'tracker') return;
+      this.minX = Math.min(this.minX, x);
+      this.maxX = Math.max(this.maxX, x);
+      this.minY = Math.min(this.minY, y);
+      this.maxY = Math.max(this.maxY, y);
+    });
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
       ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed }) => {
         if (name == 'tracker') return;
-        this.minX = Math.min(this.minX, x);
-        this.maxX = Math.max(this.maxX, x);
-        this.minY = Math.min(this.minY, y);
-        this.maxY = Math.max(this.maxY, y);
         const tileKey = this.getKey({ x, y });
         this.positions[tileKey] = name;
         let tileElem = this.container.querySelector(`.${name}-base`);
@@ -411,8 +431,8 @@ export class Map {
             this.dice[tileKey] = null;
             tileElem.outerHTML = `<div class="token-flip tile-flip ${name}-base"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
             tileElem = this.container.querySelector(`.${name}-base`);
-            tileElem.style.left = `${x * 300}px`;
-            tileElem.style.bottom = `${y * 300}px`;
+            tileElem.style.left = `${(x - this.minX + 1) * 300}px`;
+            tileElem.style.bottom = `${(y - this.minY) * 300 + 250}px`;
             tileElem.style.position = 'absolute';
             renderImage(name, tileElem.querySelector('.token-flip-front'), {
               pos: 'replace',
@@ -445,8 +465,8 @@ export class Map {
                 rotate: rotate * 90,
                 baseData: tileKey,
                 styles: {
-                  left: `${x * 300}px`,
-                  bottom: `${y * 300}px`,
+                  left: `${(x - this.minX + 1) * 300}px`,
+                  bottom: `${(y - this.minY) * 300 + 250}px`,
                   position: 'absolute',
                   '--rotate': rotate * 90,
                 },
@@ -464,7 +484,7 @@ export class Map {
               card: false,
               scale: 1,
               baseCss: 'ignore',
-              styles: { left: `${x * 300}px`, bottom: `${y * 300}px`, position: 'absolute' },
+              styles: { left: `${(x - this.minX + 1) * 300}px`, bottom: `${(y - this.minY) * 300 + 250}px`, position: 'absolute' },
             });
           renderImage(name, this.container, {
             pos: 'append',
@@ -473,8 +493,8 @@ export class Map {
             rotate: rotate * 90,
             baseData: tileKey,
             styles: {
-              left: `${x * 300}px`,
-              bottom: `${y * 300}px`,
+              left: `${(x - this.minX + 1) * 300}px`,
+              bottom: `${(y - this.minY) * 300 + 250}px`,
               position: 'absolute',
               '--rotate': rotate * 90,
             },
@@ -524,8 +544,8 @@ export class Map {
         }
       },
     );
-    const trackerElem = this.container.querySelector('.tracker-base .characters');
-    this.renderTokens(trackerElem, characterPositions, 0, -1);
+    const trackerCharactersElem = this.container.querySelector('.tracker-base .characters');
+    this.renderTokens(trackerCharactersElem, characterPositions, 0, -1);
     for (let x = this.minX - 1; x <= this.maxX + 1; x++) {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
         if (y <= -1) continue;
@@ -535,13 +555,23 @@ export class Map {
           card: false,
           scale: 1,
           baseData: this.getKey({ x, y }),
-          styles: { left: `${x * 300}px`, bottom: `${y * 300}px`, position: 'absolute' },
+          styles: { left: `${(x - this.minX + 1) * 300}px`, bottom: `${(y - this.minY) * 300 + 250}px`, position: 'absolute' },
         });
       }
     }
-    if (explosions != null) {
-      this.explosion.style.display = explosions === 0 ? 'none' : '';
-      setTimeout(() => (this.explosion.style.left = `${-325 + 140 * (explosions - 1)}px`), 0);
+    const trackerElem = this.container.querySelector('.tracker-base');
+    const mapSize = this.getMapSize();
+    this.container.style.width = `${mapSize.width}px`;
+    this.container.style.height = `${mapSize.height}px`;
+    this.setPanOptions();
+    // `-400px`, bottom: `-192px`
+    trackerElem.style.left = `${Math.abs(this.minX) * 300 - 105}px`;
+    trackerElem.style.top = `${(Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300}px`;
+    // ((this.minX + this.maxX) * 300 + 150) * zoom + this.wrapper.getBoundingClientRect().width,
+    // ((this.minY + this.maxY) * 300 + 150) * zoom + this.wrapper.getBoundingClientRect().height,
+    if (this.game.gamedatas.explosions != null) {
+      this.explosion.style.display = this.game.gamedatas.explosions == 0 ? 'none' : '';
+      setTimeout(() => (this.explosion.style.left = `${80 + 140 * (this.game.gamedatas.explosions - 1)}px`), 0);
     }
   }
 }

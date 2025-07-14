@@ -130,6 +130,23 @@ class DMTNT_SelectionStates
         ];
         $this->completeSelectionState($data);
     }
+    public function actSelectCharacter(?string $characterId = null): void
+    {
+        if (!$characterId) {
+            throw new BgaUserException(clienttranslate('Select a character'));
+        }
+        $stateData = $this->getState(null);
+        $currentCharacter = $stateData['currentCharacter'];
+        $this->game->character->swapToCharacter($currentCharacter, $characterId);
+        $this->game->endTurn();
+
+        $data = [
+            'characterId' => $characterId,
+            'nextState' => false,
+            'isInterrupt' => $stateData['isInterrupt'],
+        ];
+        $this->completeSelectionState($data);
+    }
     public function cancelState(?string $stateName): void
     {
         if ($stateName) {
@@ -156,6 +173,8 @@ class DMTNT_SelectionStates
             return 'characterMovementState';
         } elseif ($stateName == 'itemSelection') {
             return 'itemSelectionState';
+        } elseif ($stateName == 'characterSelection') {
+            return 'characterSelectionState';
         }
         return null;
     }

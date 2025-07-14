@@ -207,8 +207,6 @@ class DMTNT_Decks
             if ($notify) {
                 $this->game->notify('shuffle', '', $results);
             }
-        } else {
-            throw new Exception('Missing card id');
         }
     }
     public function shuffleInDiscard(string $deck, bool $notify = true): void
@@ -276,8 +274,5 @@ class DMTNT_Decks
             $this->getDeck($deck)->insertCardOnExtremePosition($card['id'], 'discard', true);
         });
         unset($this->cachedData[$deck]);
-        if ($deckCount - sizeof($cards) == 0) {
-            $this->shuffleInDiscard($deck);
-        }
     }
 }
