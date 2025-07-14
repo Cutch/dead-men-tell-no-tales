@@ -227,7 +227,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('${character_name} Select where the crew moves'),
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
-        'possibleactions' => ['actMoveCrew'],
+        'possibleactions' => ['actMoveCrew', 'actCancel'],
         'transitions' => ['playerTurn' => $playerTurn],
     ],
     $characterMovement => [
@@ -300,7 +300,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'action' => 'stInterrupt',
         'args' => 'argInterrupt',
-        'possibleactions' => ['actUseSkill', 'actUseItem', 'actDone', 'actForceSkip'],
+        'possibleactions' => ['actUseSkill', 'actDone', 'actForceSkip'],
         'transitions' => [
             'endGame' => $gameEnd,
             'playerTurn' => $playerTurn,

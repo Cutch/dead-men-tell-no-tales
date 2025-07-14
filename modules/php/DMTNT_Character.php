@@ -227,13 +227,6 @@ class DMTNT_Character
             } else {
                 $this->submittingCharacter = null;
             }
-        } elseif ($actions == 'actUseItem') {
-            $skillData = $this->getSkill($subActions);
-            if ($skillData && array_key_exists('character', $skillData)) {
-                $this->submittingCharacter = $skillData['character']['id'];
-            } else {
-                $this->submittingCharacter = null;
-            }
         } elseif ($actions == null) {
             $this->submittingCharacter = null;
         }

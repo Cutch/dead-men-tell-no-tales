@@ -209,25 +209,10 @@ class DMTNT_Actions
             ),
         ];
     }
-    public function getActiveEquipmentSkills()
-    {
-        $character = $this->game->character->getSubmittingCharacter();
-        $skills =
-            array_key_exists('item', $character) && $character['item'] !== null && array_key_exists('skills', $character['item'])
-                ? $character['item']['skills']
-                : [];
-        return $skills;
-    }
     public function getAction(string $actionId, ?string $subActionId = null): array
     {
         if ($actionId == 'actUseSkill') {
             $skills = $this->getSkills();
-            if (isset($skills[$subActionId])) {
-                return $skills[$subActionId];
-            }
-            return [];
-        } elseif ($actionId == 'actUseItem') {
-            $skills = $this->getActiveEquipmentSkills();
             if (isset($skills[$subActionId])) {
                 return $skills[$subActionId];
             }
@@ -261,21 +246,6 @@ class DMTNT_Actions
         return $skills;
     }
 
-    public function getAvailableItemSkills(): array
-    {
-        $character = $this->game->character->getSubmittingCharacter();
-        $skills = $this->getActiveEquipmentSkills();
-        return array_values(
-            array_filter($skills, function ($skill) use ($character) {
-                $actions = $character['actions'];
-                $fatigue = $character['fatigue'];
-                $this->skillActionCost('actUseItem', null, $skill);
-                return $this->checkRequirements($skill, $character) &&
-                    (!array_key_exists('actions', $skill) || $actions >= $skill['actions']) &&
-                    (!array_key_exists('fatigue', $skill) || $fatigue >= $skill['fatigue']);
-            })
-        );
-    }
     public function getActionSelectable(string $actionId, ?string $subActionId = null, ?string $characterId = null)
     {
         $data = [

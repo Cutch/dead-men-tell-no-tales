@@ -332,22 +332,12 @@ class DMTNT_ActInterrupt
                     'action' => 'actUseSkill',
                     'type' => 'action',
                 ],
-                [
-                    'action' => 'actUseItem',
-                    'type' => 'action',
-                ],
             ],
             'availableSkills' => $this->game->actions->wrapSkills(
                 array_filter($data['skills'], function ($skill) {
                     return $skill['type'] == 'skill';
                 }),
                 'actUseSkill'
-            ),
-            'availableItemSkills' => $this->game->actions->wrapSkills(
-                array_filter($data['skills'], function ($skill) {
-                    return $skill['type'] == 'item-skill';
-                }),
-                'actUseItem'
             ),
         ];
     }

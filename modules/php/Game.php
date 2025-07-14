@@ -693,7 +693,8 @@ class Game extends \Table
                     ]);
 
                     if ($this->actions->hasTreasure()) {
-                        $characterId = $this->character->getTurnCharacterId();
+                        $character = $this->character->getTurnCharacter();
+                        $characterId = $character['id'];
                         $tokenItems = $this->gameData->get('tokenItems');
                         $tokenItems[$characterId] = array_values(
                             array_filter($tokenItems[$characterId], function ($d) {
@@ -702,6 +703,8 @@ class Game extends \Table
                         );
                         $this->gameData->set('tokenItems', $tokenItems);
                         $this->gameData->set('treasures', $this->gameData->get('treasures') + 1);
+                        $this->incStat(1, 'treasure_recovered');
+                        $this->incStat(1, 'treasure_recovered', $character['playerId']);
 
                         $this->eventLog(clienttranslate('${character_name} looted a treasure'), [
                             'usedActionId' => 'actMove',
@@ -736,6 +739,7 @@ class Game extends \Table
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
         }
+        $this->incStat(sizeof($data), 'treasure_recovered', $this->character->getTurnCharacter()['playerId']);
         $this->actions->spendActionCost('actEliminateDeckhand');
         $this->eventLog(clienttranslate('${character_name} eliminated ${count} deckhand(s)'), [
             'usedActionId' => 'actEliminateDeckhand',
@@ -962,65 +966,6 @@ class Game extends \Table
         );
         $this->completeAction();
     }
-    public function actUseItem(string $skillId): void
-    {
-        if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
-        }
-        $this->actInterrupt->interruptableFunction(
-            __FUNCTION__,
-            func_get_args(),
-            [$this->hooks, 'onUseSkill'],
-            function (Game $_this) use ($skillId) {
-                $_this->character->setSubmittingCharacter('actUseItem', $skillId);
-                // $this->character->addExtraTime();
-                $_this->actions->validateCanRunAction('actUseItem', $skillId);
-                $character = $this->character->getSubmittingCharacter();
-
-                $skills = $this->actions->getActiveEquipmentSkills();
-                $skill = $skills[$skillId];
-                return [
-                    'skillId' => $skillId,
-                    'skill' => $skill,
-                    'character' => $character,
-                    'turnCharacter' => $this->character->getTurnCharacter(),
-                ];
-            },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
-                $skill = $data['skill'];
-                $character = $data['character'];
-                $skillId = $data['skillId'];
-
-                $skills = $this->actions->getActiveEquipmentSkills();
-                $_this->hooks->reconnectHooks($skill, $skills[$skillId]);
-                $_this->character->setSubmittingCharacter('actUseItem', $skillId);
-                $notificationSent = false;
-                $skill['sendNotification'] = function () use (&$skill, $_this, &$notificationSent) {
-                    $_this->notify('notify', clienttranslate('${character_name} used the item\'s skill ${skill_name}'), [
-                        'skill_name' => $skill['name'],
-                        'usedActionId' => 'actUseSkill',
-                        'usedActionName' => $skill['name'],
-                    ]);
-                    $notificationSent = true;
-                };
-                if ($_this->gamestate->state(true, false, true)['name'] == 'interrupt') {
-                    $_this->actInterrupt->actInterrupt($skillId);
-                    $_this->character->setSubmittingCharacter('actUseItem', $skillId);
-                    $skill['sendNotification']();
-                }
-                if (!array_key_exists('interruptState', $skill) || (in_array('interrupt', $skill['state']) && $finalizeInterrupt)) {
-                    $result = array_key_exists('onUse', $skill) ? $skill['onUse']($this, $skill, $character) : null;
-                    if (!$result || !array_key_exists('spendActionCost', $result) || $result['spendActionCost'] != false) {
-                        $_this->actions->spendActionCost('actUseItem', $skillId);
-                    }
-                    if (!$notificationSent && (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)) {
-                        $skill['sendNotification']();
-                    }
-                }
-                $_this->character->setSubmittingCharacter(null);
-            }
-        );
-        $this->completeAction();
-    }
     public function actEndTurn(): void
     {
         // TODO: Can't end turn early if sweltering
@@ -1108,6 +1053,16 @@ class Game extends \Table
                 return $d['treasure'];
             }, $character['tokenItems'])
         );
+        if (array_key_exists('treasure', $tokens)) {
+            $this->drop(
+                $character['id'],
+                array_values(
+                    array_filter($character['tokenItems'], function ($d) {
+                        return $d['treasure'] == 'treasure';
+                    })
+                )[0]['id']
+            );
+        }
         $data = [
             'attack' =>
                 $this->rollBattleDie(clienttranslate('Attack'), $this->character->getTurnCharacterId()) +
@@ -1224,6 +1179,8 @@ class Game extends \Table
         $isGuard = $battle['target']['type'] == 'guard';
         [$x, $y] = $this->getCharacterPos($this->character->getTurnCharacterId());
         if ($battle['result'] == 'win') {
+            $this->incStat(1, 'treasure_recovered', $this->character->getTurnCharacter()['playerId']);
+
             $isCaptain = $battle['target']['type'] == 'captain';
             $tokenPositions = $this->gameData->get('tokenPositions');
             if ($isCaptain) {
@@ -1809,7 +1766,6 @@ class Game extends \Table
             $result = [
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
-                'availableItemSkills' => $this->actions->getAvailableItemSkills(),
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
                 'canUndo' => $this->undo->canUndo(),
             ];
@@ -1833,7 +1789,6 @@ class Game extends \Table
                 'character_name' => $this->getCharacterHTML(),
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
-                // $result['availableItemSkills'] = $this->actions->getAvailableItemSkills();
                 'activeTurnPlayerId' => $character['player_id'],
                 'moves' => $this->map->calculateMoves()['fatigueList'],
                 'isStranded' => $this->map->isStranded(),
