@@ -269,6 +269,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         elem.style.order = 5;
       }
     });
+    if (Object.keys(this.gamedatas.players ?? {}).length === 1) {
+      document.querySelector('.player-board-game-specific-content').classList.add('one-player');
+    }
     const gameInfoSidePanel = document.querySelector('.game-info-side-panel');
     if (!gameInfoSidePanel) {
       selections.insertAdjacentHTML(

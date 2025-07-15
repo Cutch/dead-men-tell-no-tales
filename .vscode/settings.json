@@ -13,6 +13,7 @@
     "gamestate",
     "gameui",
     "interruptable",
+    "panzoom",
     "spritesheet",
     "tweening"
   ],

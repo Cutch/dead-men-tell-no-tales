@@ -138,6 +138,22 @@ class DMTNT_SelectionStates
         ];
         $this->completeSelectionState($data);
     }
+    public function actSelectCard(?string $cardId = null): void
+    {
+        if (!$cardId) {
+            throw new BgaUserException(clienttranslate('Select a card'));
+        }
+        $stateData = $this->getState(null);
+        $characterId = $stateData['characterId'];
+        $data = [
+            'cardId' => $cardId,
+            'characterId' => $characterId,
+            'nextState' => $stateData['nextState'],
+            'isInterrupt' => $stateData['isInterrupt'],
+        ];
+        $this->game->hooks->onCardSelection($data);
+        $this->completeSelectionState($data);
+    }
     public function actSelectCharacter(?string $characterId = null): void
     {
         if (!$characterId) {

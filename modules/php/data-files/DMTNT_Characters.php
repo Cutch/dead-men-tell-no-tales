@@ -157,59 +157,46 @@ class DMTNT_CharactersData
                 'actions' => '5',
                 'name' => 'Five-Fingered Titian',
                 'color' => '#dc9d29',
-                'skills' => [
-                    'skill1' => [
-                        'type' => 'skill',
-                        'name' => clienttranslate('Pick 1'),
-                        'state' => ['interrupt'],
-                        'interruptState' => ['revenge'],
-                        'onDrawRevenge' => function (Game $game, $skill, &$data) {
-                            $game->actInterrupt->addSkillInterrupt($skill);
-                        },
-                        'onUseSkill' => function (Game $game, $skill, &$data) {
-                            if ($data['skillId'] == $skill['id']) {
-                                $existingData = $game->actInterrupt->getState('actDraw');
-                                if (array_key_exists('data', $existingData)) {
-                                    $deck = $existingData['data']['deck'];
-                                    $card1 = $existingData['data']['card'];
-                                    $card2 = $game->decks->pickCard($deck);
-                                    $game->incStat(1, 'cards_drawn', $game->character->getSubmittingCharacter()['playerId']);
-                                    $data['interrupt'] = true;
-                                    $game->selectionStates->initiateState(
-                                        'cardSelection',
-                                        [
-                                            'cards' => [$card1, $card2],
-                                            'id' => $skill['id'],
-                                        ],
-                                        $game->character->getTurnCharacterId(),
-                                        false
-                                    );
-                                }
-                            }
-                        },
-                        'onCardSelection' => function (Game $game, $skill, &$data) {
-                            $state = $game->selectionStates->getState('cardSelection');
-                            if ($state && $state['id'] == $skill['id']) {
-                                $discardCard = array_values(
-                                    array_filter($state['cards'], function ($card) use ($data) {
-                                        return $card['id'] != $data['cardId'];
-                                    })
-                                )[0];
-                                $game->cardDrawEvent($discardCard, $discardCard['deck']);
+                'onDrawRevengeCardPre' => function (Game $game, $char, &$data) {
+                    if ($char['isActive']) {
+                        $card1 = $data['card'];
+                        $card2 = $game->decks->pickCard('revenge');
+                        $game->cardDrawEvent($card2, 'revenge');
+                        $data['interrupt'] = true;
+                        $game->selectionStates->initiateState(
+                            'cardSelection',
+                            [
+                                'cards' => [$card1, $card2],
+                                'id' => 'revengeCardSelection',
+                            ],
+                            $game->character->getTurnCharacterId(),
+                            false,
+                            'drawRevengeCard',
+                            null,
+                            true
+                        );
+                    }
+                },
+                'onCardSelection' => function (Game $game, $char, &$data) {
+                    $state = $game->selectionStates->getState('cardSelection');
+                    if ($state && $state['id'] == 'revengeCardSelection') {
+                        $discardCard = array_values(
+                            array_filter($state['cards'], function ($card) use ($data) {
+                                return $card['id'] != $data['cardId'];
+                            })
+                        )[0];
+                        $chosenCard = array_values(
+                            array_filter($state['cards'], function ($card) use ($data) {
+                                return $card['id'] == $data['cardId'];
+                            })
+                        )[0];
+                        $game->decks->placeCardOnTop('revenge', $discardCard['id']);
 
-                                $drawState = $game->actInterrupt->getState('actDraw');
-                                $drawState['data']['card'] = $game->decks->getCard($data['cardId']);
-                                $game->actInterrupt->setState('actDraw', $drawState);
-                                $game->actInterrupt->actInterrupt($skill['id']);
-                                $data['nextState'] = false;
-                            }
-                        },
-                        'requires' => function (Game $game, $skill) {
-                            $char = $game->character->getCharacterData($skill['characterId']);
-                            return $char['isActive'];
-                        },
-                    ],
-                ],
+                        $state = $game->actInterrupt->getState('stDrawRevengeCard');
+                        $state['data']['card'] = $chosenCard;
+                        $game->actInterrupt->setState('stDrawRevengeCard', $state);
+                    }
+                },
             ],
             'fallen' => [
                 'type' => 'character',

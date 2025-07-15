@@ -20,41 +20,36 @@ export class Map {
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
-    // this.game.table_id
     const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`;
-    // document
-    //   .getElementById('game_play_area')
-    //   .insertAdjacentHTML(
-    //     'beforeend',
-    //     buttonHTML
-    //   );
     document
       .getElementById('game_play_area')
       .insertAdjacentHTML(
         'beforeend',
         `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;"><div id="map-container"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
-    on($('zoom-in'), 'click', () =>
+    on($('zoom-in'), 'click', () => {
       this.panzoom.zoomIn({
         // focal: this.getMapCenter(),
-      }),
-    );
-    on($('zoom-out'), 'click', () => this.panzoom.zoomOut({}));
-    on($('reset'), 'click', () => this.panzoom.reset());
+      });
+      this.savePanZoom();
+    });
+    on($('zoom-out'), 'click', () => {
+      this.panzoom.zoomOut({});
+      this.savePanZoom();
+    });
+    on($('reset'), 'click', () => {
+      this.panzoom.reset();
+      this.savePanZoom();
+    });
     this.wrapper = $('map-wrapper');
     this.container = $('map-container');
     this.newCardContainer = $('new-card-container');
     const defaultScale = 0.5;
-    this.panzoom = new Panzoom(this.container, {
+    this.panzoom = Panzoom(this.container, {
       maxScale: 0.75,
       minScale: 0.25,
       startScale: defaultScale,
       canvas: true,
-      // origin: { x: 50, y: 0 },
-      // contain: 'outside',
-      // focal: {x, y}
-
-      // origin: '0 0',
     });
     addPassiveListener('resize', () => {
       this.setPanOptions();
@@ -88,13 +83,13 @@ export class Map {
     this.explosion = this.container.querySelector('.explosion-base');
     this.update(gameData);
     this.panzoom.pan(this.panzoom.getOptions().startX, this.panzoom.getOptions().startY);
+    this.loadPanZoom();
+  }
+  getBGAZoom() {
+    return parseFloat($('overall-content').style.getPropertyValue('--bga-game-zoom') ?? 0);
   }
   setPanOptions() {
-    const zoom = this.panzoom.getScale();
-    const currentCharacter = this.game.gamedatas.characters.find((d) => d.id == this.game.gamedatas.activeCharacter);
-    const wrapperBox = this.wrapper.getBoundingClientRect();
-
-    const center = this.getMapCenter();
+    const center = this.getCharacterCenter();
     this.panzoom.setOptions({
       startX: center.x,
       startY: center.y,
@@ -106,19 +101,36 @@ export class Map {
       height: (Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300 + 250,
     };
   }
-  getCharacterCenter() {}
+  setPlayerCenter() {
+    const center = this.getCharacterCenter();
+    this.panzoom.setOptions({ startX: center.x, startY: center.y });
+  }
+  getCharacterCenter() {
+    const character = this.game.gamedatas.characters.find((d) => d.id == this.game.gamedatas.activeCharacter);
+    const { x: tileX, y: tileY } = this.calcTilePosition(...character.pos);
+
+    const mapSize = this.getMapSize();
+    const mapCenter = this.getMapCenter();
+
+    return {
+      x: mapCenter.x + mapSize.width * 0.5 - (tileX + 150),
+      y: mapCenter.y + (tileY + 150) - mapSize.height * 0.5,
+    };
+  }
   getMapCenter() {
     const wrapperBox = this.wrapper.getBoundingClientRect();
     const mapSize = this.getMapSize();
 
-    const pan = this.panzoom.getPan();
     const zoom = this.panzoom.getScale();
-    return { x: wrapperBox.width * 2 - mapSize.width * 2, y: wrapperBox.height * 2 - mapSize.height * 2 };
+    return {
+      x: ((wrapperBox.width / this.getBGAZoom() - mapSize.width) * 0.5) / zoom,
+      y: ((wrapperBox.height / this.getBGAZoom() - mapSize.height) * 0.5) / zoom,
+    };
   }
   savePanZoom() {
     const data = JSON.stringify({
       options: this.panzoom.getOptions(),
-      pan: this.panzoom.getPan(),
+      // pan: this.panzoom.getPan(),
       scale: this.panzoom.getScale(),
       id: this.game.table_id,
     });
@@ -127,8 +139,10 @@ export class Map {
   loadPanZoom() {
     if (localStorage.getItem('dmtnt_data')) {
       const data = JSON.parse(localStorage.getItem('dmtnt_data'));
+      if (data.id !== this.game.table_id) return;
       this.panzoom.setOptions(data.options);
-      this.panzoom.pan(data.pan.x, data.pan.y);
+      // this.panzoom.pan(data.pan.x, data.pan.y);
+      this.setPlayerCenter();
       this.panzoom.zoom(data.scale);
     }
   }
@@ -410,6 +424,12 @@ export class Map {
       }
     });
   }
+  calcTilePosition(x, y) {
+    return {
+      x: (x - this.minX + 1) * 300,
+      y: (y - this.minY) * 300 + 250,
+    };
+  }
   update({ tiles, characters }) {
     if (this.newCardPhase) return;
     // if (this.newCardPhase && !this.game.refreshTiles) return;
@@ -433,13 +453,14 @@ export class Map {
         const tileKey = this.getKey({ x, y });
         this.positions[tileKey] = name;
         let tileElem = this.container.querySelector(`.${name}-base`);
+        const { x: tileX, y: tileY } = this.calcTilePosition(x, y);
         if (destroyed == 1) {
           if (tileElem) {
             this.dice[tileKey] = null;
             tileElem.outerHTML = `<div class="token-flip tile-flip ${name}-base"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
             tileElem = this.container.querySelector(`.${name}-base`);
-            tileElem.style.left = `${(x - this.minX + 1) * 300}px`;
-            tileElem.style.bottom = `${(y - this.minY) * 300 + 250}px`;
+            tileElem.style.left = `${tileX}px`;
+            tileElem.style.bottom = `${tileY}px`;
             tileElem.style.position = 'absolute';
             renderImage(name, tileElem.querySelector('.token-flip-front'), {
               pos: 'replace',
@@ -472,8 +493,8 @@ export class Map {
                 rotate: rotate * 90,
                 baseData: tileKey,
                 styles: {
-                  left: `${(x - this.minX + 1) * 300}px`,
-                  bottom: `${(y - this.minY) * 300 + 250}px`,
+                  left: `${tileX}px`,
+                  bottom: `${tileY}px`,
                   position: 'absolute',
                   '--rotate': rotate * 90,
                 },
@@ -491,7 +512,7 @@ export class Map {
               card: false,
               scale: 1,
               baseCss: 'ignore',
-              styles: { left: `${(x - this.minX + 1) * 300}px`, bottom: `${(y - this.minY) * 300 + 250}px`, position: 'absolute' },
+              styles: { left: `${tileX}px`, bottom: `${tileY}px`, position: 'absolute' },
             });
           renderImage(name, this.container, {
             pos: 'append',
@@ -500,8 +521,8 @@ export class Map {
             rotate: rotate * 90,
             baseData: tileKey,
             styles: {
-              left: `${(x - this.minX + 1) * 300}px`,
-              bottom: `${(y - this.minY) * 300 + 250}px`,
+              left: `${tileX}px`,
+              bottom: `${tileY}px`,
               position: 'absolute',
               '--rotate': rotate * 90,
             },
@@ -529,8 +550,8 @@ export class Map {
             renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
           }
         } else {
-          tileElem.style.left = `${(x - this.minX + 1) * 300}px`;
-          tileElem.style.bottom = `${(y - this.minY) * 300 + 250}px`;
+          tileElem.style.left = `${tileX}px`;
+          tileElem.style.bottom = `${tileY}px`;
         }
         if (exploded == 1)
           renderImage('explosion-barrel', tileElem.querySelector(`.barrel-marker`), {
@@ -561,12 +582,13 @@ export class Map {
       for (let y = this.minY - 1; y <= this.maxY + 1; y++) {
         if (y <= -1) continue;
         if (this.positions[this.getKey({ x, y })]) continue;
+        const { x: tileX, y: tileY } = this.calcTilePosition(x, y);
         renderImage('ocean', this.container, {
           pos: 'append',
           card: false,
           scale: 1,
           baseData: this.getKey({ x, y }),
-          styles: { left: `${(x - this.minX + 1) * 300}px`, bottom: `${(y - this.minY) * 300 + 250}px`, position: 'absolute' },
+          styles: { left: `${tileX}px`, bottom: `${tileY}px`, position: 'absolute' },
         });
       }
     }

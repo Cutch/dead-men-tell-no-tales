@@ -160,34 +160,6 @@ class DMTNT_Decks
         }
         return $result;
     }
-    public function addBackToDeck(string $deck, string $cardName): void
-    {
-        $cards = array_values(
-            array_filter($this->getDeck($deck)->getCardsInLocation('hand'), function ($card) use ($cardName) {
-                return $card['type_arg'] == $cardName;
-            })
-        );
-        if (sizeof($cards) > 0) {
-            $this->getDeck($deck)->moveCard($cards[0]['id'], 'discard');
-        } else {
-            throw new Exception('Missing card id');
-        }
-    }
-    public function removeFromDeck(string $deck, string $cardName): void
-    {
-        $cards = [...$this->getDeck($deck)->getCardsInLocation('discard'), ...$this->getDeck($deck)->getCardsInLocation('deck')];
-        //swapCharacter(Yurt)
-        $cards = array_values(
-            array_filter($cards, function ($card) use ($cardName) {
-                return $card['type_arg'] == $cardName;
-            })
-        );
-        if (sizeof($cards) > 0) {
-            $this->getDeck($deck)->moveCard($cards[0]['id'], 'hand');
-        } else {
-            throw new Exception('Missing card id');
-        }
-    }
     public function shuffleInCard(string $deck, string $cardName, bool $notify = true): void
     {
         $cards = array_values(
@@ -207,6 +179,17 @@ class DMTNT_Decks
             if ($notify) {
                 $this->game->notify('shuffle', '', $results);
             }
+        }
+    }
+    public function placeCardOnTop(string $deck, string $cardName): void
+    {
+        $cards = array_values(
+            array_filter($this->getDeck($deck)->getCardsInLocation('discard'), function ($card) use ($cardName) {
+                return $card['type_arg'] == $cardName;
+            })
+        );
+        if (sizeof($cards) > 0) {
+            $this->getDeck($deck)->moveCard($cards[0]['id'], 'deck', $this->getDeck($deck)->countCardInLocation('deck'));
         }
     }
     public function shuffleInDiscard(string $deck, bool $notify = true): void

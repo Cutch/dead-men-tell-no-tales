@@ -648,6 +648,10 @@ class Game extends \Table
     {
         $this->selectionStates->actMoveSelection($x, $y);
     }
+    public function actSelectCard(?string $cardId): void
+    {
+        $this->selectionStates->actSelectCard($cardId);
+    }
     public function actMove(?int $x, ?int $y): void
     {
         $this->actInterrupt->interruptableFunction(
@@ -1567,8 +1571,7 @@ class Game extends \Table
         $score = $eloMapping[$this->gameData->get('difficulty')] + ($this->gameData->get('captainFromm') ? 2 : 0);
         $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
         $this->eventLog(clienttranslate('Win!'));
-        // $this->nextState('endGame');
-        var_dump('win');
+        $this->nextState('endGame');
     }
     public function lose(string $reason)
     {
@@ -1586,8 +1589,7 @@ class Game extends \Table
             $this->eventLog(clienttranslate('The ship can\'t be searched, the expedition is lost'));
         }
         $this->DbQuery('UPDATE player SET player_score=0 WHERE 1=1');
-        // $this->nextState('endGame');
-        var_dump('loss');
+        $this->nextState('endGame');
     }
 
     /**

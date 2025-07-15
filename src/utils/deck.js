@@ -104,40 +104,17 @@ export class Deck {
       }
     }
   }
-  discardTooltip(cardId, isPartial = false) {
+  discardTooltip() {
     return () => {
       this.game.tooltip.show();
-      const {
-        frame: { w, h },
-        rotate,
-      } = getAllData()[cardId];
-
-      renderImage(cardId, this.game.tooltip.renderByElement(), {
-        withText: true,
-        scale: (rotate ? h : w) < 300 ? 1 : 2,
-        pos: 'replace',
+      this.game.tooltip.renderByElement().innerHTML = '';
+      const renderItem = (name, elem) => {
+        elem.insertAdjacentHTML('beforeend', `<div class="token ${name}"></div>`);
+        renderImage(name, elem.querySelector(`.token.${name}`), { scale: 2, pos: 'replace' });
+      };
+      this.game.gamedatas.decksDiscards[this.deck].forEach((name) => {
+        renderItem(name, this.game.tooltip.renderByElement());
       });
-      if (!isPartial) {
-        this.game.tooltip
-          .renderByElement()
-          .insertAdjacentHTML('beforeend', `<div id="see-all" class="see-all see-all-button">${_('See All')}</div>`);
-        addClickListener($('see-all'), _('See All'), () => {
-          this.game.tooltip.renderByElement().innerHTML = '';
-          const cardInnerTooltip = new Tooltip(this.game.tooltip.renderByElement());
-          const renderItem = (name, elem) => {
-            elem.insertAdjacentHTML('beforeend', `<div class="token ${name}"></div>`);
-            renderImage(name, elem.querySelector(`.token.${name}`), { scale: this.scale / 2, pos: 'replace' });
-            this.game.addHelpTooltip({
-              node: elem.querySelector(`.token.${name}`),
-              tooltipText: name,
-              tooltipElem: cardInnerTooltip,
-            });
-          };
-          this.game.gamedatas.decksDiscards[this.deck].forEach((name) => {
-            renderItem(name, this.game.tooltip.renderByElement());
-          });
-        });
-      }
     };
   }
   async partialDraw(cardId) {

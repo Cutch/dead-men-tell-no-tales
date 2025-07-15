@@ -91,7 +91,7 @@ export default {
           color: '#dc9d29',
           text: [
             { title: 'Five-Fingered Titian' },
-            _('When drawing a Revenge Card, this player instead draws 2, choose one and puts the other bock on the deck'),
+            _('When drawing a Revenge Card, this player instead draws 2, choose one and puts the other back on the deck'),
           ],
         },
       },

@@ -19,11 +19,6 @@ export class CardSelectionScreen {
   }
   show(gameData) {
     this.itemSelected = null;
-    const deckScaling = {
-      'day-event': 2,
-      'mental-hindrance': 2,
-      'physical-hindrance': 2,
-    };
     let cardSelectionElem = document.querySelector(`#card-selection-screen .cards`);
     if (!cardSelectionElem) {
       this.game.selector.show('cardSelection');
@@ -50,7 +45,7 @@ export class CardSelectionScreen {
             <div class="token ${cardName}"></div>
           <div>`,
       );
-      renderImage(cardName, elem.querySelector(`.token.${cardName}`), { scale: deckScaling[deckName] ?? 1, pos: 'insert' });
+      renderImage(cardName, elem.querySelector(`.token.${cardName}`), { scale: 1.5, pos: 'insert' });
       addClickListener(elem.querySelector(`.token.${cardName}`), 'Card', () => selectCallback());
     };
     gameData.selectionState.cards.forEach(({ deck, id: card }) => {

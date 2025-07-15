@@ -92,6 +92,18 @@
     line-height: calc(var(--size) + 2px);
   }
 }
+.see-all {
+  text-decoration: underline;
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+.see-all-button {
+  justify-self: center;
+  background-color: rgb(255 255 255);
+  font-size: 1.15rem;
+  padding: 1rem;
+  border-radius: 10px;
+}
 .counter {
   top: 0;
   right: 0;

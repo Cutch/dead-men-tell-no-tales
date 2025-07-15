@@ -79,6 +79,7 @@ $interruptScreens = [
     'crewMovement' => $crewMovement,
     'characterMovement' => $characterMovement,
     'undo' => $undo,
+    'changeZombiePlayer' => $changeZombiePlayer,
 ];
 
 $machinestates = [
@@ -129,6 +130,7 @@ $machinestates = [
         'possibleactions' => ['actPlaceTile'],
         'transitions' => [
             'finalizeTile' => $finalizeTile,
+            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $finalizeTile => [
@@ -210,6 +212,7 @@ $machinestates = [
         'possibleactions' => ['actSelectCharacter', 'actCancel'],
         'transitions' => [
             'playerTurn' => $playerTurn,
+            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $cardSelection => [
@@ -219,7 +222,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectCard', 'actCancel'],
-        'transitions' => ['playerTurn' => $playerTurn],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $crewMovement => [
         'name' => 'crewMovement',
@@ -228,7 +231,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actMoveCrew', 'actCancel'],
-        'transitions' => ['playerTurn' => $playerTurn],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $characterMovement => [
         'name' => 'characterMovement',
@@ -237,7 +240,7 @@ $machinestates = [
         'type' => 'activeplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actMoveSelection'],
-        'transitions' => ['playerTurn' => $playerTurn],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $itemSelection => [
         'name' => 'itemSelection',
@@ -246,7 +249,7 @@ $machinestates = [
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actSelectItem', 'actCancel'],
-        'transitions' => ['playerTurn' => $playerTurn],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $battleSelection => [
         'name' => 'battleSelection',
@@ -275,6 +278,7 @@ $machinestates = [
             'endGame' => $gameEnd,
             'postBattle' => $postBattle,
             'endTurn' => $nextCharacter,
+            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $postBattle => [
@@ -291,6 +295,7 @@ $machinestates = [
             'playerTurn' => $playerTurn,
             'postBattle' => $postBattle,
             'endTurn' => $nextCharacter,
+            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $interrupt => [
@@ -310,6 +315,7 @@ $machinestates = [
             'cardSelection' => $cardSelection,
             'battle' => $battle,
             'battleSelection' => $battleSelection,
+            'changeZombiePlayer' => $changeZombiePlayer,
         ],
     ],
     $changeZombiePlayer => [
