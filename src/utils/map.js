@@ -621,7 +621,17 @@ export class Map {
         if (treasuresElem) characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
         if (this.game.gamedatas.characterPositions && charactersElem)
           this.renderTokens(charactersElem, this.game.gamedatas.characterPositions, x, y);
-        if (this.game.gamedatas.tokenPositions && treasuresElem) this.renderTokens(treasuresElem, this.game.gamedatas.tokenPositions, x, y);
+        if (this.game.gamedatas.tokenPositions && treasuresElem) {
+          if (
+            !Object.values(this.game.gamedatas.tokenPositions)
+              .reduce((acc, d) => [...acc, ...d], [])
+              .some((d) => d.name.includes('captain'))
+          ) {
+            document.querySelector('.captain-4-token-base')?.remove();
+            document.querySelector('.captain-8-token-base')?.remove();
+          }
+          this.renderTokens(treasuresElem, this.game.gamedatas.tokenPositions, x, y);
+        }
         if (this.dice[tileKey]) {
           if (fire == 0) {
             this.dice[tileKey]._show();
