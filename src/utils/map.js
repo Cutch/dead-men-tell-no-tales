@@ -20,6 +20,7 @@ export class Map {
     this.minX = 0;
     this.maxY = 0;
     this.minY = 0;
+    this.firstLoad = true;
     const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`;
     document
       .getElementById('game_play_area')
@@ -28,23 +29,11 @@ export class Map {
         `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;"><div id="map-container"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
     on($('zoom-in'), 'click', () => {
-      // const { x, y, width, height } = $('map-wrapper').getBoundingClientRect();
-      // this.panzoom.zoomToPoint(
-      //   this.panzoom.getScale() * Math.exp(0.3),
-      //   { clientX: x + width / 2, clientY: y + height / 2 },
-      //   { animate: true },
-      // );
       this.zoom('in');
       this.savePanZoom();
     });
     on($('zoom-out'), 'click', () => {
       this.zoom('out');
-      // const { x, y, width, height } = $('map-wrapper').getBoundingClientRect();
-      // this.panzoom.zoomToPoint(
-      //   this.panzoom.getScale() * Math.exp(-0.3),
-      //   { clientX: x + width / 2, clientY: y + height / 2 },
-      //   { animate: true },
-      // );
       this.savePanZoom();
     });
     on($('reset'), 'click', () => {
@@ -123,23 +112,28 @@ export class Map {
   }
   setPanOptions() {
     const center = this.getCharacterCenter();
-    this.panzoom.setOptions({
-      startX: center.x,
-      startY: center.y,
-    });
+    if (center) {
+      this.panzoom.setOptions({
+        startX: center.x,
+        startY: center.y,
+      });
+    }
   }
   getMapSize() {
     return {
-      width: (Math.abs(this.minX) + Math.abs(this.maxX) + 3) * 300,
-      height: (Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300 + 250,
+      width: (Math.abs(this.minX) + Math.abs(this.maxX) + 3) * 299,
+      height: (Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 299 + 250,
     };
   }
   setCurrentPlayerCenter() {
     const center = this.getCharacterCenter();
-    this.panzoom.setOptions({ startX: center.x, startY: center.y });
+    if (center) {
+      this.panzoom.setOptions({ startX: center.x, startY: center.y });
+    }
   }
   getCharacterCenter() {
     const character = this.game.gamedatas.characters.find((d) => d.id == this.game.gamedatas.activeCharacter);
+    if (!character) return null;
     const { x: tileX, y: tileY } = this.calcTilePosition(...character.pos);
 
     const mapSize = this.getMapSize();
@@ -148,15 +142,6 @@ export class Map {
     return {
       x: mapCenter.x + mapSize.width * 0.5 - (tileX + 150),
       y: mapCenter.y + (tileY + 150) - mapSize.height * 0.5,
-    };
-  }
-  getFocal() {
-    const characterCenter = this.getCharacterCenter();
-    const mapCenter = this.getMapCenter();
-    const zoom = this.panzoom.getScale();
-    return {
-      x: (characterCenter.x - mapCenter.x) * this.getBGAZoom() * zoom,
-      y: (mapCenter.y - characterCenter.y) * this.getBGAZoom() * zoom,
     };
   }
   getMapCenter() {
@@ -170,29 +155,31 @@ export class Map {
   }
   savePanZoom() {
     const center = this.getCharacterCenter();
-    this.panzoom.setOptions({
-      startX: center.x,
-      startY: center.y,
-      startScale: this.panzoom.getScale(),
-    });
+    if (center) {
+      this.panzoom.setOptions({
+        startX: center.x,
+        startY: center.y,
+        startScale: this.panzoom.getScale(),
+      });
 
-    const data = JSON.stringify({
-      options: this.panzoom.getOptions(),
-      // pan: this.panzoom.getPan(),
-      scale: this.panzoom.getScale(),
-      id: this.game.table_id,
-    });
-    localStorage.setItem('dmtnt_data', data);
+      const data = JSON.stringify({
+        options: this.panzoom.getOptions(),
+        // pan: this.panzoom.getPan(),
+        scale: this.panzoom.getScale(),
+        id: this.game.table_id,
+      });
+      localStorage.setItem('dmtnt_data', data);
+    }
   }
   loadPanZoom() {
-    // this.setCurrentPlayerCenter();
-    // if (localStorage.getItem('dmtnt_data')) {
-    //   const data = JSON.parse(localStorage.getItem('dmtnt_data'));
-    //   if (data.id !== this.game.table_id) return;
-    //   this.panzoom.setOptions(data.options);
-    //   // this.panzoom.pan(data.pan.x, data.pan.y);
-    //   this.panzoom.zoom(data.scale);
-    // }
+    this.setCurrentPlayerCenter();
+    if (localStorage.getItem('dmtnt_data')) {
+      const data = JSON.parse(localStorage.getItem('dmtnt_data'));
+      if (data.id !== this.game.table_id) return;
+      this.panzoom.setOptions(data.options);
+      // this.panzoom.pan(data.pan.x, data.pan.y);
+      this.panzoom.zoom(data.scale);
+    }
   }
   hideTileSelectionScreen(showId) {
     if (showId && this.showId !== showId) return;
@@ -476,8 +463,8 @@ export class Map {
   }
   calcTilePosition(x, y) {
     return {
-      x: (x - this.minX + 1) * 300,
-      y: (y - this.minY) * 300 + 250,
+      x: (x - this.minX + 1) * 299,
+      y: (y - this.minY) * 299 + 250,
     };
   }
   update({ tiles, characters }) {
@@ -489,7 +476,6 @@ export class Map {
     this.lastCharacters = characters.map((d) => d.id).join(',');
     // if (this.newCardPhase && !this.game.refreshTiles) return;
     if ((tiles ?? this.game.gamedatas.tiles).length == 0) return;
-    this.refreshTiles = false;
     this.container.querySelectorAll('.ocean-base:not(.ignore)').forEach((e) => e.remove());
     this.maxX = 0;
     this.minX = 0;
@@ -664,14 +650,19 @@ export class Map {
     this.container.style.width = `${mapSize.width}px`;
     this.container.style.height = `${mapSize.height}px`;
     this.setPanOptions();
-    // `-400px`, bottom: `-192px`
-    trackerElem.style.left = `${Math.abs(this.minX) * 300 - 105}px`;
-    trackerElem.style.top = `${(Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300}px`;
-    // ((this.minX + this.maxX) * 300 + 150) * zoom + this.wrapper.getBoundingClientRect().width,
-    // ((this.minY + this.maxY) * 300 + 150) * zoom + this.wrapper.getBoundingClientRect().height,
+    trackerElem.style.left = `${Math.abs(this.minX) * 299 - 105}px`;
+    trackerElem.style.top = `${(Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 299}px`;
+
     if (this.game.gamedatas.explosions != null) {
       this.explosion.style.display = this.game.gamedatas.explosions == 0 ? 'none' : '';
       setTimeout(() => (this.explosion.style.left = `${80 + 140 * (this.game.gamedatas.explosions - 1)}px`), 0);
+    }
+    if (this.game.refreshTiles || this.firstLoad) {
+      const mapCenter = this.getMapCenter();
+      this.panzoom.pan(mapCenter.x, mapCenter.y);
+      setTimeout(() => this.panzoom.pan(mapCenter.x, mapCenter.y), 0);
+      this.refreshTiles = false;
+      this.firstLoad = false;
     }
   }
 }

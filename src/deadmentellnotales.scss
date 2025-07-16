@@ -1,6 +1,10 @@
 @use 'sass:meta';
 
 @include meta.load-css('utils/clickable');
+html {
+  background: url(img/background.png) top left repeat-y;
+  background-size: contain;
+}
 .dmtnt {
   @include meta.load-css('utils/deck');
   @include meta.load-css('utils/dice');
