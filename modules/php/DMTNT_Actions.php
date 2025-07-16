@@ -169,6 +169,13 @@ class DMTNT_Actions
                     return true && !$this->isSweltering() && !$this->tooManyDeckhands() && !$this->escaped();
                 },
             ],
+            'actUseSkill' => [
+                'state' => ['playerTurn'],
+                'type' => 'action',
+                'requires' => function (Game $game, $action) {
+                    return sizeof($this->getAvailableSkills()) > 0;
+                },
+            ],
         ]);
         $this->game = $game;
     }
@@ -194,6 +201,13 @@ class DMTNT_Actions
                 return [];
             }, $characters)
         );
+        $items = array_values(
+            array_filter(
+                array_map(function ($c) {
+                    return $c['item'];
+                }, $characters)
+            )
+        );
         $this->game->hooks->onGetCharacterSkills($characterSkills);
         return [
             ...$characterSkills,
@@ -205,6 +219,14 @@ class DMTNT_Actions
                         }
                         return [];
                     }, $this->actions)
+                ),
+                ...array_values(
+                    array_map(function ($c) {
+                        if (array_key_exists('skills', $c)) {
+                            return $c['skills'];
+                        }
+                        return [];
+                    }, $items)
                 )
             ),
         ];

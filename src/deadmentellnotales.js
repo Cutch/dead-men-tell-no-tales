@@ -546,8 +546,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'battleSelection':
       case 'nextCharacter':
       case 'finalizeTile':
-        this.map.update(this.gamedatas);
         if (args.args.characters) this.updatePlayers(args.args);
+        this.map.update(this.gamedatas);
+        this.map.setCurrentPlayerCenter();
         break;
       case 'placeTile':
         if (isActive) this.map.setNewCard(this.gamedatas.newTile.id);
@@ -576,6 +577,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'playerTurn':
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
+        this.map.setCurrentPlayerCenter();
         break;
       // case 'drawCard':
       //   if (!args.args.resolving) {
@@ -625,8 +627,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     let suffix = '';
     if (action['targetName']) suffix += ` (${_(action['targetName'])} ${action['targetDie']})`;
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
-    else if (action['characterId'] != null && !action['global']) suffix += ` (${action['characterId']})`;
-    if (action['suffix'] != null) suffix += ` (${action['suffix']})`;
+    if (action['suffix']) suffix += ` (${action['suffix']})`;
+    if (action['suffix_name']) suffix += ` (${_(action['suffix_name'])})`;
     if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa6 fa6-solid fa6-person-running dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
@@ -659,18 +661,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           })
           .forEach((action) => {
             const actionId = action.action;
+            if (actionId === 'actUseSkill') return;
             const suffix = this.getActionSuffixHTML(action);
             return this.statusBar.addActionButton(`${this.getActionMappings()[actionId]}${suffix}`, () => {
-              if (actionId === 'actUseSkill') {
-                this.clearActionButtons();
-                Object.values(this.gamedatas.availableSkills).forEach((skill) => {
-                  const suffix = this.getActionSuffixHTML(skill);
-                  this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {
-                    return this.bgaPerformAction(actionId, { skillId: skill.id, skillSecondaryId: skill.secondaryId });
-                  });
-                });
-                this.statusBar.addActionButton(_('Cancel'), () => this.onUpdateActionButtons(stateName, args), { color: 'secondary' });
-              } else if (actionId === 'actPlaceTile') {
+              if (actionId === 'actPlaceTile') {
                 this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
               } else if (actionId === 'actSwapItem') {
                 this.bgaPerformAction('actSwapItem');
@@ -887,6 +881,12 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'playerTurn':
           if (isActive) {
+            Object.values(this.gamedatas.availableSkills).forEach((skill) => {
+              const suffix = this.getActionSuffixHTML(skill);
+              this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {
+                return this.bgaPerformAction('actUseSkill', { skillId: skill.id, skillSecondaryId: skill.secondaryId });
+              });
+            });
             if (this.gamedatas.isStranded)
               this.statusBar.addActionButton(
                 _('Abandon Ship'),

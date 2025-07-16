@@ -166,6 +166,7 @@ $machinestates = [
             'actDrinkGrog',
             'actSwapItem',
             'actAbandonShip',
+            'actUseSkill',
         ],
         'transitions' => [
             // 'placeTile' => $placeTile,
@@ -279,6 +280,8 @@ $machinestates = [
             'postBattle' => $postBattle,
             'endTurn' => $nextCharacter,
             'changeZombiePlayer' => $changeZombiePlayer,
+            'playerTurn' => $playerTurn,
+            'nextCharacter' => $nextCharacter,
         ],
     ],
     $postBattle => [
@@ -294,6 +297,7 @@ $machinestates = [
             'battleSelection' => $battleSelection,
             'playerTurn' => $playerTurn,
             'postBattle' => $postBattle,
+            'battle' => $battle,
             'endTurn' => $nextCharacter,
             'changeZombiePlayer' => $changeZombiePlayer,
         ],
@@ -340,7 +344,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 
-$interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter, $battle, $postBattle];
+$interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter, $battle, $postBattle, $placeTile];
 $interruptableScreenNames = [];
 foreach ($interruptableScreens as $stateId) {
     $interruptableScreenNames[$stateId] = $machinestates[$stateId]['name'];

@@ -230,7 +230,6 @@ class DMTNT_Character
         } elseif ($actions == null) {
             $this->submittingCharacter = null;
         }
-        $this->game->log('submittingCharacter: ', $actions, $subActions, $this->submittingCharacter);
     }
     public function setSubmittingCharacterById(?string $characterId): void
     {
@@ -243,6 +242,11 @@ class DMTNT_Character
             if (array_key_exists('skills', $v)) {
                 if (array_key_exists($skillId, $v['skills'])) {
                     return ['character' => $v, 'skill' => $v['skills'][$skillId]];
+                }
+            }
+            if (array_key_exists('item', $v) && array_key_exists('skills', $v['item'])) {
+                if (array_key_exists($skillId, $v['item']['skills'])) {
+                    return ['character' => $v, 'skill' => $v['item']['skills'][$skillId]];
                 }
             }
         }

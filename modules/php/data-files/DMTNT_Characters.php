@@ -161,6 +161,14 @@ class DMTNT_CharactersData
                     if ($char['isActive']) {
                         $card1 = $data['card'];
                         $card2 = $game->decks->pickCard('revenge');
+
+                        $game->eventLog('Titian drew ${buttons}', [
+                            'buttons' => notifyButtons([
+                                ['name' => $game->decks->getDeckName('revenge'), 'dataId' => $card1['id'], 'dataType' => 'revenge'],
+                                ['name' => $game->decks->getDeckName('revenge'), 'dataId' => $card2['id'], 'dataType' => 'revenge'],
+                            ]),
+                        ]);
+
                         $game->cardDrawEvent($card2, 'revenge');
                         $data['interrupt'] = true;
                         $game->selectionStates->initiateState(

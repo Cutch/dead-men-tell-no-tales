@@ -48,8 +48,8 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Bucket'),
                 'actions' => 0,
-                'onCalculateFires' => function (Game $game, $char, &$data) {
-                    if ($char['isActive'] && getUsePerTurn('bucket', $game) == 0) {
+                'onCalculateFires' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && getUsePerTurn('bucket', $game) == 0) {
                         $moveList = $game->map->getValidAdjacentTiles($data['x'], $data['y']);
                         $currentTile = $data['currentTile'];
                         array_walk($moveList, function ($firstTile) use ($currentTile, &$data, $game) {
@@ -62,9 +62,9 @@ class DMTNT_ItemsData
                         });
                     }
                 },
-                'onFightFire' => function (Game $game, $char, &$data) {
-                    if ($char['isActive']) {
-                        $moveList = $game->map->getAdjacentTiles(...$game->getCharacterPos($char['id']));
+                'onFightFire' => function (Game $game, $item, &$data) {
+                    if ($item['isActive']) {
+                        $moveList = $game->map->getAdjacentTiles(...$game->getCharacterPos($item['id']));
                         if (
                             sizeof(
                                 array_filter($moveList, function ($tile) use ($data) {
@@ -88,9 +88,13 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Compass'),
                 'actions' => 0,
-                'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actMove' && getUsePerTurn('compass', $game) == 0) {
+                'onGetActionCost' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && $data['action'] == 'actMove' && getUsePerTurn('compass', $game) == 0) {
                         $data['actions'] = 0;
+                    }
+                },
+                'onMove' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && getUsePerTurn('compass', $game) == 0) {
                         usePerTurn('compass', $game);
                     }
                 },
@@ -99,9 +103,13 @@ class DMTNT_ItemsData
                 'type' => 'item',
                 'name' => clienttranslate('Dagger'),
                 'actions' => 1,
-                'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actEliminateDeckhand' && getUsePerTurn('dagger', $game) == 0) {
+                'onGetActionCost' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && $data['action'] == 'actEliminateDeckhand' && getUsePerTurn('dagger', $game) == 0) {
                         $data['actions'] = 0;
+                    }
+                },
+                'onEliminateDeckhands' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && getUsePerTurn('dagger', $game) == 0) {
                         usePerTurn('dagger', $game);
                     }
                 },
@@ -111,14 +119,35 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Pistol'),
                 'actions' => 1,
                 // Attack from adjacent rooms
+                'skills' => [
+                    'skill1' => [
+                        'type' => 'skill',
+                        'state' => ['playerTurn'],
+                        'name' => clienttranslate('Pistol Attack'),
+                        'actions' => 1,
+                        'onUse' => function (Game $game, $skill, &$data) {
+                            $game->gameData->set('battle', ['includeAdjacent' => true]);
+                            usePerTurn('pistol', $game);
+                            $game->nextState('battleSelection');
+                        },
+                        'requires' => function (Game $game, $skill) {
+                            $char = $game->character->getCharacterData($skill['characterId']);
+                            return $char['isActive'] && sizeof($game->getEnemies(true)) > 0 && getUsePerTurn('pistol', $game) == 0;
+                        },
+                    ],
+                ],
             ],
             'rum' => [
                 'type' => 'item',
                 'name' => clienttranslate('Rum'),
                 'actions' => 0,
-                'onGetActionCost' => function (Game $game, $char, &$data) {
-                    if ($data['action'] == 'actRest' && getUsePerTurn('rum', $game) == 0) {
+                'onGetActionCost' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && $data['action'] == 'actRest' && getUsePerTurn('rum', $game) == 0) {
                         $data['actions'] = 0;
+                    }
+                },
+                'onDrinkGrog' => function (Game $game, $item, &$data) {
+                    if ($item['isActive'] && getUsePerTurn('rum', $game) == 0) {
                         usePerTurn('rum', $game);
                     }
                 },
@@ -128,7 +157,9 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Sword'),
                 'actions' => 0,
                 'onGetAttack' => function (Game $game, $item, &$data) {
-                    $data['attack']++;
+                    if ($item['isActive']) {
+                        $data['attack']++;
+                    }
                 },
             ],
         ];

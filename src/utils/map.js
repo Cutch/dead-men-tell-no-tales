@@ -28,13 +28,23 @@ export class Map {
         `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;"><div id="map-container"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
       );
     on($('zoom-in'), 'click', () => {
-      this.panzoom.zoomIn({
-        // focal: this.getMapCenter(),
-      });
+      // const { x, y, width, height } = $('map-wrapper').getBoundingClientRect();
+      // this.panzoom.zoomToPoint(
+      //   this.panzoom.getScale() * Math.exp(0.3),
+      //   { clientX: x + width / 2, clientY: y + height / 2 },
+      //   { animate: true },
+      // );
+      this.zoom('in');
       this.savePanZoom();
     });
     on($('zoom-out'), 'click', () => {
-      this.panzoom.zoomOut({});
+      this.zoom('out');
+      // const { x, y, width, height } = $('map-wrapper').getBoundingClientRect();
+      // this.panzoom.zoomToPoint(
+      //   this.panzoom.getScale() * Math.exp(-0.3),
+      //   { clientX: x + width / 2, clientY: y + height / 2 },
+      //   { animate: true },
+      // );
       this.savePanZoom();
     });
     on($('reset'), 'click', () => {
@@ -51,6 +61,14 @@ export class Map {
       startScale: defaultScale,
       canvas: true,
     });
+    const originalZoomToPoint = this.panzoom.zoomToPoint;
+    this.panzoom.zoomToPoint = (scale, point, options) => {
+      point = {
+        clientX: point.clientX * this.getBGAZoom(),
+        clientY: point.clientY * this.getBGAZoom(),
+      };
+      originalZoomToPoint.apply(this.panzoom, [scale, point, options]);
+    };
     addPassiveListener('resize', () => {
       this.setPanOptions();
     });
@@ -85,8 +103,23 @@ export class Map {
     this.panzoom.pan(this.panzoom.getOptions().startX, this.panzoom.getOptions().startY);
     this.loadPanZoom();
   }
+  zoom(inOut = 'in', duration = 250) {
+    const start = this.panzoom.getScale();
+    const end = start * Math.exp((inOut === 'out' ? -1 : 1) * 0.3);
+    const { x, y, width, height } = $('map-wrapper').getBoundingClientRect();
+    const direction = Math.sign(end - start);
+    const step = ((direction * Math.abs(end - start)) / duration) * 10;
+    let scale = start;
+    // console.log(start, end, step, direction);
+    const intervalId = setInterval(() => {
+      if ((direction === 1 && scale > end) || (direction === -1 && scale < end)) clearInterval(intervalId);
+      scale += step;
+      this.panzoom.zoomToPoint(scale, { clientX: x + width / 2, clientY: y + height / 2 }, { animate: false });
+    }, 10);
+    this.savePanZoom();
+  }
   getBGAZoom() {
-    return parseFloat($('overall-content').style.getPropertyValue('--bga-game-zoom') ?? 0);
+    return parseFloat($('overall-content').style.getPropertyValue('--bga-game-zoom')) || 1;
   }
   setPanOptions() {
     const center = this.getCharacterCenter();
@@ -101,7 +134,7 @@ export class Map {
       height: (Math.abs(this.minY) + Math.abs(this.maxY) + 2) * 300 + 250,
     };
   }
-  setPlayerCenter() {
+  setCurrentPlayerCenter() {
     const center = this.getCharacterCenter();
     this.panzoom.setOptions({ startX: center.x, startY: center.y });
   }
@@ -117,10 +150,18 @@ export class Map {
       y: mapCenter.y + (tileY + 150) - mapSize.height * 0.5,
     };
   }
+  getFocal() {
+    const characterCenter = this.getCharacterCenter();
+    const mapCenter = this.getMapCenter();
+    const zoom = this.panzoom.getScale();
+    return {
+      x: (characterCenter.x - mapCenter.x) * this.getBGAZoom() * zoom,
+      y: (mapCenter.y - characterCenter.y) * this.getBGAZoom() * zoom,
+    };
+  }
   getMapCenter() {
     const wrapperBox = this.wrapper.getBoundingClientRect();
     const mapSize = this.getMapSize();
-
     const zoom = this.panzoom.getScale();
     return {
       x: ((wrapperBox.width / this.getBGAZoom() - mapSize.width) * 0.5) / zoom,
@@ -128,6 +169,13 @@ export class Map {
     };
   }
   savePanZoom() {
+    const center = this.getCharacterCenter();
+    this.panzoom.setOptions({
+      startX: center.x,
+      startY: center.y,
+      startScale: this.panzoom.getScale(),
+    });
+
     const data = JSON.stringify({
       options: this.panzoom.getOptions(),
       // pan: this.panzoom.getPan(),
@@ -137,14 +185,14 @@ export class Map {
     localStorage.setItem('dmtnt_data', data);
   }
   loadPanZoom() {
-    if (localStorage.getItem('dmtnt_data')) {
-      const data = JSON.parse(localStorage.getItem('dmtnt_data'));
-      if (data.id !== this.game.table_id) return;
-      this.panzoom.setOptions(data.options);
-      // this.panzoom.pan(data.pan.x, data.pan.y);
-      this.setPlayerCenter();
-      this.panzoom.zoom(data.scale);
-    }
+    // this.setCurrentPlayerCenter();
+    // if (localStorage.getItem('dmtnt_data')) {
+    //   const data = JSON.parse(localStorage.getItem('dmtnt_data'));
+    //   if (data.id !== this.game.table_id) return;
+    //   this.panzoom.setOptions(data.options);
+    //   // this.panzoom.pan(data.pan.x, data.pan.y);
+    //   this.panzoom.zoom(data.scale);
+    // }
   }
   hideTileSelectionScreen(showId) {
     if (showId && this.showId !== showId) return;
@@ -331,6 +379,8 @@ export class Map {
         .fill(0)
         .map(() => `<div class="deckhand"></div>`)
         .join('');
+    } else if (count == 0) {
+      container.innerHTML = '';
     }
     container.querySelectorAll('.deckhand').forEach((elem) => {
       renderImage('deckhand', elem, { pos: 'insert', card: false, scale: 3, baseData: v4() });
@@ -432,6 +482,11 @@ export class Map {
   }
   update({ tiles, characters }) {
     if (this.newCardPhase) return;
+    if (this.game.gamedatas.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) {
+      document.querySelectorAll('.tracker-base .character-token-card-base').forEach((el) => el.remove());
+      document.querySelectorAll('.tile-card-base .character-token-card-base').forEach((el) => el.remove());
+    }
+    this.lastCharacters = characters.map((d) => d.id).join(',');
     // if (this.newCardPhase && !this.game.refreshTiles) return;
     if ((tiles ?? this.game.gamedatas.tiles).length == 0) return;
     this.refreshTiles = false;
@@ -568,8 +623,10 @@ export class Map {
           this.renderTokens(charactersElem, this.game.gamedatas.characterPositions, x, y);
         if (this.game.gamedatas.tokenPositions && treasuresElem) this.renderTokens(treasuresElem, this.game.gamedatas.tokenPositions, x, y);
         if (this.dice[tileKey]) {
-          if (fire === 0) this.dice[tileKey]._hide();
-          else {
+          if (fire == 0) {
+            this.dice[tileKey]._show();
+            this.dice[tileKey]._hide();
+          } else {
             this.dice[tileKey]._show();
             this.dice[tileKey]._set({ roll: fire });
           }

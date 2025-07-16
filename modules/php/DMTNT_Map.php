@@ -16,6 +16,12 @@ class DMTNT_Map
         $this->game = $game;
         $this->reloadCache();
     }
+    public function directionToName(int $direction): string
+    {
+        $directionNames = [clienttranslate('Up'), clienttranslate('Right'), clienttranslate('Down'), clienttranslate('Left')];
+
+        return $directionNames[$direction];
+    }
     public function xy($x, $y)
     {
         return "{$x}x{$y}";
@@ -238,7 +244,7 @@ class DMTNT_Map
                 array_walk($currentTiles, function ($tile) use (&$moveList) {
                     array_push($moveList, ...$this->getAdjacentTiles($tile['x'], $tile['y']));
                 });
-                $moveList = array_unique($moveList);
+                $moveList = array_unique_nested($moveList, 'id');
                 $moveIds = toId($moveList);
             } else {
                 $currentTiles = [$this->xyMap[$key]];

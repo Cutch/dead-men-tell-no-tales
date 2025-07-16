@@ -15,8 +15,6 @@ class DMTNT_Hooks
     }
     private function getHook(): array
     {
-        // $tokens = $this->game->getValidTokens();
-        // $actions = $this->game->actions->getActions();
         $characters = $this->game->character->getAllCharacterData(true);
         $items = array_values(
             array_filter(
@@ -26,14 +24,6 @@ class DMTNT_Hooks
             )
         );
         $skills = array_merge(
-            // ...array_values(
-            //     array_map(function ($c) {
-            //         if (array_key_exists('skills', $c)) {
-            //             return $c['skills'];
-            //         }
-            //         return [];
-            //     }, $actions)
-            // ),
             ...array_map(function ($c) {
                 if (array_key_exists('skills', $c)) {
                     return $c['skills'];
@@ -48,12 +38,7 @@ class DMTNT_Hooks
                 return $skills;
             }, $characters)
         );
-        return [
-            // ...$actions,
-            ...$characters,
-            ...$skills,
-            ...$items,
-        ];
+        return [...$characters, ...$skills, ...$items];
     }
     private function callHooks($functionName, $args, &$data1, &$data2 = null, &$data3 = null, &$data4 = null)
     {
@@ -170,6 +155,16 @@ class DMTNT_Hooks
         return $data;
     }
     function onRollDie(&$data, array $args = [])
+    {
+        $this->callHooks(__FUNCTION__, $args, $data);
+        return $data;
+    }
+    function onEliminateDeckhands(&$data, array $args = [])
+    {
+        $this->callHooks(__FUNCTION__, $args, $data);
+        return $data;
+    }
+    function onDrinkGrog(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;

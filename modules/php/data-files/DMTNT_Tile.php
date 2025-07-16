@@ -80,7 +80,7 @@ class DMTNT_TileData
             'tile006' => [
                 'type' => 'deck',
                 'deck' => 'tile',
-                'fire' => 1,
+                'fire' => 4,
                 'color' => 'red',
                 'touchPoints' => [0, 1, 2, 3],
             ],
