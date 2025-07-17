@@ -64,7 +64,7 @@ class DMTNT_ItemsData
                 },
                 'onFightFire' => function (Game $game, $item, &$data) {
                     if ($item['isActive']) {
-                        $moveList = $game->map->getAdjacentTiles(...$game->getCharacterPos($item['id']));
+                        $moveList = $game->map->getAdjacentTiles(...$game->getCharacterPos($item['characterId']));
                         if (
                             sizeof(
                                 array_filter($moveList, function ($tile) use ($data) {
