@@ -146,7 +146,7 @@ class DMTNT_ItemsData
                         $data['actions'] = 0;
                     }
                 },
-                'onDrinkGrog' => function (Game $game, $item, &$data) {
+                'onRest' => function (Game $game, $item, &$data) {
                     if ($item['isActive'] && getUsePerTurn('rum', $game) == 0) {
                         usePerTurn('rum', $game);
                     }

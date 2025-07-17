@@ -900,6 +900,8 @@ class Game extends \Table
     public function actRest(): void
     {
         $this->actions->spendActionCost('actRest');
+        $data = [];
+        $this->hooks->onRest($data);
         $this->character->adjustActiveFatigue(-2);
         $this->eventLog(clienttranslate('${character_name} rested and recovered ${count} fatigue'), [
             'usedActionId' => 'actRest',
