@@ -78,11 +78,13 @@ class DMTNT_Actions
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
                     [$x, $y] = $game->getCharacterPos($game->character->getTurnCharacterId());
-                    $tile = $game->map->getTileByXY($x, $y);
-                    if ($tile) {
-                        return $tile['fire'] > 0 && !$this->tooManyDeckhands() && !$this->hasTreasure();
+                    if ($this->tooManyDeckhands() || $this->hasTreasure() || $this->escaped()) {
+                        return false;
                     }
-                    return false && !$this->escaped();
+                    if (sizeof($game->map->calculateFires()) > 0) {
+                        return true;
+                    }
+                    return false;
                 },
             ],
             'actEliminateDeckhand' => [
