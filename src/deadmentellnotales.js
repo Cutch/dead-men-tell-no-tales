@@ -506,7 +506,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.setupNotifications();
   },
   updateGameDatas: function (gameData) {
-    if (gameData?.version && this.gamedatas.version < gameData?.version && !this.reloadShown) {
+    if (gameData?.version && this.gamedatas.version < gameData?.version && !this.reloadShown && !this.replayFrom) {
       this.infoDialog(_('There is a new version available.'), _('Reload'), () => window.location.reload());
       this.reloadShown = true;
     }

@@ -31,6 +31,7 @@ class DMTNT_GameData
         'round' => 1,
         'expansion' => 0,
         'difficulty' => 0,
+        'battle' => ['includeAdjacent' => false],
         'turnUseItems' => [],
         'pendingStates' => [],
         'state' => [],
