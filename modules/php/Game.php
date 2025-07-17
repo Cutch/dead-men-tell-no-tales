@@ -1886,6 +1886,13 @@ class Game extends \Table
      */
     public function getAllDatas(): array
     {
+        $stateName = $this->gamestate->state(true, false, true)['name'];
+        if ($stateName === 'characterMovement') {
+            $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
+            if (!$canMove) {
+                $this->nextState('postBattle');
+            }
+        }
         $result = [
             'version' => $this->getVersion(),
             'expansionList' => self::$expansionList,
