@@ -21,8 +21,6 @@ namespace Bga\Games\DeadMenTellNoTales;
 use BgaUserException;
 use Exception;
 
-use function PHPSTORM_META\type;
-
 class DMTNT_GameData
 {
     private Game $game;
