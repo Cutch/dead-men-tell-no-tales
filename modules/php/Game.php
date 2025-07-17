@@ -1313,18 +1313,20 @@ class Game extends \Table
     }
     public function actRetreat()
     {
-        $this->selectionStates->initiateState(
-            'characterMovement',
-            [
-                'id' => 'characterMovement',
-                'characterId' => $this->character->getTurnCharacterId(),
-                'moves' => $this->map->calculateMoves(false)['fatigueList'],
-                'title' => clienttranslate('Select where to move'),
-            ],
-            $this->character->getTurnCharacterId(),
-            false,
-            'battleSelection'
-        );
+        if (sizeof($this->map->calculateMoves(false)['fatigueList']) > 0) {
+            $this->selectionStates->initiateState(
+                'characterMovement',
+                [
+                    'id' => 'characterMovement',
+                    'characterId' => $this->character->getTurnCharacterId(),
+                    'moves' => $this->map->calculateMoves(false)['fatigueList'],
+                    'title' => clienttranslate('Select where to move'),
+                ],
+                $this->character->getTurnCharacterId(),
+                false,
+                'battleSelection'
+            );
+        }
     }
     public function stPostBattle()
     {
@@ -1361,6 +1363,7 @@ class Game extends \Table
     {
         $battle = $this->gameData->get('battle');
         $isGuard = $battle['target']['type'] == 'guard';
+        $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
         $result = [
             'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
@@ -1372,10 +1375,14 @@ class Game extends \Table
                             'action' => 'actBattleAgain',
                             'type' => 'action',
                         ],
-                        [
-                            'action' => 'actRetreat',
-                            'type' => 'action',
-                        ],
+                        ...$canMove
+                            ? [
+                                [
+                                    'action' => 'actRetreat',
+                                    'type' => 'action',
+                                ],
+                            ]
+                            : [],
                     ]
                     : ($battle['resultRoll'] == 6
                         ? [
@@ -1383,10 +1390,14 @@ class Game extends \Table
                                 'action' => 'actBattleAgain',
                                 'type' => 'action',
                             ],
-                            [
-                                'action' => 'actRetreat',
-                                'type' => 'action',
-                            ],
+                            ...$canMove
+                                ? [
+                                    [
+                                        'action' => 'actRetreat',
+                                        'type' => 'action',
+                                    ],
+                                ]
+                                : [],
                             [
                                 'action' => 'actMakeThemFlee',
                                 'type' => 'action',

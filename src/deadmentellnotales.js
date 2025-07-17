@@ -291,7 +291,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       gameInfoSidePanel.querySelector('.treasure .value').innerHTML =
         `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted >= this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
       gameInfoSidePanel.querySelector('.deckhands .value').innerHTML =
-        `${this.gamedatas.tiles.reduce((acc, d) => acc + parseInt(d.deckhand, 10), 0)}/30`;
+        `${this.gamedatas.tiles.reduce((acc, d) => acc + (d.deckhand ? parseInt(d.deckhand, 10) : 0), 0)}/30`;
       gameInfoSidePanel.querySelector('.characters-left .value').innerHTML = `${this.gamedatas.remainingCharacters ?? 0}`;
     }
   },
