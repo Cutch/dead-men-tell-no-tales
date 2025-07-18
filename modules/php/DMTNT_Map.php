@@ -146,6 +146,13 @@ class DMTNT_Map
         return in_array($tileDirection, $this->getAdjustedTouchPoints($tile1)) &&
             in_array($inverseTileDirection, $this->getAdjustedTouchPoints($tile2));
     }
+    public function testHasDoor(array $tile1, array $tile2): bool
+    {
+        $tileDirection = $this->getTileDirection($tile1, $tile2);
+        $inverseTileDirection = $this->inverseRotation($tileDirection);
+        return in_array($tileDirection, $this->getAdjustedTouchPoints($tile1)) ||
+            in_array($inverseTileDirection, $this->getAdjustedTouchPoints($tile2));
+    }
     public function getTileDirection(array $tile1, array $tile2): int
     {
         $x = $tile2['x'] - $tile1['x'];
