@@ -740,7 +740,7 @@ EOD;
                 $currentDeckhand = $tile['deckhand'];
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTile) {
-                    $aTile = $this->getTileById($aTile['id']);
+                    $aTile = &$this->getTileById($aTile['id']);
                     if ($currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
                         $aTile['deckhand']++;
                     }
