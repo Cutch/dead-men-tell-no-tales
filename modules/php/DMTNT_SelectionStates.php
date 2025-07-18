@@ -128,6 +128,7 @@ class DMTNT_SelectionStates
             $this->game->eventLog(clienttranslate('${character_name} picked up ${item}'), [
                 'usedActionId' => 'actPickupToken',
                 'item' => $this->game->data->getItems()[$itemId]['name'],
+                'character_name' => $this->game->getCharacterHTML($characterId),
             ]);
         }
         $data = [

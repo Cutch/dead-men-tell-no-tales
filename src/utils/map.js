@@ -99,7 +99,6 @@ export class Map {
     const direction = Math.sign(end - start);
     const step = ((direction * Math.abs(end - start)) / duration) * 10;
     let scale = start;
-    // console.log(start, end, step, direction);
     const intervalId = setInterval(() => {
       if ((direction === 1 && scale > end) || (direction === -1 && scale < end)) clearInterval(intervalId);
       scale += step;
@@ -472,6 +471,7 @@ export class Map {
     if (this.game.gamedatas.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) {
       document.querySelectorAll('.tracker-base .character-token-card-base').forEach((el) => el.remove());
       document.querySelectorAll('.tile-card-base .character-token-card-base').forEach((el) => el.remove());
+      document.querySelectorAll('.tile-flip').forEach((el) => el.remove());
     }
     this.lastCharacters = characters.map((d) => d.id).join(',');
     // if (this.newCardPhase && !this.game.refreshTiles) return;
@@ -493,14 +493,13 @@ export class Map {
         if (name == 'tracker') return;
         const tileKey = this.getKey({ x, y });
         this.positions[tileKey] = name;
-        let tileElem = this.container.querySelector(`.${name}-base`);
+        let tileElem = this.container.querySelector(`.${name}-base:not(.tile-flip)`);
         const { x: tileX, y: tileY } = this.calcTilePosition(x, y);
         if (destroyed == 1) {
-          if (tileElem.querySelector('.token-flip')) {
+          if (tileElem && !tileElem.querySelector('.token-flip')) {
             this.dice[tileKey] = null;
             tileElem.outerHTML = `<div class="token-flip tile-flip ${name}-base"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
             const newTileElem = this.container.querySelector(`.${name}-base`);
-            console.log(newTileElem);
             newTileElem.style.left = `${tileX}px`;
             newTileElem.style.bottom = `${tileY}px`;
             newTileElem.style.position = 'absolute';

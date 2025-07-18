@@ -748,29 +748,34 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   { color: 'secondary' },
                 );
               } else if (actionId === 'actFightFire') {
-                this.clearActionButtons();
-                this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
-                const showId = this.map.showId;
-                this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
-                  this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
-                    .then(() => this.map.hideTileSelectionScreen(showId))
-                    .catch(console.error);
-                });
-                if (this.gamedatas.canUseBlanket)
-                  this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
-                    this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
+                if (!this.gamedatas.canUseBlanket && this.gamedatas.fires.length === 1) {
+                  const [x, y] = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).pos;
+                  this.bgaPerformAction('actFightFire', { x, y }).catch(console.error);
+                } else {
+                  this.clearActionButtons();
+                  this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
+                  const showId = this.map.showId;
+                  this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
+                    this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
                       .then(() => this.map.hideTileSelectionScreen(showId))
                       .catch(console.error);
                   });
+                  if (this.gamedatas.canUseBlanket)
+                    this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
+                      this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
+                        .then(() => this.map.hideTileSelectionScreen(showId))
+                        .catch(console.error);
+                    });
 
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                    this.map.hideTileSelectionScreen(showId);
-                  },
-                  { color: 'secondary' },
-                );
+                  this.statusBar.addActionButton(
+                    _('Cancel'),
+                    () => {
+                      this.onUpdateActionButtons(stateName, args);
+                      this.map.hideTileSelectionScreen(showId);
+                    },
+                    { color: 'secondary' },
+                  );
+                }
               } else if (actionId === 'actEliminateDeckhand') {
                 this.clearActionButtons();
                 this.map.showDeckhandSelection();
