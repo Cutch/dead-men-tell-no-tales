@@ -406,12 +406,18 @@ class Game extends \Table
         if (sizeof($tiles) === 0 || $y < 0) {
             throw new BgaUserException(clienttranslate('Tile can\'t be placed there'));
         }
+        $all = true;
         $any = false;
-        array_walk($tiles, function ($tile) use ($newTile, &$any) {
-            $any = $any || $this->map->testTouchPoints($tile, $newTile);
+        array_walk($tiles, function ($tile) use ($newTile, &$all, &$any) {
+            $touches = $this->map->testTouchPoints($tile, $newTile);
+            $all = $all && ($touches || $tile['destroyed'] == 1);
+            $any = $any || $touches;
         });
         if (!$any) {
             throw new BgaUserException(clienttranslate('Tile must connect to a door'));
+        }
+        if (!$all) {
+            throw new BgaUserException(clienttranslate('All doors must connect'));
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
 
