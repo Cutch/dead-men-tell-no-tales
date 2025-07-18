@@ -645,7 +645,10 @@ export class Map {
     if (this.game.refreshTiles || this.firstLoad) {
       const mapCenter = this.getMapCenter();
       this.panzoom.pan(mapCenter.x, mapCenter.y);
-      setTimeout(() => this.panzoom.pan(mapCenter.x, mapCenter.y), 0);
+      setTimeout(() => {
+        const mapCenter = this.getMapCenter();
+        this.panzoom.pan(mapCenter.x, mapCenter.y);
+      }, 0);
       this.refreshTiles = false;
       this.firstLoad = false;
     }

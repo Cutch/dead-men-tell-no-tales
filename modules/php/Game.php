@@ -388,6 +388,44 @@ class Game extends \Table
         $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $id => [$x, $y]]);
         $this->markChanged('player');
     }
+    public function getTilePlacementLocations(): array
+    {
+        $validLocations = [];
+        $newTile = $this->gameData->get('newTile');
+        if ($this->gameData->get('newTile')['id'] === 'dinghy') {
+            $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
+            $validLocations = $this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']);
+        } else {
+            $validLocations = $this->map->getAllEmptyTiles();
+        }
+        $validLocations = array_filter($validLocations, function ($position) use ($newTile, $validLocations) {
+            $newTile['x'] = $position['x'];
+            $newTile['y'] = $position['y'];
+            $tiles = null;
+            if ($newTile['id'] === 'dinghy') {
+                $tiles = $this->map->getAdjacentTiles($position['x'], $position['y'], $this->gameData->get('lastPlacedTileId'));
+            } else {
+                $tiles = $this->map->getAdjacentTiles($position['x'], $position['y']);
+            }
+            foreach (range(0, 3) as $rotate) {
+                $newTile['rotate'] = $rotate;
+                $all = true;
+                $any = false;
+                array_walk($tiles, function ($tile) use ($newTile, &$all, &$any) {
+                    $touches = $this->map->testTouchPoints($tile, $newTile);
+                    $all = $all && ($touches || !$this->map->testHasDoor($tile, $newTile) || $tile['destroyed'] == 1);
+                    $any = $any || $touches;
+                });
+                $response = $any && $all;
+                unset($all, $any);
+                if ($response) {
+                    return $response;
+                }
+            }
+            return false;
+        });
+        return array_unique_nested($validLocations, 'id');
+    }
     public function actPlaceTile(?int $x, ?int $y, ?int $rotate): void
     {
         if ($x === null || $y === null) {
@@ -410,7 +448,7 @@ class Game extends \Table
         $any = false;
         array_walk($tiles, function ($tile) use ($newTile, &$all, &$any) {
             $touches = $this->map->testTouchPoints($tile, $newTile);
-            $all = $all && ($touches || $tile['destroyed'] == 1);
+            $all = $all && ($touches || !$this->map->testHasDoor($tile, $newTile) || $tile['destroyed'] == 1);
             $any = $any || $touches;
         });
         if (!$any) {
@@ -437,7 +475,11 @@ class Game extends \Table
                         return str_contains($card['type_arg'], 'captain');
                     });
                     $card2 = $this->decks->pickCardWithoutLookup('bag');
-                    $tokens[] = $this->getTokenData($card2);
+                    if ($card2['type_arg'] === 'trapdoor') {
+                        $trapdoor = true;
+                    } else {
+                        $tokens[] = $this->getTokenData($card2);
+                    }
                 }
                 $this->gameData->set('tokenPositions', [...$this->gameData->get('tokenPositions'), $this->map->xy($x, $y) => $tokens]);
             }
@@ -476,13 +518,8 @@ class Game extends \Table
             'lastPlacedTileId' => $this->gameData->get('lastPlacedTileId'),
             'character_name' => $this->getCharacterHTML(),
             'newTile' => $this->gameData->get('newTile'),
+            'validLocations' => $this->getTilePlacementLocations(),
         ];
-        if ($this->gameData->get('newTile')['id'] === 'dinghy') {
-            $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
-            $result['validLocations'] = $this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']);
-        } else {
-            $result['validLocations'] = $this->map->getAllEmptyTiles();
-        }
         $this->getTiles($result);
         return $result;
     }
@@ -511,7 +548,11 @@ class Game extends \Table
             $card = $this->decks->pickCard('tile');
             $this->gameData->set('newTile', $card);
             $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-            $this->nextState('placeTile');
+            if (sizeof($this->getTilePlacementLocations()) > 0) {
+                $this->nextState('placeTile');
+            } else {
+                $this->lose('trapped');
+            }
         } elseif (!$this->gameData->get('dinghyChecked')) {
             $this->gameData->set('dinghyChecked', true);
             $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
@@ -1581,7 +1622,8 @@ class Game extends \Table
     public function getGameProgression()
     {
         // Compute and return the game progression
-        return 1;
+        $treasureCount = $this->gameData->get('treasures');
+        return max((sizeof($this->map->getMap()) / 26) * 0.75, $treasureCount / max($this->getTreasuresNeeded(), 1)) * 100;
     }
     public function endTurn()
     {
