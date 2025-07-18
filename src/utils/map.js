@@ -496,14 +496,15 @@ export class Map {
         let tileElem = this.container.querySelector(`.${name}-base`);
         const { x: tileX, y: tileY } = this.calcTilePosition(x, y);
         if (destroyed == 1) {
-          if (tileElem) {
+          if (tileElem.querySelector('.token-flip')) {
             this.dice[tileKey] = null;
             tileElem.outerHTML = `<div class="token-flip tile-flip ${name}-base"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
-            tileElem = this.container.querySelector(`.${name}-base`);
-            tileElem.style.left = `${tileX}px`;
-            tileElem.style.bottom = `${tileY}px`;
-            tileElem.style.position = 'absolute';
-            renderImage(name, tileElem.querySelector('.token-flip-front'), {
+            const newTileElem = this.container.querySelector(`.${name}-base`);
+            console.log(newTileElem);
+            newTileElem.style.left = `${tileX}px`;
+            newTileElem.style.bottom = `${tileY}px`;
+            newTileElem.style.position = 'absolute';
+            renderImage(name, newTileElem.querySelector('.token-flip-front'), {
               pos: 'replace',
               card: false,
               scale: 1,
@@ -513,7 +514,7 @@ export class Map {
                 '--rotate': rotate * 90,
               },
             });
-            renderImage('tile-back', tileElem.querySelector('.token-flip-back'), {
+            renderImage('tile-back', newTileElem.querySelector('.token-flip-back'), {
               pos: 'replace',
               card: false,
               scale: 1,
@@ -524,23 +525,8 @@ export class Map {
               },
             });
             setTimeout(() => {
-              tileElem.classList.add('flip');
+              newTileElem.classList.add('flip');
             }, 0);
-            setTimeout(() => {
-              tileElem.outerHTML = renderImage('tile-back', tileElem, {
-                pos: 'return',
-                card: false,
-                scale: 1,
-                rotate: rotate * 90,
-                baseData: tileKey,
-                styles: {
-                  left: `${tileX}px`,
-                  bottom: `${tileY}px`,
-                  position: 'absolute',
-                  '--rotate': rotate * 90,
-                },
-              });
-            }, 1400);
           } else {
             name = 'tile-back';
             tileElem = null;
