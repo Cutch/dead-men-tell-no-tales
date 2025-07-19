@@ -49,16 +49,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       actFightFire: _('Fight Fire'),
       actEliminateDeckhand: _('Eliminate Deckhand'),
       actPickupToken: _('Pickup Token'),
+      actDrop: _('Drop Token'),
       actDrinkGrog: _('Drink Grog'),
       actRest: _('Rest'),
       actIncreaseBattleStrength: _('Increase Strength'),
-      actDrop: _('Drop'),
       actSwapItem: _('Swap Item'),
       actSelectCharacter: _('Select Character'),
       actSelectCard: _('Select Card'),
       actMoveCrew: _('Move Crew'),
       actBattleSelection: _('Battle'),
-      actUseStrength: _('Use Temporary Strength'),
+      actUseStrength: _('Use Strength'),
       actDontUseStrength: _("Don't Use Strength"),
       actBattleAgain: _('Battle'),
       actRetreat: _('Retreat'),
@@ -630,6 +630,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     if (action['suffix']) suffix += ` (${action['suffix']})`;
     if (action['suffix_name']) suffix += ` (${_(action['suffix_name'])})`;
+    if (action['tempStrength'] != null)
+      suffix += ` +${action['tempStrength']} (${action['defense']} <i class="fa6 fa6-solid fa6-skull"></i> <i class="fa6 fa6-solid fa6-right-left"></i> ${parseInt(action['attack'], 10) + parseInt(action['tempStrength'], 10)} <i class="fa6 fa6-solid fa6-hand-fist"></i>)`;
     if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa6 fa6-solid fa6-person-running dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
@@ -671,6 +673,13 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.bgaPerformAction('actSwapItem');
               } else if (actionId === 'actBattleSelection') {
                 this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
+              } else if (actionId === 'actDontUseStrength') {
+                if (action.willDie) {
+                  this.confirmationDialog(
+                    _("If you don't use your strength, you will gain > 15 fatigue and be eliminated. Are you sure you want to do this?"),
+                    () => this.bgaPerformAction('actDontUseStrength'),
+                  );
+                } else this.bgaPerformAction('actDontUseStrength');
               } else if (actionId === 'actDrop') {
                 this.clearActionButtons();
 
@@ -814,7 +823,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           if (!$('pagemaintitletext').querySelector('.battling')) {
             $('pagemaintitletext').insertAdjacentHTML(
               'beforeend',
-              ` <span class="battling">${this.gamedatas.attack} <i class="fa6 fa6-solid fa6-user"></i> <i class="fa6 fa6-solid fa6-arrow-right"></i> ${this.gamedatas.defense}</span> <i class="fa6 fa6-solid fa6-skull"></i>`,
+              `<span class="battling">
+              ${_('Current Result')} ${this.gamedatas.defense} <i class="fa6 fa6-solid fa6-skull"></i> <i class="fa6 fa6-solid fa6-right-left"></i> ${this.gamedatas.attack} <i class="fa6 fa6-solid fa6-hand-fist"></i>
+              </span>`,
             );
           }
           break;
@@ -1099,6 +1110,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (await this.notificationWrapper(notification)) {
       if (!notification.args.partial) this.decks[notification.args.deck].setDiscard(notification.args.card.id);
     } else {
+      if (notification.args.deck === 'revenge') {
+        this.map.setLeftCard(notification.args.card.id);
+      }
       await this.decks[notification.args.deck].drawCard(notification.args.card.id, notification.args.partial);
     }
     this.decks[notification.args.deck].updateDeckCounts(gameData.decks[notification.args.deck]);

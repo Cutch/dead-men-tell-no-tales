@@ -1152,16 +1152,14 @@ class Game extends \Table
             );
         }
         $data = [
-            'attack' =>
-                $this->rollBattleDie(clienttranslate('Attack'), $this->character->getTurnCharacterId()) +
-                (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0),
+            'attack' => $this->rollBattleDie(clienttranslate('Attack'), $this->character->getTurnCharacterId()),
         ];
         $this->hooks->onGetAttack($data);
         $result = '';
         if ($battle['target']['battle'] <= $data['attack']) {
             // Win without need for strength
             $result = 'win';
-        } elseif (!$character['tempStrength']) {
+        } elseif ($character['tempStrength'] + (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0) == 0) {
             $result = 'lose';
         }
         $this->gameData->set('battle', [...$battle, 'pos' => $battle['target']['pos'], 'attack' => $data['attack'], 'result' => $result]);
@@ -1179,7 +1177,12 @@ class Game extends \Table
     {
         $character = $this->character->getTurnCharacter();
         $battle = $this->gameData->get('battle');
-        $battle['attack'] += $character['tempStrength'];
+        $tokens = array_count_values(
+            array_map(function ($d) {
+                return $d['treasure'];
+            }, $character['tokenItems'])
+        );
+        $battle['attack'] += $character['tempStrength'] + (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0);
         $characterId = $this->character->getSubmittingCharacter()['characterId'];
         $this->character->updateCharacterData($characterId, function (&$data) {
             $data['tempStrength'] = 0;
@@ -1243,6 +1246,13 @@ class Game extends \Table
     public function argBattle()
     {
         $battle = $this->gameData->get('battle');
+        $willDie = $this->character->getTurnCharacter()['fatigue'] + max($battle['target']['battle'] - $battle['attack'], 0) >= 16;
+        $character = $this->character->getTurnCharacter();
+        $tokens = array_count_values(
+            array_map(function ($d) {
+                return $d['treasure'];
+            }, $character['tokenItems'])
+        );
         $result = [
             'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
@@ -1255,11 +1265,16 @@ class Game extends \Table
                     [
                         'action' => 'actUseStrength',
                         'type' => 'action',
-                        'suffix' => '+' . $this->character->getTurnCharacter()['tempStrength'],
+                        'attack' => $battle['attack'],
+                        'defense' => $battle['target']['battle'],
+                        'tempStrength' =>
+                            $this->character->getTurnCharacter()['tempStrength'] +
+                            (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0),
                     ],
                     [
                         'action' => 'actDontUseStrength',
                         'type' => 'action',
+                        'willDie' => $willDie,
                     ],
                 ],
         ];

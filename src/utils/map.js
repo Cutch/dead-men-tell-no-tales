@@ -22,12 +22,14 @@ export class Map {
     this.minY = 0;
     this.firstLoad = true;
     const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`;
-    document
-      .getElementById('game_play_area')
-      .insertAdjacentHTML(
-        'beforeend',
-        `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;"><div id="map-container"></div>${buttonHTML}<div id="new-card-container" style="display: none"></div></div>`,
-      );
+    document.getElementById('game_play_area').insertAdjacentHTML(
+      'beforeend',
+      `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;">
+        <div id="map-container"></div>${buttonHTML}
+        <div id="new-card-container" style="display: none"></div>
+        <div id="left-card-container" style="display: none; opacity: 0"></div>
+        </div>`,
+    );
     on($('zoom-in'), 'click', () => {
       this.zoom('in');
       this.savePanZoom();
@@ -43,6 +45,7 @@ export class Map {
     this.wrapper = $('map-wrapper');
     this.container = $('map-container');
     this.newCardContainer = $('new-card-container');
+    this.leftCardContainer = $('left-card-container');
     const defaultScale = 0.5;
     this.panzoom = Panzoom(this.container, {
       maxScale: 0.75,
@@ -240,6 +243,17 @@ export class Map {
   getSelectionPosition() {
     return this.selectionPosition;
   }
+  async setLeftCard(id) {
+    renderImage(id, this.leftCardContainer, { pos: 'replace', scale: 1.5, card: false });
+    this.leftCardContainer.insertAdjacentHTML('afterbegin', `<h3>${_('Revenge Card')}</h3>`);
+    this.leftCardContainer.style.display = '';
+
+    const anim = fx.chain([dojo.fadeIn({ node: this.leftCardContainer }), dojo.fadeOut({ node: this.leftCardContainer, delay: 3000 })]);
+    dojo.connect(anim, 'onEnd', () => {
+      this.leftCardContainer.style.display = 'none';
+    });
+    await this.game.bgaPlayDojoAnimation(anim);
+  }
   clearNewCard() {
     this.newCardPhase = false;
     this.newCardContainer.style.display = 'none';
@@ -359,7 +373,7 @@ export class Map {
   }
   renderDeckhands(container, count) {
     if (count > 10) {
-      container.innerHTML = `<div class="deckhand"><div class="dot dot--number counter">${count}</div></div>`;
+      container.innerHTML = `<div class="deckhand"><div class="dot dot--number counter">${count - 1}</div></div><div class="deckhand"></div>`;
     } else if (count) {
       container.innerHTML = Array(parseInt(count, 10))
         .fill(0)
