@@ -372,14 +372,13 @@ export class Map {
       renderImage('deckhand', elem, { pos: 'insert', card: false, scale: 3, baseData: v4() });
     });
   }
-  getWindowRelativeOffset(parentElem, elem) {
+  getWindowRelativeOffset(elem, elem2) {
     return {
-      left: (elem.getBoundingClientRect().left - parentElem.getBoundingClientRect().left) / this.panzoom.getScale(),
-      top: (elem.getBoundingClientRect().top - parentElem.getBoundingClientRect().top) / this.panzoom.getScale(),
+      left: (elem.getBoundingClientRect().left - elem2.getBoundingClientRect().left) / this.panzoom.getScale() / this.getBGAZoom(),
+      top: (elem.getBoundingClientRect().top - elem2.getBoundingClientRect().top) / this.panzoom.getScale() / this.getBGAZoom(),
     };
   }
   renderTokens(container, positions, x, y) {
-    // container.innerHTML = '';
     const xyId = this.getKey({ x, y });
     container.style.setProperty('--count', positions[xyId]?.length ?? 0);
     positions[xyId]?.forEach(({ name, oldName, id, type }) => {
@@ -390,21 +389,17 @@ export class Map {
           container.insertAdjacentHTML('beforeend', '<div class="temp-mover"></div>');
           currentElem.setAttribute('data-data', xyId);
           const tempMover = container.querySelector('.temp-mover');
-          const targetOffset = this.getWindowRelativeOffset(this.container, tempMover);
-          const currentOffset = this.getWindowRelativeOffset(this.container, currentElem);
-          this.container.appendChild(currentElem);
+          const targetOffset = this.getWindowRelativeOffset(tempMover, currentElem);
           currentElem.style.position = 'absolute';
-          currentElem.style.left = currentOffset.left + 'px';
-          currentElem.style.top = currentOffset.top + 'px';
+          currentElem.style.left = '0px';
+          currentElem.style.top = '0px';
           currentElem.style.zIndex = '5';
-          const animationId = fx
-            .slideTo({
-              node: currentElem,
-              ...targetOffset,
-              units: 'px',
-              duration: 750,
-            })
-            .play();
+          const animationId = fx.slideTo({
+            node: currentElem,
+            ...targetOffset,
+            units: 'px',
+            duration: 750,
+          });
           dojo.connect(animationId, 'onEnd', () => {
             tempMover.remove();
             container.appendChild(currentElem);
