@@ -160,10 +160,10 @@ class DMTNT_Decks
         }
         return $result;
     }
-    public function shuffleInCard(string $deck, string $cardName, bool $notify = true): void
+    public function shuffleInCard(string $deck, string $cardName, string $location = 'discard', bool $notify = true): void
     {
         $cards = array_values(
-            array_filter($this->getDeck($deck)->getCardsInLocation('discard'), function ($card) use ($cardName) {
+            array_filter($this->getDeck($deck)->getCardsInLocation($location), function ($card) use ($cardName) {
                 return $card['type_arg'] == $cardName;
             })
         );
@@ -246,15 +246,15 @@ class DMTNT_Decks
         $this->getDeck($deck)->insertCardOnExtremePosition($topCard['id'], 'discard', true);
         return $topCard;
     }
-    public function discardCards(string $deck, $callback): void
+    public function discardCards(string $deck, string $location = 'discard', $callback): void
     {
         $deckCount = $this->getDeck($deck)->countCardsInLocation('deck');
         $cards = $this->getDeck($deck)->getCardsOnTop($deckCount, 'deck');
         $cards = array_filter($cards, function ($card) use ($callback) {
             return $callback($this->getCard($card['type_arg']), $card);
         });
-        array_walk($cards, function ($card) use ($deck) {
-            $this->getDeck($deck)->insertCardOnExtremePosition($card['id'], 'discard', true);
+        array_walk($cards, function ($card) use ($deck, $location) {
+            $this->getDeck($deck)->insertCardOnExtremePosition($card['id'], $location, true);
         });
         unset($this->cachedData[$deck]);
     }

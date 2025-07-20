@@ -86,7 +86,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     const characters = gameData?.characters
       ? Object.values(gameData?.characters)
       : Object.values(this.selectedCharacters).sort((a, b) => a.id.localeCompare(b.id));
-    if (gameData.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) {
+    if (this.lastCharacters !== characters.map((d) => d.id).join(',')) {
+      console.log('Removing old characters', document.querySelectorAll('.character-side-container'));
       document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
       document.querySelectorAll('.player-card').forEach((el) => el.remove());
     }
@@ -280,6 +281,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
         <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
         <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
+        <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
         </div>`,
       );
     }
@@ -293,6 +295,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       gameInfoSidePanel.querySelector('.deckhands .value').innerHTML =
         `${this.gamedatas.tiles.reduce((acc, d) => acc + (d.deckhand ? parseInt(d.deckhand, 10) : 0), 0)}/30`;
       gameInfoSidePanel.querySelector('.characters-left .value').innerHTML = `${this.gamedatas.remainingCharacters ?? 0}`;
+      gameInfoSidePanel.querySelector('.map-left .value').innerHTML = `${this.gamedatas.decks?.['tile']?.count ?? 20}`;
     }
   },
   renderTokens(container, tokens) {

@@ -194,7 +194,7 @@ class DMTNT_Map
             );
         });
 
-        $this->game->decks->discardCards('tile', function ($data, $card) {
+        $this->game->decks->discardCards('tile', 'hand', function ($data, $card) {
             return (array_key_exists('starter', $data) && $data['starter'] == true) || $data['id'] == 'dinghy';
         });
     }

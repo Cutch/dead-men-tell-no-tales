@@ -471,7 +471,7 @@ class Game extends \Table
                 $tokens = [$this->getTokenData($card)];
                 if (str_contains($card['type_arg'], 'captain')) {
                     // TODO check this for captain
-                    $this->decks->discardCards('bag', function ($data, $card) {
+                    $this->decks->discardCards('bag', 'discard', function ($data, $card) {
                         return str_contains($card['type_arg'], 'captain');
                     });
                     $card2 = $this->decks->pickCardWithoutLookup('bag');
@@ -558,7 +558,7 @@ class Game extends \Table
             $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
 
             if (sizeof($this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']))) {
-                $this->decks->shuffleInCard('tile', 'dinghy', false);
+                $this->decks->shuffleInCard('tile', 'dinghy', 'hand', false);
 
                 $card = $this->decks->pickCard('tile');
                 $this->gameData->set('newTile', $card);
@@ -1300,8 +1300,8 @@ class Game extends \Table
                         return !str_contains($token['token'], 'captain');
                     })
                 );
-                $this->decks->shuffleInCard('bag', 'captain-4', false);
-                $this->decks->shuffleInCard('bag', 'captain-8', false);
+                $this->decks->shuffleInCard('bag', 'captain-4', 'discard', false);
+                $this->decks->shuffleInCard('bag', 'captain-8', 'discard', false);
                 $this->gameData->set('tokenPositions', $tokenPositions);
             } else {
                 $tokenPositions[$this->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
@@ -1861,7 +1861,6 @@ class Game extends \Table
             $this->undo->saveState();
             $this->incStat(1, 'actions_used', $this->character->getSubmittingCharacter()['playerId']);
         }
-        $character = $this->character->getTurnCharacter(true);
         if ($this->changed['token']) {
             $result = [];
             $this->getItemData($result);
@@ -1869,6 +1868,7 @@ class Game extends \Table
             $this->notify('tokenUsed', '', ['gameData' => $result]);
         }
         if ($this->changed['player']) {
+            $character = $this->character->getTurnCharacter(true);
             $result = [
                 'activeCharacter' => $this->character->getTurnCharacterId(),
                 'activePlayer' => $this->character->getTurnCharacterId(),
@@ -1882,6 +1882,7 @@ class Game extends \Table
             $this->notify('updateCharacterData', '', ['gameData' => $result]);
         }
         if ($this->changed['map']) {
+            $character = $this->character->getTurnCharacter(true);
             $result = [
                 'activeCharacter' => $this->character->getTurnCharacterId(),
                 'activePlayer' => $this->character->getTurnCharacterId(),
@@ -1895,6 +1896,7 @@ class Game extends \Table
             $this->notify('updateMap', '', ['gameData' => $result]);
         }
         if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn'])) {
+            $character = $this->character->getTurnCharacter(true);
             $result = [
                 'actions' => array_values($this->actions->getValidActions()),
                 'availableSkills' => $this->actions->getAvailableSkills(),
