@@ -388,11 +388,11 @@ class Game extends \Table
         $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $id => [$x, $y]]);
         $this->markChanged('player');
     }
-    public function getTilePlacementLocations(): array
+    public function getTilePlacementLocations($isDinghy = false): array
     {
         $validLocations = [];
         $newTile = $this->gameData->get('newTile');
-        if ($this->gameData->get('newTile')['id'] === 'dinghy') {
+        if ($isDinghy) {
             $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
             $validLocations = $this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']);
         } else {
@@ -518,7 +518,9 @@ class Game extends \Table
             'lastPlacedTileId' => $this->gameData->get('lastPlacedTileId'),
             'character_name' => $this->getCharacterHTML(),
             'newTile' => $this->gameData->get('newTile'),
-            'validLocations' => $this->getTilePlacementLocations(),
+            'validLocations' => $this->gameData->get('newTile')
+                ? $this->getTilePlacementLocations($this->gameData->get('newTile')['id'] === 'dinghy')
+                : [],
         ];
         $this->getTiles($result);
         return $result;
@@ -548,17 +550,17 @@ class Game extends \Table
             $card = $this->decks->pickCard('tile');
             $this->gameData->set('newTile', $card);
             $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-            if (sizeof($this->getTilePlacementLocations()) > 0) {
+            if (sizeof($this->getTilePlacementLocations(false)) > 0) {
                 $this->nextState('placeTile');
             } else {
                 $this->lose('trapped');
             }
         } elseif (!$this->gameData->get('dinghyChecked')) {
             $this->gameData->set('dinghyChecked', true);
-            $lastTile = $this->map->getTileById($this->gameData->get('lastPlacedTileId'));
 
-            if (sizeof($this->map->getEmptyAdjacentTiles($lastTile['x'], $lastTile['y']))) {
+            if (sizeof($this->getTilePlacementLocations(true)) > 0) {
                 $this->decks->shuffleInCard('tile', 'dinghy', 'hand', false);
+                $this->decks->shuffleInCard('tile', 'dinghy', 'discard', false); // TODO remove for new games
 
                 $card = $this->decks->pickCard('tile');
                 $this->gameData->set('newTile', $card);
@@ -1954,11 +1956,50 @@ class Game extends \Table
     public function getAllDatas(): array
     {
         $stateName = $this->gamestate->state(true, false, true)['name'];
+        // Temp fix for stuck in battle
         if ($stateName === 'characterMovement') {
             $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
             if (!$canMove) {
                 $this->nextState('postBattle');
             }
+        }
+        // Temp fix for stuck tile placement
+        if ($stateName === 'placeTile' && sizeof($this->map->getMap()) == 25) {
+            if ($this->decks->getDeck('tile')->getCardOnTop('deck')) {
+                $this->decks->discardCards('tile', 'discard', function () {
+                    return true;
+                });
+                $this->gameData->set('dinghyChecked', true);
+                if (sizeof($this->getTilePlacementLocations(true)) > 0) {
+                    $this->decks->shuffleInCard('tile', 'dinghy', 'hand', false);
+                    $this->decks->shuffleInCard('tile', 'dinghy', 'discard', false);
+
+                    $card = $this->decks->pickCard('tile');
+                    $this->gameData->set('newTile', $card);
+                    $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+                    // $this->nextState('placeTile');
+                } else {
+                    $this->gameData->set('newTile', null);
+                    $this->gameData->set('newTileCount', 0);
+                    $this->nextState('playerTurn');
+                }
+            }
+
+            // if ($this->decks->getDeck('tile')->getCardOnTop('deck')) {
+            //     $card = $this->decks->pickCard('tile');
+            //     $this->gameData->set('newTile', $card);
+            //     $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+            //     if (sizeof($this->getTilePlacementLocations(false)) > 0) {
+            //         $this->nextState('placeTile');
+            //     } else {
+            //         $this->lose('trapped');
+            //     }
+            // } elseif (!$this->gameData->get('dinghyChecked')) {
+            // } else {
+            //     $this->gameData->set('newTile', null);
+            //     $this->gameData->set('newTileCount', 0);
+            //     $this->nextState('playerTurn');
+            // }
         }
         $result = [
             'version' => $this->getVersion(),

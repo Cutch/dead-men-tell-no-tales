@@ -446,14 +446,15 @@ export class Map {
             container.querySelector('.token-flip').classList.add('flip');
           }, 0);
           setTimeout(() => {
-            container.querySelector(`.id${id}`).outerHTML = renderImage(name + '-token', container, {
-              pos: 'return',
-              card: false,
-              scale: 1.5,
-              baseData: xyId,
-              baseCss: 'id' + id,
-              styles: { '--color': '#000' },
-            });
+            if (container.querySelector(`.id${id}`))
+              container.querySelector(`.id${id}`).outerHTML = renderImage(name + '-token', container, {
+                pos: 'return',
+                card: false,
+                scale: 1.5,
+                baseData: xyId,
+                baseCss: 'id' + id,
+                styles: { '--color': '#000' },
+              });
           }, 1000);
         }
       } else {

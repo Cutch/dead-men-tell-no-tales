@@ -70,7 +70,7 @@ class DMTNT_Map
             $nx = $v[0];
             $ny = $v[1];
             $key = $this->xy($x + $nx, $y + $ny);
-            if (array_key_exists($key, $this->xyMap)) {
+            if (($x + $nx == 0 || $y + $ny >= 0) && array_key_exists($key, $this->xyMap)) {
                 if ($toTileId && $this->xyMap[$key] === $toTileId) {
                     $tiles[] = $this->xyMap[$key];
                 } else {
@@ -93,7 +93,7 @@ class DMTNT_Map
             $ny = $v[1];
             $emptyPosition = ['x' => $x + $nx, 'y' => $y + $ny];
             $key = $this->xy(...$emptyPosition);
-            if (!array_key_exists($key, $this->xyMap)) {
+            if (($x + $nx == 0 || $y + $ny >= 0) && !array_key_exists($key, $this->xyMap)) {
                 $tileDirection = $this->getTileDirection($currentTile, $emptyPosition);
                 if (in_array($tileDirection, $this->getAdjustedTouchPoints($currentTile))) {
                     $emptyPosition['id'] = $key;
@@ -544,10 +544,18 @@ EOD;
     }
     public function increaseFire($roll, $color): void
     {
-        $this->iterateMap(function (&$tile) use ($color, $roll) {
+        $characters = $this->game->character->getAllCharacterData(false);
+        $this->iterateMap(function (&$tile) use ($color, $roll, $characters) {
             if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll) {
                 $tile['fire'] = min($tile['fire'] + 1, 6);
+                foreach ($characters as $character) {
+                    if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {
+                        $this->game->character->adjustFatigue($character['id'], 1);
+                        $this->game->markChanged('player');
+                    }
+                }
             }
+
             $this->checkExplosion($tile);
         });
         $this->saveMapChanges();

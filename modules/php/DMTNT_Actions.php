@@ -57,7 +57,7 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return !$this->escaped() && sizeof($this->game->map->calculateMoves()) > 0;
+                    return !$this->escaped() && sizeof($this->game->map->calculateMoves()['fatigueList']) > 0;
                 },
             ],
             'actDrinkGrog' => [

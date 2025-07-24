@@ -20,7 +20,8 @@ class DMTNT_SelectionStates
     {
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
 
-        if ($data['nextState']) {
+        $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+        if (sizeof($pendingStates) == 0 && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
             $this->game->nextState($data['nextState']);
         }

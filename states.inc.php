@@ -131,6 +131,7 @@ $machinestates = [
         'transitions' => [
             'finalizeTile' => $finalizeTile,
             'changeZombiePlayer' => $changeZombiePlayer,
+            'playerTurn' => $playerTurn, // TODO bug fix for stuck tile
         ],
     ],
     $finalizeTile => [
@@ -342,6 +343,11 @@ $machinestates = [
 
 foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
+}
+foreach ($machinestates as $key => $state) {
+    if (array_key_exists('transitions', $machinestates[$key]) && $key != $gameSetup) {
+        $machinestates[$key]['transitions']['endGame'] = $gameEnd;
+    }
 }
 
 $interruptableScreens = [$battle, $battleSelection, $drawRevengeCard, $playerTurn, $nextCharacter, $battle, $postBattle, $placeTile];
