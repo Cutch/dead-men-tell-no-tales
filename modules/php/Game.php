@@ -327,7 +327,7 @@ class Game extends \Table
     public function rollBattleDie(string $action, string $characterName): int
     {
         $this->markRandomness();
-        $value = rand(1, 6);
+        $value = bga_rand(1, 6);
         $notificationSent = false;
         $data = [
             'value' => $value,

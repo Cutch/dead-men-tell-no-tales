@@ -185,7 +185,7 @@ class DMTNT_Map
                 $starter['startX'],
                 $starter['startY'],
                 0,
-                $id === 'tracker' ? 0 : rand(1, 5),
+                $id === 'tracker' ? 0 : bga_rand(1, 5),
                 $starter['color'],
                 array_key_exists('startsWith', $starter) && $starter['startsWith'] === 'trapdoor' ? 1 : 0,
                 array_key_exists('startsWith', $starter) && $starter['startsWith'] === 'trapdoor' ? 1 : 0,
