@@ -1754,7 +1754,8 @@ class Game extends \Table
     }
     public function getAllPlayers(&$result): void
     {
-        if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
+        $stateName = $this->gamestate->state(true, false, true)['name'];
+        if (!($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
             $result['currentPosition'] = $this->map->xy(...$xy);
             $result['activeCharacter'] = $this->character->getTurnCharacterId();
@@ -1918,7 +1919,8 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
             'tiles' => [],
         ];
-        if ($this->gamestate->state(true, false, true)['name'] != 'characterSelect') {
+        $stateName = $this->gamestate->state(true, false, true)['name'];
+        if (!($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
                 ...$result,
@@ -1936,7 +1938,7 @@ class Game extends \Table
             $this->getAllPlayers($result);
             $this->getTiles($result);
         }
-        if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn', 'battleSelection'])) {
+        if (in_array($stateName, ['playerTurn', 'battleSelection'])) {
             $result['canUndo'] = $this->undo->canUndo();
         }
         $this->getDecks($result);
@@ -2186,6 +2188,11 @@ class Game extends \Table
         });
         $this->completeAction();
     }
+    public function spreadDeckhand()
+    {
+        $this->map->spreadDeckhand();
+        $this->completeAction();
+    }
     public function setup()
     {
         $this->decks->setup();
@@ -2211,5 +2218,14 @@ class Game extends \Table
     {
         $this->gameData->set('treasures', $this->gameData->get('treasures') + 3);
         $this->checkWin();
+    }
+    public function clearMap()
+    {
+        $this->map->iterateMap(function (&$tile) {
+            $tile['fire'] = 0;
+            $tile['deckhand'] = 0;
+        });
+        $this->map->saveMapChanges();
+        $this->completeAction();
     }
 }

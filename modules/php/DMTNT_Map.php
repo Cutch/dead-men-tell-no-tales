@@ -439,6 +439,7 @@ class DMTNT_Map
                 'exploded' => $map['exploded'],
             ];
         }, $this->cachedMap);
+        $this->game->markChanged('map');
         $dataTable = buildSelectQuery($rows);
         $query = <<<EOD
 UPDATE map
@@ -749,7 +750,7 @@ EOD;
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTile) {
                     $aTile = &$this->getTileById($aTile['id']);
-                    if ($currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
+                    if (!$aTile['has_trapdoor'] && $currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
                         $aTile['deckhand']++;
                     }
                     unset($aTile);
