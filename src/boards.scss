@@ -125,3 +125,18 @@
   justify-content: center;
   gap: 1em;
 }
+
+.game-info-panel {
+  background-color: #ebd5bd;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px #0000004d;
+  padding: 5px 12px;
+  margin: 0.5rem;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  .fa6 {
+    width: 1rem;
+  }
+}

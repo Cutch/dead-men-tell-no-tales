@@ -273,22 +273,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (Object.keys(this.gamedatas.players ?? {}).length === 1) {
       document.querySelector('.player-board-game-specific-content').classList.add('one-player');
     }
-    const gameInfoSidePanel = document.querySelector('.game-info-side-panel');
-    if (!gameInfoSidePanel) {
-      selections.insertAdjacentHTML(
-        'afterend',
-        `<div class="game-info-side-panel">
-        <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
-        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
-        <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
-        <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
-        </div>`,
-      );
-    }
-    this.updateSidePanel();
   },
-  updateSidePanel() {
-    const gameInfoSidePanel = document.querySelector('.game-info-side-panel');
+  updateInfoPanel() {
+    const gameInfoSidePanel = document.querySelector('.game-info-panel');
     if (gameInfoSidePanel) {
       gameInfoSidePanel.querySelector('.treasure .value').innerHTML =
         `${this.gamedatas.treasuresLooted}/${this.gamedatas.treasuresNeeded} ${this.gamedatas.treasuresLooted >= this.gamedatas.treasuresNeeded ? '(' + _('Escape') + '!)' : ''}`;
@@ -368,6 +355,20 @@ declare('bgagame.deadmentellnotales', Gamegui, {
 
     this.map = new Map(this, gameData);
     // renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
+
+    const gameInfoSidePanel = document.querySelector('.game-info-panel');
+    if (!gameInfoSidePanel) {
+      $('game_play_area').insertAdjacentHTML(
+        'beforeend',
+        `<div class="game-info-panel">
+        <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
+        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
+        <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
+        <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
+        </div>`,
+      );
+    }
+    this.updateInfoPanel();
   },
   setupDecks: function (gameData, playArea) {
     const decks = [
@@ -1161,7 +1162,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     await this.notificationWrapper(notification);
     if (isStudio()) console.log('notif_updateMap', notification);
     this.map.update(notification.args.gameData);
-    this.updateSidePanel();
+    this.updateInfoPanel();
   },
   notif_updateCharacterData: async function (notification) {
     await this.notificationWrapper(notification);

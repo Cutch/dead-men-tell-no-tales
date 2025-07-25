@@ -1977,29 +1977,18 @@ class Game extends \Table
                     $card = $this->decks->pickCard('tile');
                     $this->gameData->set('newTile', $card);
                     $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-                    // $this->nextState('placeTile');
                 } else {
                     $this->gameData->set('newTile', null);
                     $this->gameData->set('newTileCount', 0);
                     $this->nextState('playerTurn');
                 }
             }
+        }
 
-            // if ($this->decks->getDeck('tile')->getCardOnTop('deck')) {
-            //     $card = $this->decks->pickCard('tile');
-            //     $this->gameData->set('newTile', $card);
-            //     $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
-            //     if (sizeof($this->getTilePlacementLocations(false)) > 0) {
-            //         $this->nextState('placeTile');
-            //     } else {
-            //         $this->lose('trapped');
-            //     }
-            // } elseif (!$this->gameData->get('dinghyChecked')) {
-            // } else {
-            //     $this->gameData->set('newTile', null);
-            //     $this->gameData->set('newTileCount', 0);
-            //     $this->nextState('playerTurn');
-            // }
+        if ($stateName === 'placeTile' && $this->gameData->get('newTile') && $this->gameData->get('newTile')['id'] !== 'dinghy') {
+            if (sizeof($this->getTilePlacementLocations(false)) == 0) {
+                $this->lose('trapped'); // Temp fix for game loss
+            }
         }
         $result = [
             'version' => $this->getVersion(),
