@@ -1735,7 +1735,18 @@ class Game extends \Table
      */
     public function upgradeTableDb($from_version)
     {
-        // if ($from_version <= 2506201717) {
+        if ($from_version <= 2507270000) {
+            foreach ($this->character->getAllCharacterData(false) as $char) {
+                if (!$char['item']) {
+                    $items = array_map(function ($d) {
+                        return ['id' => $d];
+                    }, $this->getUnequippedItems());
+                    $this->character->updateCharacterData($char['id'], function (&$data) use ($items) {
+                        $data['item'] = $items[0]['id'];
+                    });
+                }
+            }
+        }
         //     // ! important ! Use DBPREFIX_<table_name> for all tables
         //     try {
         //         $sql = 'ALTER TABLE DBPREFIX_item ADD  `last_owner` varchar(10)';
@@ -1933,7 +1944,7 @@ class Game extends \Table
                 'fires' => $this->map->calculateFires(),
                 'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
                 'deckhandTargetCount' => $this->getDeckhandTargetCount(),
-                'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
+                'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item'] && $character['item']['itemId'] === 'blanket',
             ];
             $this->getAllPlayers($result);
             $this->getTiles($result);
