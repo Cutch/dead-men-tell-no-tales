@@ -763,7 +763,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 );
               } else if (actionId === 'actFightFire') {
                 if (!this.gamedatas.canUseBlanket && this.gamedatas.fires.length === 1) {
-                  const [x, y] = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).pos;
+                  const id = this.gamedatas.fires[0];
+                  const { x, y } = this.gamedatas.tiles.find((d) => d.id === id);
                   this.bgaPerformAction('actFightFire', { x, y }).catch(console.error);
                 } else {
                   this.clearActionButtons();
