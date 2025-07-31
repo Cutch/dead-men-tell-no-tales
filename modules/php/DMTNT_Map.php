@@ -71,8 +71,10 @@ class DMTNT_Map
             $ny = $v[1];
             $key = $this->xy($x + $nx, $y + $ny);
             if (($x + $nx == 0 || $y + $ny >= 0) && array_key_exists($key, $this->xyMap)) {
-                if ($toTileId && $this->xyMap[$key] === $toTileId) {
-                    $tiles[] = $this->xyMap[$key];
+                if ($toTileId) {
+                    if ($this->xyMap[$key]['id'] === $toTileId) {
+                        $tiles[] = $this->xyMap[$key];
+                    }
                 } else {
                     $tiles[] = $this->xyMap[$key];
                 }
@@ -374,17 +376,44 @@ class DMTNT_Map
     public function calculateFires(): array
     {
         [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
-        $currentTile = null;
         $key = $this->xy($x, $y);
-        $fireList = [];
         if (array_key_exists($key, $this->xyMap)) {
-            $currentTile = $this->xyMap[$key];
+            if ($this->xyMap[$key]['escape'] == 1) {
+                $currentTiles = array_values(
+                    array_filter($this->cachedMap, function ($d) {
+                        return $d['escape'] == 1;
+                    })
+                );
+            } else {
+                $currentTiles = [$this->xyMap[$key]];
+            }
+        }
+
+        $fireList = [];
+        foreach ($currentTiles as $currentTile) {
             if ($currentTile['fire'] > 0) {
                 $fireList[] = $currentTile['id'];
             }
         }
 
-        $data = ['fireList' => $fireList, 'currentTile' => $currentTile, 'x' => $x, 'y' => $y];
+        $data = [
+            'fireList' => $fireList,
+            'currentTiles' => $currentTiles,
+            'addAdjacentTiles' => function (&$data) {
+                $currentTiles = $data['currentTiles'];
+                foreach ($currentTiles as $currentTile) {
+                    $moveList = $this->getValidAdjacentTiles($currentTile['x'], $currentTile['y']);
+                    array_walk($moveList, function ($firstTile) use ($currentTile, &$data) {
+                        if ($currentTile && !$this->testTouchPoints($currentTile, $firstTile)) {
+                            return;
+                        }
+                        if ($firstTile['fire'] > 0) {
+                            $data['fireList'][] = $firstTile['id'];
+                        }
+                    });
+                }
+            },
+        ];
         $this->game->hooks->onCalculateFires($data);
         return $data['fireList'];
     }

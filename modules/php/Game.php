@@ -416,7 +416,11 @@ class Game extends \Table
                     $all = $all && ($touches || !$this->map->testHasDoor($tile, $newTile) || $tile['destroyed'] == 1);
                     $any = $any || $touches;
                 });
-                $response = $any && $all;
+                if ($newTile['id'] === 'dinghy') {
+                    $response = $any;
+                } else {
+                    $response = $any && $all;
+                }
                 unset($all, $any);
                 if ($response) {
                     return $response;
@@ -454,8 +458,10 @@ class Game extends \Table
         if (!$any) {
             throw new BgaUserException(clienttranslate('Tile must connect to a door'));
         }
-        if (!$all) {
-            throw new BgaUserException(clienttranslate('All doors must connect'));
+        if ($newTile['id'] !== 'dinghy') {
+            if (!$all) {
+                throw new BgaUserException(clienttranslate('All doors must connect'));
+            }
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
 

@@ -114,16 +114,7 @@ class DMTNT_CharactersData
                 'color' => '#cd402a',
                 'onCalculateFires' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
-                        $moveList = $game->map->getValidAdjacentTiles($data['x'], $data['y']);
-                        $currentTile = $data['currentTile'];
-                        array_walk($moveList, function ($firstTile) use ($currentTile, &$data, $game) {
-                            if ($currentTile && !$game->map->testTouchPoints($currentTile, $firstTile)) {
-                                return;
-                            }
-                            if ($firstTile['fire'] > 0) {
-                                $data['fireList'][] = $firstTile['id'];
-                            }
-                        });
+                        $data['addAdjacentTiles']($data);
                     }
                 },
             ],

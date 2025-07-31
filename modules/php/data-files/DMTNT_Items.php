@@ -50,16 +50,7 @@ class DMTNT_ItemsData
                 'actions' => 0,
                 'onCalculateFires' => function (Game $game, $item, &$data) {
                     if ($item['isActive'] && getUsePerTurn('bucket', $game) == 0) {
-                        $moveList = $game->map->getValidAdjacentTiles($data['x'], $data['y']);
-                        $currentTile = $data['currentTile'];
-                        array_walk($moveList, function ($firstTile) use ($currentTile, &$data, $game) {
-                            if ($currentTile && !$game->map->testTouchPoints($currentTile, $firstTile)) {
-                                return;
-                            }
-                            if ($firstTile['fire'] > 0) {
-                                $data['fireList'][] = $firstTile['id'];
-                            }
-                        });
+                        $data['addAdjacentTiles']($data);
                     }
                 },
                 'onFightFire' => function (Game $game, $item, &$data) {
