@@ -92,7 +92,7 @@ if (!function_exists('addId')) {
         $name = $obj['name'];
         $dataId = $obj['dataId'];
         $dataType = $obj['dataType'];
-        if (!array_search($dataType, ['character', 'item', 'revenge', 'card'])) {
+        if (!array_search($dataType, ['character', 'item', 'revenge', 'card', 'tile'])) {
             throw new Exception('Bad dataType');
         }
         return "<span class=\"dmtnt__log-button\" data-id=\"$dataId\" data-type=\"$dataType\">$name</span>";

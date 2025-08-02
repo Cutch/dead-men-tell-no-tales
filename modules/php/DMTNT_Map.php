@@ -233,6 +233,18 @@ class DMTNT_Map
             $tile['destroyed'] == 1
         );
     }
+    public function getEscapeTiles(): array
+    {
+        return array_values(
+            array_filter($this->cachedMap, function ($d) {
+                return $d['escape'] == 1;
+            })
+        );
+    }
+    public function isEscapeTile(string $key)
+    {
+        return $this->xyMap[$key]['escape'] == 1;
+    }
     public function calculateMoves(bool $canRun = true): array
     {
         $canRun = $canRun && !$this->game->actions->hasTreasure();
@@ -243,12 +255,8 @@ class DMTNT_Map
         $moveList = $this->getAdjacentTiles($x, $y);
         $moveIds = toId($moveList);
         if (array_key_exists($key, $this->xyMap)) {
-            if ($this->xyMap[$key]['escape'] == 1) {
-                $currentTiles = array_values(
-                    array_filter($this->cachedMap, function ($d) {
-                        return $d['escape'] == 1;
-                    })
-                );
+            if ($this->isEscapeTile($key)) {
+                $currentTiles = $this->getEscapeTiles();
                 $moveList = [];
                 array_walk($currentTiles, function ($tile) use (&$moveList) {
                     array_push($moveList, ...$this->getAdjacentTiles($tile['x'], $tile['y']));
@@ -378,12 +386,8 @@ class DMTNT_Map
         [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
         $key = $this->xy($x, $y);
         if (array_key_exists($key, $this->xyMap)) {
-            if ($this->xyMap[$key]['escape'] == 1) {
-                $currentTiles = array_values(
-                    array_filter($this->cachedMap, function ($d) {
-                        return $d['escape'] == 1;
-                    })
-                );
+            if ($this->isEscapeTile($key)) {
+                $currentTiles = $this->getEscapeTiles();
             } else {
                 $currentTiles = [$this->xyMap[$key]];
             }
@@ -497,6 +501,11 @@ EOD;
             if ($this->game->gameData->get('explosions') == 7) {
                 $this->game->lose('explosion');
             }
+            $this->game->eventLog(clienttranslate('${buttons} was destroyed'), [
+                'buttons' => notifyButtons([
+                    ['name' => $this->game->decks->getDeckName('tile'), 'dataId' => $tile['id'], 'dataType' => 'tile'],
+                ]),
+            ]);
             $tileXY = $this->xy($tile['x'], $tile['y']);
             // Increase fire in adjacent tiles
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
@@ -555,6 +564,11 @@ EOD;
                 $this->game->lose('explosion');
             }
 
+            $this->game->eventLog(clienttranslate('The barrel in ${buttons} exploded'), [
+                'buttons' => notifyButtons([
+                    ['name' => $this->game->decks->getDeckName('tile'), 'dataId' => $tile['id'], 'dataType' => 'tile'],
+                ]),
+            ]);
             $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
             $directions = [];
             $start = $tile['rotate'] + 2; // All kegs start at rotation 2
@@ -576,7 +590,7 @@ EOD;
     {
         $characters = $this->game->character->getAllCharacterData(false);
         $this->iterateMap(function (&$tile) use ($color, $roll, $characters) {
-            if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll) {
+            if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll && $tile['escape'] == 0) {
                 $tile['fire'] = min($tile['fire'] + 1, 6);
                 foreach ($characters as $character) {
                     if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {

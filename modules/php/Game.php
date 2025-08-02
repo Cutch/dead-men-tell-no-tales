@@ -628,12 +628,24 @@ class Game extends \Table
         $tokenPositions = $this->gameData->get('tokenPositions');
         $xyIds = [$this->map->xy(...$xy)];
         if ($includeAdjacent) {
-            $xyIds = array_merge(
-                $xyIds,
-                array_map(function ($tile) {
-                    return $this->map->xy($tile['x'], $tile['y']);
-                }, $this->map->getValidAdjacentTiles(...$xy))
-            );
+            if ($this->map->isEscapeTile($this->map->xy(...$xy))) {
+                $tiles = $this->map->getEscapeTiles();
+                foreach ($tiles as $tile) {
+                    $xyIds = array_merge(
+                        $xyIds,
+                        array_map(function ($tile) {
+                            return $this->map->xy($tile['x'], $tile['y']);
+                        }, $this->map->getValidAdjacentTiles($tile['x'], $tile['y']))
+                    );
+                }
+            } else {
+                $xyIds = array_merge(
+                    $xyIds,
+                    array_map(function ($tile) {
+                        return $this->map->xy($tile['x'], $tile['y']);
+                    }, $this->map->getValidAdjacentTiles(...$xy))
+                );
+            }
         }
         $enemies = [];
         foreach ($xyIds as $xyId) {
@@ -2243,6 +2255,22 @@ class Game extends \Table
             $tile['deckhand'] = 0;
         });
         $this->map->saveMapChanges();
+        $this->completeAction();
+    }
+    public function dinghy()
+    {
+        $card = $this->decks->getDeck('tile')->getCardOnTop('deck');
+
+        $query = <<<EOD
+UPDATE tile
+SET card_location='discard'
+WHERE card_location='deck' AND card_id != {$card['id']}
+EOD;
+        $this::DbQuery($query);
+    }
+    public function increaseFire(int $roll, string $color)
+    {
+        $this->map->increaseFire($roll, $color);
         $this->completeAction();
     }
 }

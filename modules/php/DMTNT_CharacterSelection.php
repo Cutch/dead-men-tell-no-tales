@@ -140,9 +140,11 @@ class DMTNT_CharacterSelection
 
         $this->game::DbQuery("UPDATE `character` set `confirmed`=1 WHERE `player_id` = $playerId");
         $selectedCharactersArgs = [];
+        $colors = [];
         $message = '';
         foreach ($selectedCharacters as $index => $value) {
             $characterObject = $this->game->data->getCharacters()[$value];
+            $colors[] = str_replace('#', '', $characterObject['color']);
             // if (array_key_exists('startsWith', $characterObject)) {
             //     $this->game->character->equipEquipment($value, [$itemId]);$characterObject['startsWith']
             // }
@@ -181,6 +183,14 @@ class DMTNT_CharacterSelection
             array_merge(['gameData' => $results, 'playerId' => $playerId], $selectedCharactersArgs)
         );
         $this->game->markChanged('token');
+        // TODO: Better color mappings esp for white and yellow
+        // $players = $this->game->loadPlayersBasicInfos();
+        // $this->game->reattributeColorsBasedOnPreferences(
+        //     array_filter($players, function ($player) use ($playerId) {
+        //         return $player['player_id'] == $playerId;
+        //     }),
+        //     $colors
+        // );
 
         if (sizeof($this->game->gamestate->getActivePlayerList()) == 1) {
             $items = [...$this->game->data->getItems()];
