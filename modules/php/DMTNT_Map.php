@@ -61,6 +61,7 @@ class DMTNT_Map
             $this->minMax['maxY'] = max($this->minMax['maxY'], $d['y']);
             unset($d);
         });
+        $this->game->markChanged('map');
     }
     public function getAdjacentTiles($x, $y, ?string $toTileId = null): array
     {

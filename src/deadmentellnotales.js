@@ -1164,6 +1164,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     if (isStudio()) console.log('notif_updateMap', notification);
     this.map.update(notification.args.gameData);
     this.updateInfoPanel();
+    this.updateItems(notification.args.gameData);
   },
   notif_updateCharacterData: async function (notification) {
     await this.notificationWrapper(notification);

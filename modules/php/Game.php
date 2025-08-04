@@ -504,6 +504,7 @@ class Game extends \Table
         }
 
         $this->nextState('finalizeTile');
+        $this->completeAction(false);
     }
     public function getTokenData(array $card)
     {
