@@ -293,14 +293,18 @@ class DMTNT_Character
         }
         $turnNo = ($turnNo + 1) % sizeof($turnOrder);
         $this->adjustActiveActions(10);
-        $characterData = $this->getCharacterData($character);
+        $this->activateCharacter($character);
+        $this->game->markChanged('player');
+    }
+    public function activateCharacter(string $characterId): void
+    {
+        $characterData = $this->getCharacterData($characterId);
 
         $playerId = (int) $this->game->getActivePlayerId();
         if ($playerId != $characterData['playerId']) {
             $this->game->gamestate->changeActivePlayer($characterData['playerId']);
             $this->addExtraTime();
         }
-        $this->game->markChanged('player');
     }
     public function getActiveActions(): int
     {

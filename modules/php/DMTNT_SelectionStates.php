@@ -200,6 +200,8 @@ class DMTNT_SelectionStates
             return 'itemSelectionState';
         } elseif ($stateName == 'characterSelection') {
             return 'characterSelectionState';
+        } elseif ($stateName == 'revengeBattleSelection') {
+            return 'revengeBattleSelectionState';
         }
         return null;
     }

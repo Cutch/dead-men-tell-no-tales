@@ -70,6 +70,17 @@ class DMTNT_GameData
         $value = array_key_exists($name, $this->cachedGameData) ? $this->cachedGameData[$name] : null;
         return $value;
     }
+    public function getBattleData(): array
+    {
+        $battle = $this->get('battle') ?? [];
+        if (!array_key_exists('characterId', $battle)) {
+            $battle['characterId'] = $this->game->character->getTurnCharacterId();
+        }
+        if (!array_key_exists('includeAdjacent', $battle)) {
+            $battle['includeAdjacent'] = false;
+        }
+        return $battle;
+    }
     public function getAll(...$names): array
     {
         if (sizeof($names) == 0) {
