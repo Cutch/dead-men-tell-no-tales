@@ -748,6 +748,10 @@ class Game extends \Table
     }
     public function actMove(?int $x, ?int $y): void
     {
+        $this->_actMove('actMove', $x, $y);
+    }
+    public function _actMove(string $functionName, ?int $x, ?int $y): void
+    {
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
             func_get_args(),
@@ -771,14 +775,16 @@ class Game extends \Table
                     'tile' => $tile,
                 ];
             },
-            function (Game $_this, bool $finalizeInterrupt, $data) {
+            function (Game $_this, bool $finalizeInterrupt, $data) use ($functionName) {
                 $fatigue = $data['fatigue'];
                 $x = $data['x'];
                 $y = $data['y'];
                 $character = $data['character'];
                 $tile = $data['tile'];
                 $this->character->adjustActiveFatigue($fatigue);
-                $this->actions->spendActionCost('actMove');
+                if ($functionName === 'actMove') {
+                    $this->actions->spendActionCost('actMove');
+                }
                 $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
                 $this->markChanged('player');
                 if (array_key_exists('escape', $tile) && $tile['escape'] == 1) {

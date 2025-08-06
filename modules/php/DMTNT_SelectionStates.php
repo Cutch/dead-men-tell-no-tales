@@ -35,7 +35,7 @@ class DMTNT_SelectionStates
         $stateData = $this->getState(null);
         if ($stateData['id'] === 'gusMovement') {
         } else {
-            $this->game->actMove($x, $y);
+            $this->game->_actMove('actMoveSelection', $x, $y);
         }
         $characterId = $stateData['characterId'];
         $data = [
