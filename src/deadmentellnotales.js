@@ -903,6 +903,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'playerTurn':
           if (isActive) {
+            this.statusBar.setTitle('${actionCount} actions left', { actionCount: this.gamedatas.actionCount });
             Object.values(this.gamedatas.availableSkills).forEach((skill) => {
               const suffix = this.getActionSuffixHTML(skill);
               this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {

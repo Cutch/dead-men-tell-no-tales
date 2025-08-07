@@ -1938,6 +1938,7 @@ class Game extends \Table
             $character = $this->character->getTurnCharacter(true);
             $result = [
                 'actions' => array_values($this->actions->getValidActions()),
+                'actionCount' => $character['actions'],
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
                 'canUndo' => $this->undo->canUndo(),
@@ -1955,6 +1956,7 @@ class Game extends \Table
             'resolving' => $this->actInterrupt->isStateResolving(),
             'tiles' => [],
         ];
+
         $stateName = $this->gamestate->state(true, false, true)['name'];
         if (!($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
@@ -1969,6 +1971,7 @@ class Game extends \Table
                 'fires' => $this->map->calculateFires(),
                 'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
                 'deckhandTargetCount' => $this->getDeckhandTargetCount(),
+                'actionCount' => $character['actions'],
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item'] && $character['item']['itemId'] === 'blanket',
             ];
             $this->getAllPlayers($result);
