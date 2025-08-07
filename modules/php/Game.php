@@ -1906,7 +1906,8 @@ class Game extends \Table
 
             $this->notify('tokenUsed', '', ['gameData' => $result]);
         }
-        if ($this->changed['player']) {
+        $stateName = $this->gamestate->state(true, false, true)['name'];
+        if ($this->changed['player'] && !($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
                 'activeCharacter' => $this->character->getTurnCharacterId(),
@@ -1920,7 +1921,7 @@ class Game extends \Table
 
             $this->notify('updateCharacterData', '', ['gameData' => $result]);
         }
-        if ($this->changed['map']) {
+        if ($this->changed['map'] && !($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
                 'activeCharacter' => $this->character->getTurnCharacterId(),
