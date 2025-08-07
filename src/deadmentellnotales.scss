@@ -2,8 +2,8 @@
 
 @include meta.load-css('utils/clickable');
 html {
-  background: url(img/background.png) top left repeat-y;
-  background-size: contain;
+  background: url(img/background.png) top left;
+  background-size: 100%;
 }
 .dmtnt {
   @include meta.load-css('utils/deck');
@@ -128,7 +128,13 @@ html {
 
 .dmtnt__container {
   margin: 0 auto 1rem;
-  place-items: anchor-center;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  .content {
+    display: flex;
+    flex-flow: column;
+  }
 }
 
 .dmtnt__log-button {
