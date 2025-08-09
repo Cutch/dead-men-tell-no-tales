@@ -40,6 +40,7 @@ class DMTNT_GameData
         'activateCharacters' => [],
         'actInterruptState' => [],
         'characterPositions' => [],
+        'battleLocations' => [],
         'deadCharacters' => [],
         'destroyedItems' => [],
         'destroyedTokens' => [],
@@ -147,7 +148,6 @@ class DMTNT_GameData
                 return $this->game->character->getCharacterData($c)['playerId'];
             }, $activateCharacters)
         );
-        $this->game->log('state 1', $activePlayerIds, 'playerTurn');
         if (sizeof($activePlayerIds) == 0) {
             $this->game->character->setSubmittingCharacter(null);
         }

@@ -30,6 +30,7 @@ set_error_handler(function ($severity, $message, $file, $line) {
     }
 });
 require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
+include_once dirname(__DIR__) . '/php/DMTNT_Battle.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Data.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Actions.php';
 include_once dirname(__DIR__) . '/php/DMTNT_CharacterSelection.php';
@@ -47,6 +48,7 @@ class Game extends \Table
     public DMTNT_Character $character;
     public DMTNT_Actions $actions;
     private DMTNT_CharacterSelection $characterSelection;
+    public DMTNT_Battle $battle;
     public DMTNT_Data $data;
     public DMTNT_Decks $decks;
     public DMTNT_Map $map;
@@ -82,6 +84,7 @@ class Game extends \Table
         ]);
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
+        $this->battle = new DMTNT_Battle($this);
         $this->data = new DMTNT_Data($this);
         $this->decks = new DMTNT_Decks($this);
         $this->map = new DMTNT_Map($this);
@@ -623,9 +626,13 @@ class Game extends \Table
         }
         return [];
     }
-    public function getEnemies(bool $includeAdjacent = false): array
+    public function getEnemies(bool $includeAdjacent = false, ?string $characterId = null): array
     {
-        $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
+        $xy = $this->getCharacterPos($characterId ?? $this->character->getTurnCharacterId());
+        return $this->getEnemiesByLocation($includeAdjacent, $xy);
+    }
+    public function getEnemiesByLocation(bool $includeAdjacent, array $xy): array
+    {
         $tokenPositions = $this->gameData->get('tokenPositions');
         $xyIds = [$this->map->xy(...$xy)];
         if ($includeAdjacent) {
@@ -1128,6 +1135,55 @@ class Game extends \Table
         }
         $this->completeAction($saveState);
     }
+    public function startCharacterBattleSelection($tokenId, array $characterIds)
+    {
+        if (sizeof($characterIds) == 1) {
+            $this->startBattle((int) $tokenId, $characterIds[0]);
+        } else {
+            $playerIds = [];
+            foreach ($characterIds as $charId) {
+                $charData = $this->character->getCharacterData($charId);
+                $playerIds[$charId] = $charData['playerId'];
+            }
+            $mustSelect = sizeof(array_unique(array_values($playerIds))) == 1;
+            $this->gameData->set('characterBattleSelection', [
+                'tokenId' => $tokenId,
+                'playerIds' => $playerIds,
+                'mustSelect' => $mustSelect,
+            ]);
+            $this->gamestate->setPlayersMultiactive(array_unique(array_values($playerIds)), '', true);
+            $this->nextState('characterBattleSelection');
+        }
+    }
+    public function actFightMe(string $characterId)
+    {
+        $tokenId = $this->gameData->get('characterBattleSelection')['tokenId'];
+
+        $this->startBattle((int) $tokenId, $characterId);
+    }
+    public function actDontFight()
+    {
+        $playerIds = $this->gameData->get('characterBattleSelection')['playerIds'];
+        $playerIds = array_unique(array_values($playerIds));
+        $playerId = $this->getCurrentPlayer();
+
+        if (sizeof($this->gamestate->getActivePlayerList()) == 1) {
+            $this->gameData->setMultiActiveCharacter(array_diff($playerIds, [$playerId]), false);
+        } else {
+            $this->gamestate->setPlayerNonMultiactive($playerId, '');
+        }
+    }
+    public function argCharacterBattleSelection()
+    {
+        $result = [
+            'resolving' => $this->actInterrupt->isStateResolving(),
+            'character_name' => $this->getCharacterHTML(),
+            'activeTurnPlayerId' => 0,
+            'characterBattleSelection' => $this->gameData->get('characterBattleSelection'),
+        ];
+        $this->getDecks($result);
+        return $result;
+    }
 
     public function argDrawRevengeCard()
     {
@@ -1151,360 +1207,49 @@ class Game extends \Table
         $this->getTiles($result);
         return $result;
     }
-    public function startBattle(int $targetId, ?string $characterId = null)
-    {
-        if ($characterId !== $this->character->getTurnCharacterId()) {
-            $character = $this->character->getCharacterData($characterId);
-            $this->character->activateCharacter($characterId);
-        }
-        $enemies = $this->getEnemies($this->gameData->getBattleData()['includeAdjacent']);
-        $battle = [
-            'includeAdjacent' => $this->gameData->getBattleData()['includeAdjacent'] || false,
-            'target' => array_values(
-                array_filter($enemies, function ($d) use ($targetId) {
-                    return $d['id'] == $targetId;
-                })
-            )[0],
-            'characterId' => $characterId ?? $this->character->getTurnCharacterId(),
-        ];
-        $character = $this->character->getCharacterData($battle['characterId']);
-        $tokens = array_count_values(
-            array_map(function ($d) {
-                return $d['treasure'];
-            }, $character['tokenItems'])
-        );
-        if (array_key_exists('treasure', $tokens)) {
-            $this->drop(
-                $character['id'],
-                array_values(
-                    array_filter($character['tokenItems'], function ($d) {
-                        return $d['treasure'] == 'treasure';
-                    })
-                )[0]['id']
-            );
-        }
-        $data = [
-            'attack' => $this->rollBattleDie(clienttranslate('Attack'), $battle['characterId']),
-        ];
-        $this->hooks->onGetAttack($data);
-        $result = '';
-        if ($battle['target']['battle'] <= $data['attack']) {
-            // Win without need for strength
-            $result = 'win';
-        } elseif ($character['tempStrength'] + (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0) == 0) {
-            $result = 'lose';
-        }
-        $this->gameData->set('battle', [...$battle, 'pos' => $battle['target']['pos'], 'attack' => $data['attack'], 'result' => $result]);
-        if ($result) {
-            $this->transitionToPostBattle();
-        } else {
-            $this->nextState('battle');
-        }
-    }
     public function actBattleSelection(int $targetId)
     {
-        $this->startBattle($targetId);
+        $this->battle->actBattleSelection($targetId);
     }
     public function actUseStrength()
     {
-        $battle = $this->gameData->getBattleData();
-        $character = $this->character->getCharacterData($battle['characterId']);
-        $tokens = array_count_values(
-            array_map(function ($d) {
-                return $d['treasure'];
-            }, $character['tokenItems'])
-        );
-        $battle['attack'] += $character['tempStrength'] + (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0);
-        $this->character->updateCharacterData($battle['characterId'], function (&$data) {
-            $data['tempStrength'] = 0;
-        });
-        $this->gameData->set('battle', [...$battle, 'result' => $battle['target']['battle'] <= $battle['attack'] ? 'win' : 'lose']);
-        $this->transitionToPostBattle();
+        $this->battle->actUseStrength();
     }
     public function actDontUseStrength()
     {
-        $this->gameData->set('battle', [...$this->gameData->getBattleData(), 'result' => 'lose']);
-        $this->transitionToPostBattle();
+        $this->battle->actDontUseStrength();
     }
     public function stBattleSelection()
     {
-        $enemies = $this->getEnemies($this->gameData->getBattleData()['includeAdjacent']);
-        if (sizeof($enemies) == 0) {
-            $this->nextState('playerTurn');
-        }
+        $this->battle->stBattleSelection();
     }
     public function argBattleSelection()
     {
-        $battle = $this->gameData->getBattleData();
-        $enemies = $this->getEnemies($battle['includeAdjacent']);
-        $hasCrew = array_count_values(
-            array_map(
-                function ($d) {
-                    return $d['suffix'];
-                },
-                array_filter($enemies, function ($d) {
-                    return $d['type'] != 'guard';
-                })
-            )
-        );
-
-        $targets = array_filter($enemies, function ($d) use ($hasCrew) {
-            return array_key_exists($d['suffix'], $hasCrew) && $hasCrew[$d['suffix']] > 0 ? $d['type'] != 'guard' : $d['type'] == 'guard';
-        });
-        $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_name' => $this->getCharacterHTML($battle['characterId']),
-            'activeTurnPlayerId' => 0,
-            'canUndo' => $this->undo->canUndo(),
-            'actions' =>
-                sizeof($enemies) > 0
-                    ? array_map(function ($d) {
-                        return [
-                            'action' => 'actBattleSelection',
-                            'type' => 'action',
-                            'targetId' => $d['id'],
-                            'targetName' => $d['enemyName'],
-                            'targetDie' => $d['battle'],
-                            'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
-                        ];
-                    }, array_values($targets))
-                    : [],
-        ];
-
-        $this->getAllPlayers($result);
-        $this->getTiles($result);
-        return $result;
+        return $this->battle->argBattleSelection();
     }
     public function argBattle()
     {
-        $battle = $this->gameData->getBattleData();
-        $character = $this->character->getCharacterData($battle['characterId']);
-        $willDie = $character['fatigue'] + max($battle['target']['battle'] - $battle['attack'], 0) >= 16;
-        $tokens = array_count_values(
-            array_map(function ($d) {
-                return $d['treasure'];
-            }, $character['tokenItems'])
-        );
-        $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_name' => $this->getCharacterHTML($battle['characterId']),
-            'activeTurnPlayerId' => 0,
-            'attack' => $battle['attack'],
-            'defense' => $battle['target']['battle'],
-            'actions' => $battle['result']
-                ? []
-                : [
-                    [
-                        'action' => 'actUseStrength',
-                        'type' => 'action',
-                        'attack' => $battle['attack'],
-                        'defense' => $battle['target']['battle'],
-                        'tempStrength' =>
-                            $character['tempStrength'] + (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0),
-                    ],
-                    [
-                        'action' => 'actDontUseStrength',
-                        'type' => 'action',
-                        'willDie' => $willDie,
-                    ],
-                ],
-        ];
-        $this->getAllPlayers($result);
-        $this->getTiles($result);
-        return $result;
-    }
-    private function transitionToPostBattle()
-    {
-        $battle = $this->gameData->getBattleData();
-        $resultRoll = 0;
-        $isGuard = $battle['target']['type'] == 'guard';
-        [$x, $y] = array_key_exists('pos', $battle) ? $battle['pos'] : $this->getCharacterPos($battle['characterId']);
-        if ($battle['result'] == 'win') {
-            $this->gameData->set('battle', [...$battle, 'includeAdjacent' => false]);
-            $this->incStat(1, 'crew_eliminated', $this->character->getCalculatedData($battle['characterId'])['playerId']);
-
-            $isCaptain = $battle['target']['type'] == 'captain';
-            $tokenPositions = $this->gameData->get('tokenPositions');
-            if ($isCaptain) {
-                $tokenPositions[$this->map->xy($x, $y)] = array_values(
-                    array_filter($tokenPositions[$this->map->xy($x, $y)], function ($token) {
-                        return !str_contains($token['token'], 'captain');
-                    })
-                );
-                $this->decks->shuffleInCard('bag', 'captain-4', 'discard', false);
-                $this->decks->shuffleInCard('bag', 'captain-8', 'discard', false);
-                $this->gameData->set('tokenPositions', $tokenPositions);
-            } else {
-                $tokenPositions[$this->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
-                    if ($token['id'] == $battle['target']['id']) {
-                        $token['isTreasure'] = true;
-                    }
-                    return $token;
-                }, $tokenPositions[$this->map->xy($x, $y)]);
-            }
-            $this->gameData->set('tokenPositions', $tokenPositions);
-            $this->markChanged('map');
-            // $this->gameData->set('battle', [...$battle, 'resultRoll' => $resultRoll]);
-        } elseif ($battle['result'] == 'lose') {
-            if (!$battle['includeAdjacent']) {
-                $this->eventLog(clienttranslate('${character_name} gained ${count} fatigue'), [
-                    'count' => $battle['target']['battle'] - $battle['attack'],
-                    'character_name' => $this->getCharacterHTML($battle['characterId']),
-                ]);
-                $this->character->adjustActiveFatigue($battle['target']['battle'] - $battle['attack']);
-                // Check if the character is dead
-                $battle = $this->gameData->getBattleData();
-                if (!$isGuard && (!array_key_exists('death', $battle) || !$battle['death'])) {
-                    $this->gameData->set('battle', [...$battle, 'includeAdjacent' => false]);
-                    $moveList = $this->map->getValidAdjacentTiles($x, $y);
-                    $currentTile = $this->map->getTileByXY($x, $y);
-                    $hasValidMove = sizeof(
-                        array_filter($moveList, function ($tile) use ($currentTile) {
-                            return $this->map->checkIfCanMove($currentTile, $tile);
-                        })
-                    );
-                    if (sizeof($this->map->getValidAdjacentTiles(...$this->getCharacterPos($battle['characterId']))) > 0) {
-                        while ($resultRoll == 0 || (($resultRoll == 3 || $resultRoll == 4) && !$hasValidMove)) {
-                            $resultRoll = $this->rollBattleDie(clienttranslate('Post Battle'), $battle['characterId']);
-                        }
-                    }
-                }
-            }
-        }
-        $this->gameData->set('battle', [...$battle, 'resultRoll' => $resultRoll]);
-        if (!array_key_exists('death', $battle) || !$battle['death']) {
-            $this->nextState('postBattle');
-        }
+        return $this->battle->argBattle();
     }
     public function actBattleAgain()
     {
-        $battle = $this->gameData->getBattleData();
-        $this->startBattle((int) $battle['target']['id']);
+        $this->battle->actBattleAgain();
     }
     public function actMakeThemFlee()
     {
-        $battle = $this->gameData->getBattleData();
-        [$x, $y] = array_key_exists('pos', $battle) ? $battle['pos'] : $this->getCharacterPos($battle['characterId']);
-        $targetTiles = toId($this->map->getValidAdjacentTiles($x, $y));
-        $tokenPositions = $this->gameData->get('tokenPositions');
-        $crewToken = array_values(
-            array_filter($tokenPositions[$this->map->xy($x, $y)], function ($token) use ($battle) {
-                return $token['id'] == $battle['target']['id'];
-            })
-        )[0];
-        unset($crewToken['treasure']);
-        unset($crewToken['isTreasure']);
-        $this->selectionStates->initiateState(
-            'crewMovement',
-            [
-                'movePositions' => $targetTiles,
-                'id' => 'moveCrew',
-                'crew' => $crewToken,
-                'currentPosId' => $this->map->xy($x, $y),
-            ],
-            $battle['characterId'],
-            false,
-            'battleSelection'
-        );
+        $this->battle->actMakeThemFlee();
     }
     public function actRetreat()
     {
-        $battle = $this->gameData->getBattleData();
-        if (sizeof($this->map->calculateMoves(false)['fatigueList']) > 0) {
-            $this->selectionStates->initiateState(
-                'characterMovement',
-                [
-                    'id' => 'characterMovement',
-                    'characterId' => $battle['characterId'],
-                    'moves' => $this->map->calculateMoves(false)['fatigueList'],
-                    'title' => clienttranslate('Select where to move'),
-                ],
-                $battle['characterId'],
-                false,
-                'battleSelection'
-            );
-        }
+        $this->battle->actRetreat();
     }
     public function stPostBattle()
     {
-        $battle = $this->gameData->getBattleData();
-        if ($battle['includeAdjacent']) {
-            $this->gameData->set('battle', [...$battle, 'includeAdjacent' => false]);
-            $this->nextState('playerTurn');
-            return;
-        }
-        $isGuard = $battle['target']['type'] == 'guard';
-        if (sizeof($this->map->getValidAdjacentTiles(...$this->getCharacterPos($battle['characterId']))) == 0) {
-            $this->eventLog(clienttranslate('There is nowhere to move, battling again'));
-            $this->startBattle((int) $battle['target']['id']);
-        } else {
-            if ($isGuard) {
-                if ($battle['result'] == 'win') {
-                    $this->nextState('battleSelection');
-                }
-                $this->completeAction(false);
-            } else {
-                if ($battle['resultRoll'] == 0) {
-                    $this->nextState('battleSelection');
-                } elseif ($battle['resultRoll'] <= 2) {
-                    $this->actMakeThemFlee();
-                } elseif ($battle['resultRoll'] <= 4) {
-                    $this->actRetreat();
-                } elseif ($battle['resultRoll'] == 5) {
-                    $this->startBattle((int) $battle['target']['id']);
-                }
-            }
-        }
+        $this->battle->stPostBattle();
     }
     public function argPostBattle()
     {
-        $battle = $this->gameData->getBattleData();
-        $isGuard = $battle['target']['type'] == 'guard';
-        $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
-        $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_name' => $this->getCharacterHTML($battle['characterId']),
-            'activeTurnPlayerId' => 0,
-            'actions' =>
-                $isGuard && $battle['result'] !== 'win'
-                    ? [
-                        [
-                            'action' => 'actBattleAgain',
-                            'type' => 'action',
-                        ],
-                        ...$canMove
-                            ? [
-                                [
-                                    'action' => 'actRetreat',
-                                    'type' => 'action',
-                                ],
-                            ]
-                            : [],
-                    ]
-                    : ($battle['resultRoll'] == 6
-                        ? [
-                            [
-                                'action' => 'actBattleAgain',
-                                'type' => 'action',
-                            ],
-                            ...$canMove
-                                ? [
-                                    [
-                                        'action' => 'actRetreat',
-                                        'type' => 'action',
-                                    ],
-                                ]
-                                : [],
-                            [
-                                'action' => 'actMakeThemFlee',
-                                'type' => 'action',
-                            ],
-                        ]
-                        : []),
-        ];
-        $this->getAllPlayers($result);
-        $this->getTiles($result);
-        return $result;
+        return $this->battle->argPostBattle();
     }
     public function actCancel(): void
     {

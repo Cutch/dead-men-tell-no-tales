@@ -77,11 +77,12 @@ class DMTNT_SelectionStates
         $tokenPositions[$targetPosId][] = $token;
         // $tokenPositions[$currentPosId]
         $this->game->gameData->set('tokenPositions', $tokenPositions);
+        $stateChanged = $this->game->map->checkCrewPosition($token['id']);
 
         $this->game->markChanged('map');
         $data = [
             'characterId' => $characterId,
-            'nextState' => $stateData['nextState'],
+            'nextState' => $stateChanged ? false : $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
         ];
         $this->completeSelectionState($data);
@@ -270,14 +271,18 @@ class DMTNT_SelectionStates
         string $nextState = 'playerTurn',
         ?string $title = null,
         bool $isInterrupt = false,
-        bool $isPendingState = false
+        bool $isPendingState = false,
+        ?bool $setAsNextState = false
     ): void {
         if ($this->stateChanged || $this->stateToStateNameMapping() != null) {
             $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
             // WARNING: Update if args change
-            $args = [$stateName, $state, $characterId, $cancellable, $nextState, $title, $isInterrupt, $isPendingState];
-            $args[sizeof($args) - 1] = true;
-            array_push($pendingStates, $args);
+            $args = [$stateName, $state, $characterId, $cancellable, $nextState, $title, $isInterrupt, true, $setAsNextState];
+            if ($setAsNextState) {
+                array_unshift($pendingStates, $args);
+            } else {
+                array_push($pendingStates, $args);
+            }
             $this->game->gameData->set('pendingStates', $pendingStates);
         } else {
             $this->stateChanged = true;

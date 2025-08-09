@@ -666,7 +666,7 @@ EOD;
                 if (!$token['isTreasure']) {
                     $deckType = $this->game->data->getTreasure()[$token['token']]['deckType'];
                     if ($deckType === 'crew' || $deckType === 'captain') {
-                        $crew[] = ['currentPos' => $xy, 'token' => $token];
+                        $crew[] = ['id' => $token['id'], 'currentPos' => $xy, 'token' => $token];
                     }
                 }
             }
@@ -780,12 +780,35 @@ EOD;
                     }
                     $tokenPositions[$targetPosId][] = $token['token'];
                     $this->game->gameData->set('tokenPositions', $tokenPositions);
+                    $stateChanged = $this->game->map->checkCrewPosition($crewToken['id']);
+                    if ($stateChanged) {
+                        $nextState = false;
+                    }
                 }
             }
         }
         $this->game->markChanged('map');
         return $nextState;
     }
+
+    public function checkCrewPosition($tokenId): bool
+    {
+        $crew = $this->getCrew();
+        foreach ($crew as $token) {
+            if ($token['id'] == $tokenId) {
+                $currentPosId = $token['currentPos'];
+                // $currentPos = $this->getXY($token['currentPos']);
+
+                $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
+                    return $this->xy(...$xy) === $currentPosId;
+                });
+                $this->game->startCharacterBattleSelection($tokenId, array_keys($characters));
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function spreadDeckhand(): void
     {
         $this->iterateMap(function ($tile) {

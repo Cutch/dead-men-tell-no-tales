@@ -66,6 +66,7 @@ $characterSelection = 71;
 $cardSelection = 72;
 $itemSelection = 73;
 $characterMovement = 74;
+$characterBattleSelection = 75;
 $undo = 96;
 $changeZombiePlayer = 97;
 $gameEnd = 99;
@@ -78,6 +79,7 @@ $interruptScreens = [
     'cardSelection' => $cardSelection,
     'crewMovement' => $crewMovement,
     'characterMovement' => $characterMovement,
+    'characterBattleSelection' => $characterBattleSelection,
     'undo' => $undo,
     'changeZombiePlayer' => $changeZombiePlayer,
 ];
@@ -242,6 +244,15 @@ $machinestates = [
         'type' => 'activeplayer',
         'args' => 'argSelectionState',
         'possibleactions' => ['actMoveSelection'],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
+    ],
+    $characterBattleSelection => [
+        'name' => 'characterBattleSelection',
+        'description' => clienttranslate('A battle is starting'),
+        'descriptionmyturn' => 'A crew member must be battled',
+        'type' => 'multiactiveplayer',
+        'args' => 'argCharacterBattleSelection',
+        'possibleactions' => ['actFightMe', 'actDontFight'],
         'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $itemSelection => [

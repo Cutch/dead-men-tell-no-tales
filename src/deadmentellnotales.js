@@ -834,6 +834,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             );
           }
           break;
+        case 'characterBattleSelection':
+          this.gamedatas.characterBattleSelection.playerIds[gameui.player_id].forEach((characterId) => {
+            this.statusBar.addActionButton(_('Fight ${characterId}').replace('${characterId}', characterId), () => {
+              this.bgaPerformAction('actFightMe', { characterId });
+            });
+          });
+          this.statusBar.addActionButton(_("Don't Fight"), () => {
+            this.bgaPerformAction('actDontFight');
+          });
+          break;
         case 'characterSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCharacter, () => {
             this.bgaPerformAction('actSelectCharacter', { characterId: this.characterSelectionScreen.getSelectedId() });
