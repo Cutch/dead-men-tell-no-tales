@@ -249,9 +249,10 @@ $machinestates = [
     $characterBattleSelection => [
         'name' => 'characterBattleSelection',
         'description' => clienttranslate('A battle is starting'),
-        'descriptionmyturn' => 'A crew member must be battled',
-        'type' => 'multiactiveplayer',
+        'descriptionmyturn' => clienttranslate('A crew member must be battled'),
+        'type' => 'multipleactiveplayer',
         'args' => 'argCharacterBattleSelection',
+        'action' => 'stCharacterBattleSelection',
         'possibleactions' => ['actFightMe', 'actDontFight'],
         'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],

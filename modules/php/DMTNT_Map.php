@@ -780,33 +780,33 @@ EOD;
                     }
                     $tokenPositions[$targetPosId][] = $token['token'];
                     $this->game->gameData->set('tokenPositions', $tokenPositions);
-                    $stateChanged = $this->game->map->checkCrewPosition($crewToken['id']);
-                    if ($stateChanged) {
-                        $nextState = false;
-                    }
                 }
             }
         }
         $this->game->markChanged('map');
+        $stateChanged = $this->game->map->checkCrewPosition();
+        if ($stateChanged) {
+            $nextState = false;
+        }
         return $nextState;
     }
 
-    public function checkCrewPosition($tokenId): bool
+    public function checkCrewPosition(): bool
     {
+        $addedLocation = false;
         $crew = $this->getCrew();
         foreach ($crew as $token) {
-            if ($token['id'] == $tokenId) {
-                $currentPosId = $token['currentPos'];
-                // $currentPos = $this->getXY($token['currentPos']);
+            $currentPosId = $token['currentPos'];
 
-                $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
-                    return $this->xy(...$xy) === $currentPosId;
-                });
-                $this->game->startCharacterBattleSelection($tokenId, array_keys($characters));
-                return true;
+            $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
+                return $this->xy(...$xy) === $currentPosId;
+            });
+            if (sizeof($characters) > 0) {
+                $this->game->battle->addBattleLocation($currentPosId);
+                $addedLocation = true;
             }
         }
-        return false;
+        return $addedLocation;
     }
 
     public function spreadDeckhand(): void

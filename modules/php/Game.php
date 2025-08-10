@@ -1135,56 +1135,22 @@ class Game extends \Table
         }
         $this->completeAction($saveState);
     }
-    public function startCharacterBattleSelection($tokenId, array $characterIds)
-    {
-        if (sizeof($characterIds) == 1) {
-            $this->startBattle((int) $tokenId, $characterIds[0]);
-        } else {
-            $playerIds = [];
-            foreach ($characterIds as $charId) {
-                $charData = $this->character->getCharacterData($charId);
-                $playerIds[$charId] = $charData['playerId'];
-            }
-            $mustSelect = sizeof(array_unique(array_values($playerIds))) == 1;
-            $this->gameData->set('characterBattleSelection', [
-                'tokenId' => $tokenId,
-                'playerIds' => $playerIds,
-                'mustSelect' => $mustSelect,
-            ]);
-            $this->gamestate->setPlayersMultiactive(array_unique(array_values($playerIds)), '', true);
-            $this->nextState('characterBattleSelection');
-        }
-    }
     public function actFightMe(string $characterId)
     {
-        $tokenId = $this->gameData->get('characterBattleSelection')['tokenId'];
-
-        $this->startBattle((int) $tokenId, $characterId);
+        $this->battle->actFightMe($characterId);
     }
     public function actDontFight()
     {
-        $playerIds = $this->gameData->get('characterBattleSelection')['playerIds'];
-        $playerIds = array_unique(array_values($playerIds));
-        $playerId = $this->getCurrentPlayer();
-
-        if (sizeof($this->gamestate->getActivePlayerList()) == 1) {
-            $this->gameData->setMultiActiveCharacter(array_diff($playerIds, [$playerId]), false);
-        } else {
-            $this->gamestate->setPlayerNonMultiactive($playerId, '');
-        }
+        $this->battle->actDontFight();
     }
     public function argCharacterBattleSelection()
     {
-        $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
-            'character_name' => $this->getCharacterHTML(),
-            'activeTurnPlayerId' => 0,
-            'characterBattleSelection' => $this->gameData->get('characterBattleSelection'),
-        ];
-        $this->getDecks($result);
-        return $result;
+        return $this->battle->argCharacterBattleSelection();
     }
-
+    public function stCharacterBattleSelection()
+    {
+        $this->battle->stCharacterBattleSelection();
+    }
     public function argDrawRevengeCard()
     {
         $result = [

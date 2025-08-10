@@ -16,10 +16,13 @@ class DMTNT_Battle
     }
     public function addBattleLocation(string $xy, string $nextState = 'playerTurn')
     {
-        if (sizeof($this->game->gameData->get('battleLocations')) >= 0) {
-            $this->game->gameData->set('battleLocationState', $nextState);
-        }
+        $currentBattleLocations = sizeof($this->game->gameData->get('battleLocations'));
         $this->game->gameData->set('battleLocations', array_unique([...$this->game->gameData->get('battleLocations'), $xy]));
+
+        if ($currentBattleLocations == 0) {
+            $this->game->gameData->set('battleLocationState', $nextState);
+            $this->startCharacterBattleSelection();
+        }
     }
     public function checkBattleLocation(string $xy)
     {
@@ -31,6 +34,67 @@ class DMTNT_Battle
             }
         }
     }
+
+    public function startCharacterBattleSelection()
+    {
+        $battleXY = $this->game->gameData->get('battleLocations')[0];
+        $characterIds = array_keys(
+            array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($battleXY) {
+                return $this->game->map->xy(...$xy) === $battleXY;
+            })
+        );
+        if (sizeof($characterIds) == 1) {
+            $this->game->nextState('battleSelection');
+        } else {
+            $playerIds = [];
+            foreach ($characterIds as $charId) {
+                $charData = $this->game->character->getCharacterData($charId);
+                $playerIds[$charId] = $charData['playerId'];
+            }
+            $mustSelect = sizeof(array_unique(array_values($playerIds))) == 1;
+            $this->game->gameData->set('characterBattleSelection', [
+                'playerIds' => $playerIds,
+                'mustSelect' => $mustSelect,
+            ]);
+            $this->game->nextState('characterBattleSelection');
+        }
+    }
+    public function stCharacterBattleSelection()
+    {
+        $playerIds = $this->game->gameData->get('characterBattleSelection')['playerIds'];
+        $this->game->gamestate->setPlayersMultiactive(array_unique(array_values($playerIds)), '', true);
+    }
+    public function actFightMe(string $characterId)
+    {
+        $this->game->gameData->set('battle', [...$this->game->gameData->get('battle'), 'characterId' => $characterId]);
+        $this->game->nextState('battleSelection');
+    }
+    public function actDontFight()
+    {
+        $playerIds = $this->game->gameData->get('characterBattleSelection')['playerIds'];
+        $playerIds = array_unique(array_values($playerIds));
+        $playerId = $this->game->getCurrentPlayer();
+
+        if (sizeof($this->game->gamestate->getActivePlayerList()) == 1) {
+            $this->game->gamestate->setPlayersMultiactive(array_diff($playerIds, [$playerId]), '', true);
+        } else {
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
+        }
+    }
+    public function argCharacterBattleSelection()
+    {
+        $result = [
+            'actions' => [],
+            'resolving' => $this->game->actInterrupt->isStateResolving(),
+            'character_name' => $this->game->getCharacterHTML(),
+            'activeTurnPlayerId' => 0,
+            'characterBattleSelection' => $this->game->gameData->get('characterBattleSelection'),
+        ];
+        $this->game->getDecks($result);
+        $this->game->getAllPlayers($result);
+        return $result;
+    }
+
     public function startBattle(int $targetId, ?string $characterId = null, ?string $nextState = 'playerTurn')
     {
         $this->game->character->activateCharacter($characterId ?? $this->game->character->getTurnCharacterId());
@@ -88,7 +152,8 @@ class DMTNT_Battle
     }
     public function actBattleSelection(int $targetId)
     {
-        $this->startBattle($targetId);
+        $battle = $this->game->gameData->getBattleData();
+        $this->startBattle($targetId, $battle['characterId']);
     }
     public function actUseStrength()
     {
@@ -114,8 +179,8 @@ class DMTNT_Battle
     public function stBattleSelection()
     {
         $battle = $this->game->gameData->getBattleData();
-        var_dump($battle['includeAdjacent'], $battle['characterId']);
         $enemies = $this->game->getEnemies($battle['includeAdjacent'], $battle['characterId']);
+        var_dump($battle['includeAdjacent'], $battle['characterId'], sizeof($enemies));
         if (sizeof($enemies) == 0) {
             $this->game->nextState(array_key_exists('nextState', $battle) ? $battle['nextState'] : 'playerTurn');
         }

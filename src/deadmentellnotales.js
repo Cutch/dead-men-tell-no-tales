@@ -87,7 +87,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       ? Object.values(gameData?.characters)
       : Object.values(this.selectedCharacters).sort((a, b) => a.id.localeCompare(b.id));
     if (this.lastCharacters !== characters.map((d) => d.id).join(',')) {
-      console.log('Removing old characters', document.querySelectorAll('.character-side-container'));
       document.querySelectorAll('.character-side-container').forEach((el) => el.remove());
       document.querySelectorAll('.player-card').forEach((el) => el.remove());
     }
@@ -835,7 +834,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           }
           break;
         case 'characterBattleSelection':
-          this.gamedatas.characterBattleSelection.playerIds[gameui.player_id].forEach((characterId) => {
+          console.log('characterBattleSelection', this.gamedatas.characterBattleSelection.playerIds, this.player_id);
+          const playerIds = Object.entries(this.gamedatas.characterBattleSelection.playerIds).reduce((acc, [key, value]) => {
+            if (!acc[value]) acc[value] = [];
+            acc[value].push(key);
+            return acc;
+          }, {});
+
+          playerIds[this.player_id].forEach((characterId) => {
             this.statusBar.addActionButton(_('Fight ${characterId}').replace('${characterId}', characterId), () => {
               this.bgaPerformAction('actFightMe', { characterId });
             });
