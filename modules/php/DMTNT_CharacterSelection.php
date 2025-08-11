@@ -184,6 +184,7 @@ class DMTNT_CharacterSelection
         );
         $this->game->markChanged('token');
         // TODO: Better color mappings esp for white and yellow
+
         // $players = $this->game->loadPlayersBasicInfos();
         // $this->game->reattributeColorsBasedOnPreferences(
         //     array_filter($players, function ($player) use ($playerId) {
@@ -191,6 +192,7 @@ class DMTNT_CharacterSelection
         //     }),
         //     $colors
         // );
+        $this->game->DbQuery("UPDATE player SET player_color='{$colors[0]}' WHERE player_id = $playerId");
 
         if (sizeof($this->game->gamestate->getActivePlayerList()) == 1) {
             $items = [...$this->game->data->getItems()];
@@ -203,6 +205,7 @@ class DMTNT_CharacterSelection
         }
         // Deactivate player, and move to next state if none are active
         $this->game->gamestate->setPlayerNonMultiactive($playerId, 'initializeTile');
+        $this->game->markChanged('playerColor');
     }
     public function argSelectionCount(): array
     {

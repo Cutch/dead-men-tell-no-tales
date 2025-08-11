@@ -261,6 +261,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       }
     });
 
+    Object.entries(this.gamedatas.players).forEach(([playerId, { player_color }]) => {
+      document.querySelector(`#player_name_${playerId} > a`).style.color = `#${player_color}`;
+    });
+
     const selections = $('player_boards');
     [...selections.children].forEach((elem) => {
       if (elem.id?.includes('overall_player_board_')) {

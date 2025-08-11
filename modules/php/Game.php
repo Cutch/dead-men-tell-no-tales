@@ -1514,7 +1514,7 @@ class Game extends \Table
             },
             []
         );
-        $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no FROM `player`');
+        $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no, player_color FROM `player`');
     }
     public function getDecks(&$result): void
     {
@@ -1590,7 +1590,7 @@ class Game extends \Table
         $difficultyMapping = ['normal', 'challenge', 'hard'];
         return $difficultyMapping[$this->gameData->get('difficulty')];
     }
-    private array $changed = ['token' => false, 'player' => false, 'map' => false, 'actions' => false];
+    private array $changed = ['token' => false, 'player' => false, 'map' => false, 'actions' => false, 'playerColor' => false];
     public function markChanged(string $type)
     {
         if (!array_key_exists($type, $this->changed)) {
@@ -1615,6 +1615,12 @@ class Game extends \Table
             $this->notify('tokenUsed', '', ['gameData' => $result]);
         }
         $stateName = $this->gamestate->state(true, false, true)['name'];
+        if ($this->changed['playerColor'] && $stateName === 'characterSelect') {
+            $result = [];
+            $this->getAllPlayers($result);
+
+            $this->notify('updateCharacterData', '', ['gameData' => $result]);
+        }
         if ($this->changed['player'] && !($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
