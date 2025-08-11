@@ -415,14 +415,18 @@ export class Map {
             duration: 750,
           });
           dojo.connect(animationId, 'onEnd', () => {
-            tempMover.remove();
+            container.querySelector('.temp-mover').remove();
             container.appendChild(currentElem);
             currentElem.style.position = '';
             currentElem.style.left = '';
             currentElem.style.top = '';
           });
           animationId.play();
-        } else if (container.querySelector(`.id${id}`) && !container.querySelector(`.id${id}`).querySelector(`.${name}-token`)) {
+        } else if (
+          type === 'treasure' &&
+          container.querySelector(`.id${id}`) &&
+          !container.querySelector(`.id${id}`).querySelector(`.${name}-token`)
+        ) {
           container.querySelector(`.id${id}`).outerHTML =
             `<div class="token-flip id${id}"><div class="token-flip-inner"><div class="token-flip-front"></div><div class="token-flip-back"></div></div></div>`;
 

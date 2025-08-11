@@ -150,7 +150,7 @@ class DMTNT_CharacterSelection
             // }
             $this->game->hooks->onCharacterChoose($characterObject);
 
-            $selectedCharactersArgs['character' . ($index + 1)] = $value;
+            $selectedCharactersArgs['character' . ($index + 1)] = $characterObject['name'];
         }
         switch (sizeof($selectedCharacters)) {
             case 1:

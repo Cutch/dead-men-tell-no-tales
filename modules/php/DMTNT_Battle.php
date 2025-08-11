@@ -33,21 +33,28 @@ class DMTNT_Battle
         });
         return $battleXY;
     }
-    public function battleLocation(string $nextState): bool
+    public function battleLocation(string $nextState): int
     {
         $battleXY = $this->getNextBattle();
-        if ($battleXY && $this->game->gameData->get('battleLocationState')) {
-            $this->game->gameData->set('battleLocationState', $nextState);
-            $this->game->nextState('startCharacterBattleSelection');
+        if ($battleXY) {
+            if (!$this->game->gameData->get('battleLocationState')) {
+                $this->game->gameData->set('battleLocationState', $nextState);
+                $this->game->nextState('startCharacterBattleSelection');
+                return 1; // In Starting battle
+            }
+            return 2; // In Battle
         }
-        return !$battleXY;
+        return 0; // No battle
     }
 
     public function stStartCharacterBattleSelection()
     {
         $battleXY = $this->getNextBattle();
         if (!$battleXY) {
-            $this->game->nextState('playerTurn');
+            if ($this->game->gameData->get('battleLocationState') === 'playerTurn') {
+                $this->game->character->activateCharacter($this->game->character->getTurnCharacterId());
+            }
+            $this->game->nextState($this->game->gameData->get('battleLocationState'));
             $this->game->gameData->set('battleLocationState', null);
             return;
         }
@@ -204,7 +211,6 @@ class DMTNT_Battle
     {
         $battle = $this->game->gameData->getBattleData();
         $enemies = $this->game->getEnemies($battle['includeAdjacent'], $battle['characterId']);
-        // var_dump($battle['includeAdjacent'], $battle['characterId'], sizeof($enemies));
         if (sizeof($enemies) == 0) {
             $this->game->nextState(array_key_exists('nextState', $battle) ? $battle['nextState'] : 'playerTurn');
         }
@@ -234,16 +240,30 @@ class DMTNT_Battle
             'canUndo' => $this->game->undo->canUndo(),
             'actions' =>
                 sizeof($enemies) > 0
-                    ? array_map(function ($d) {
-                        return [
-                            'action' => 'actBattleSelection',
-                            'type' => 'action',
-                            'targetId' => $d['id'],
-                            'targetName' => $d['enemyName'],
-                            'targetDie' => $d['battle'],
-                            'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
-                        ];
-                    }, array_values($targets))
+                    ? [
+                        ...array_map(function ($d) {
+                            return [
+                                'action' => 'actBattleSelection',
+                                'type' => 'action',
+                                'targetId' => $d['id'],
+                                'targetName' => $d['enemyName'],
+                                'targetDie' => $d['battle'],
+                                'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
+                            ];
+                        }, array_values($targets)),
+                        ...$battle['characterId'] === 'garrett'
+                            ? array_map(function ($d) {
+                                return [
+                                    'action' => 'actMakeThemFlee',
+                                    'type' => 'action',
+                                    'targetId' => $d['id'],
+                                    'targetName' => $d['enemyName'],
+                                    'targetDie' => $d['battle'],
+                                    'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
+                                ];
+                            }, array_values($targets))
+                            : [],
+                    ]
                     : [],
         ];
 
@@ -355,19 +375,31 @@ class DMTNT_Battle
     public function actBattleAgain()
     {
         $battle = $this->game->gameData->getBattleData();
+        $this->game->eventLog(clienttranslate('${character_name} battles again'), [
+            'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+        ]);
         $this->startBattle((int) $battle['target']['id'], $battle['characterId']);
     }
-    public function actMakeThemFlee()
+    public function actMakeThemFlee(?string $targetId = null)
     {
         $battle = $this->game->gameData->getBattleData();
-        [$x, $y] = array_key_exists('pos', $battle) ? $battle['pos'] : $this->game->getCharacterPos($battle['characterId']);
-        $targetTiles = toId($this->game->map->getValidAdjacentTiles($x, $y));
+        $this->game->eventLog(clienttranslate('${character_name} makes the crew retreat'), [
+            'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+        ]);
         $tokenPositions = $this->game->gameData->get('tokenPositions');
-        $crewToken = array_values(
-            array_filter($tokenPositions[$this->game->map->xy($x, $y)], function ($token) use ($battle) {
-                return $token['id'] == $battle['target']['id'];
-            })
-        )[0];
+
+        $x = 0;
+        $y = 0;
+        foreach ($tokenPositions as $xy => $tokens) {
+            foreach ($tokens as $token) {
+                if ($token['id'] == ($targetId ?? $battle['target']['id'])) {
+                    $crewToken = $token;
+                    [$x, $y] = array_values($this->game->map->getXY($xy));
+                    break 2;
+                }
+            }
+        }
+        $targetTiles = toId($this->game->map->getValidAdjacentTiles($x, $y));
         unset($crewToken['treasure']);
         unset($crewToken['isTreasure']);
         $this->game->selectionStates->initiateState(
@@ -376,7 +408,7 @@ class DMTNT_Battle
                 'movePositions' => $targetTiles,
                 'id' => 'moveCrew',
                 'crew' => $crewToken,
-                'currentPosId' => $this->game->map->xy($x, $y),
+                'currentPosId' => $xy,
             ],
             $battle['characterId'],
             false,
@@ -427,10 +459,16 @@ class DMTNT_Battle
                 if ($battle['resultRoll'] == 0) {
                     $this->game->nextState('startCharacterBattleSelection');
                 } elseif ($battle['resultRoll'] <= 2) {
+                    $this->game->eventLog(clienttranslate('${character_name} makes the crew retreat'), [
+                        'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+                    ]);
                     $this->game->actMakeThemFlee();
                 } elseif ($battle['resultRoll'] <= 4) {
                     $this->game->actRetreat();
                 } elseif ($battle['resultRoll'] == 5) {
+                    $this->game->eventLog(clienttranslate('${character_name} battles again'), [
+                        'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+                    ]);
                     $this->startBattle((int) $battle['target']['id'], $battle['characterId']);
                 }
             }

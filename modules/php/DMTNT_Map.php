@@ -282,6 +282,7 @@ class DMTNT_Map
             $moveIds,
             $hasTreasure,
             $currentFire,
+            $characterId,
             &$fatigueList
         ) {
             if (
@@ -302,8 +303,11 @@ class DMTNT_Map
             } else {
                 $fatigueList[$id] = (int) max($fire - $currentFire, 0);
             }
+            // Skip being able to run to adjacent if enemy exists, except garrett
+            if ($characterId !== 'garrett' && sizeof($this->game->getEnemiesByLocation(false, [$firstTile['x'], $firstTile['y']])) > 0) {
+                return;
+            }
             if ($canRun) {
-                // TODO skip being able to run to adjacent if enemy exists, except garret
                 $tempList = $this->getAdjacentTiles($x, $y);
                 foreach ($tempList as $tempTile) {
                     $id = $tempTile['id'];
@@ -791,26 +795,6 @@ EOD;
         // }
         return $nextState;
     }
-
-    // public function checkCrewPosition(?string $tokenId = null): bool
-    // {
-    //     $addedLocation = false;
-    //     $crew = $this->getCrew();
-    //     foreach ($crew as $token) {
-    //         if ($tokenId == null || $token['id'] == $tokenId) {
-    //             $currentPosId = $token['currentPos'];
-
-    //             $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
-    //                 return $this->xy(...$xy) === $currentPosId;
-    //             });
-    //             if (sizeof($characters) > 0) {
-    //                 $this->game->battle->battleLocation($currentPosId);
-    //                 $addedLocation = true;
-    //             }
-    //         }
-    //     }
-    //     return $addedLocation;
-    // }
 
     public function spreadDeckhand(): void
     {

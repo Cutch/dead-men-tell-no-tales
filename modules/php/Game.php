@@ -825,9 +825,8 @@ class Game extends \Table
                 $this->undo->saveState();
                 $this->hooks->onMoveFinalize($data);
                 if ($this->gamestate->state(true, false, true)['name'] === 'playerTurn') {
-                    if (sizeof($this->getEnemies()) > 0) {
-                        $this->nextState('battleSelection');
-                    }
+                    $this->battle->battleLocation('playerTurn');
+                    // Is already player turn so don't need to call nextState
                 }
             }
         );
@@ -1199,9 +1198,9 @@ class Game extends \Table
     {
         $this->battle->actBattleAgain();
     }
-    public function actMakeThemFlee()
+    public function actMakeThemFlee(?string $targetId = null)
     {
-        $this->battle->actMakeThemFlee();
+        $this->battle->actMakeThemFlee($targetId);
     }
     public function actRetreat()
     {
@@ -1234,7 +1233,9 @@ class Game extends \Table
     public function crewMove(): void
     {
         $this->map->crewMove();
-        $this->battle->battleLocation('nextCharacter');
+        if (sizeof($this->selectionStates->getPendingStates()) == 0) {
+            $this->battle->battleLocation('nextCharacter');
+        }
         $this->completeAction();
     }
     public function stDrawRevengeCard()
@@ -1300,19 +1301,10 @@ class Game extends \Table
                 ) {
                     $this->decks->shuffleInDiscard('revenge');
                 }
-                // $this->decks->getDeck('revenge')->getCard()
-                // TODO: Shuffle when 3 5s in discard
-
-                // if (!$data || !array_key_exists('onUse', $data) || $data['onUse'] != false) {
-                //     $result = array_key_exists('onUse', $card) ? $card['onUse']($this, $card) : null;
-                // }
-                // if (
-                //     (!$data || !array_key_exists('notify', $data) || $data['notify'] != false) &&
-                //     (!$result || !array_key_exists('notify', $result) || $result['notify'] != false)
-                // ) {
-                // }
                 if ($currentState === $this->gamestate->state(true, false, true)['name']) {
-                    $this->battle->battleLocation('nextCharacter');
+                    if ($this->battle->battleLocation('nextCharacter') == 0) {
+                        $this->nextState('nextCharacter');
+                    }
                 }
             }
         );

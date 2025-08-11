@@ -335,8 +335,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       availableElem = document.querySelector(`#items-container .items`);
     }
     availableElem.innerHTML = '';
-    gameData.availableItems?.forEach((name) => this.updateItem(name, availableElem));
-    if (!gameData.availableItems?.length) {
+    this.gamedatas.availableItems?.forEach((name) => this.updateItem(name, availableElem));
+    if (!this.gamedatas.availableItems?.length) {
       availableElem.innerHTML = `<b>${_('None')}</b>`;
     }
   },
@@ -349,7 +349,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     });
   },
   setupBoard: function (gameData) {
-    this.firstPlayer = Object.values(gameui.gamedatas.players).find((d) => d.player_no == 1).id;
+    this.firstPlayer = Object.values(this.gamedatas.players).find((d) => d.player_no == 1).id;
     // Main board
 
     this.map = new Map(this, gameData);
@@ -433,7 +433,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   updateCharacterSelections: function (gameData) {
     const elem = $('character-selector');
     const myCharacters = this.selectedCharacters
-      .filter((d) => d.playerId == gameui.player_id)
+      .filter((d) => d.playerId == this.player_id)
       .map((d) => d.id)
       .sort((a, b) => this.mySelectedCharacters.indexOf(a) - this.mySelectedCharacters.indexOf(b));
     this.mySelectedCharacters = myCharacters;
@@ -443,7 +443,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       if (character) {
         card.style.setProperty('--player-color', '#' + character.playerColor);
         card.classList.add('selected');
-        if (character.playerId != gameui.player_id) this.disableClick(card);
+        if (character.playerId != this.player_id) this.disableClick(card);
       } else {
         card.classList.remove('selected');
         this.enableClick(card);
@@ -452,7 +452,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.updatePlayers(gameData);
   },
   setup: function (gameData) {
-    dojo.subscribe('addMoveToLog', gameui, () => {
+    dojo.subscribe('addMoveToLog', this, () => {
       const addButtonListener = (node) => {
         addClickListener(node, 'Card', () => {
           this.tooltip.show();
@@ -521,7 +521,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     return (
       this.getActivePlayers()
         .map((d) => d.toString())
-        .includes(this.player_id.toString()) || gameui.isPlayerActive()
+        .includes(this.player_id.toString()) || this.isPlayerActive()
     );
   },
   ///////////////////////////////////////////////////
@@ -538,7 +538,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     }
     const isActive = this.isActive();
     if (isStudio())
-      console.log('Entering state: ' + stateName, args, isActive, this.getActivePlayers(), gameui.isPlayerActive(), this.player_id);
+      console.log('Entering state: ' + stateName, args, isActive, this.getActivePlayers(), this.isPlayerActive(), this.player_id);
     switch (stateName) {
       case 'itemSelection':
         if (isActive) this.itemsScreen.show(args.args);
@@ -676,6 +676,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 this.bgaPerformAction('actSwapItem');
               } else if (actionId === 'actBattleSelection') {
                 this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
+              } else if (actionId === 'actMakeThemFlee') {
+                if (action.targetId) this.bgaPerformAction('actMakeThemFlee', { targetId: action.targetId });
+                else this.bgaPerformAction('actMakeThemFlee');
               } else if (actionId === 'actDontUseStrength') {
                 if (action.willDie) {
                   this.confirmationDialog(
@@ -893,7 +896,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           );
           this.statusBar.addActionButton(_('Randomize') + ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`, () => {
             const saved = [...this.mySelectedCharacters];
-            const otherCharacters = this.selectedCharacters.filter((d) => d.playerId != gameui.player_id).map((d) => d.id);
+            const otherCharacters = this.selectedCharacters.filter((d) => d.playerId != this.player_id).map((d) => d.id);
             const validCharacters = Object.keys(this.data).filter(
               (d) => this.data[d].options.type === 'character' && !otherCharacters.includes(d),
             );
@@ -982,7 +985,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'interrupt':
           if (!this.gamedatas.availableSkills.some((d) => d.cancellable === false))
-            if (gameui.gamedatas.activeTurnPlayerId == gameui.player_id && !this.gamedatas.isRealTime) {
+            if (this.gamedatas.activeTurnPlayerId == this.player_id && !this.gamedatas.isRealTime) {
               actions
                 .sort((a, b) => (a?.actions ?? 9) - (b?.actions ?? 9))
                 .forEach((action) => {
@@ -1108,8 +1111,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   notif_resetNotifications: async function (notification) {
     await this.notificationWrapper(notification);
     const lastMoveId = parseInt(notification.args.moveId, 10);
-    for (const logId of Object.keys(gameui.log_to_move_id)) {
-      const moveId = parseInt(gameui.log_to_move_id[logId], 10);
+    for (const logId of Object.keys(this.log_to_move_id)) {
+      const moveId = parseInt(this.log_to_move_id[logId], 10);
       if (moveId > lastMoveId) {
         try {
           $(`log_${logId}`).remove();

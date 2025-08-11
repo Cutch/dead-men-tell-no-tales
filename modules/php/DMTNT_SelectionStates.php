@@ -20,7 +20,7 @@ class DMTNT_SelectionStates
     {
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
 
-        $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+        $pendingStates = $this->getPendingStates();
         if ((sizeof($pendingStates) == 0 || in_array($data['nextState'], ['nextCharacter', 'playerTurn'])) && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
             $this->game->nextState($data['nextState']);
@@ -77,15 +77,21 @@ class DMTNT_SelectionStates
         $tokenPositions[$targetPosId][] = $token;
         // $tokenPositions[$currentPosId]
         $this->game->gameData->set('tokenPositions', $tokenPositions);
-        $stateChanged = $this->game->battle->battleLocation($stateData['nextState']);
-
         $this->game->markChanged('map');
         $data = [
             'characterId' => $characterId,
-            'nextState' => $stateChanged ? false : $stateData['nextState'],
+            'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
         ];
         $this->completeSelectionState($data);
+        // If this is the first call it will be player turn, otherwise it will use the battle's next state
+
+        if (sizeof($this->getPendingStates()) == 0) {
+            if ($this->game->battle->battleLocation('playerTurn') == 0) {
+                $this->game->character->activateCharacter($this->game->character->getTurnCharacterId());
+                $this->game->nextState('playerTurn');
+            }
+        }
     }
     public function actSelectItem(?string $itemId = null): void
     {
@@ -253,9 +259,13 @@ class DMTNT_SelectionStates
         $stateNameState = $this->stateToStateNameMapping($stateName);
         $this->game->gameData->set($stateNameState, $data);
     }
+    public function getPendingStates(): array
+    {
+        return $this->game->gameData->get('pendingStates') ?? [];
+    }
     public function initiatePendingState(): void
     {
-        $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+        $pendingStates = $this->getPendingStates();
         if (sizeof($pendingStates) > 0) {
             $this->initiateState(...$pendingStates[0]);
             array_shift($pendingStates);
@@ -275,7 +285,7 @@ class DMTNT_SelectionStates
         ?bool $setAsNextState = false
     ): void {
         if ($this->stateChanged || $this->stateToStateNameMapping() != null) {
-            $pendingStates = $this->game->gameData->get('pendingStates') ?? [];
+            $pendingStates = $this->getPendingStates();
             // WARNING: Update if args change
             $args = [$stateName, $state, $characterId, $cancellable, $nextState, $title, $isInterrupt, true, $setAsNextState];
             if ($setAsNextState) {
