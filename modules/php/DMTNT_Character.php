@@ -375,7 +375,7 @@ class DMTNT_Character
 
             $this->game->death($characterId);
 
-            if ($this->game->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+            if ($this->game->gamestate->state(true, false, true)['name'] == 'playerTurn' && $this->getTurnCharacterId() === $characterId) {
                 $this->game->endTurn();
             }
             $this->game->gameData->set('battle', [...$this->game->gameData->get('battle'), 'death' => true]);

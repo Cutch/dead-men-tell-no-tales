@@ -103,7 +103,9 @@ class DMTNT_Battle
         $playerId = $this->game->getCurrentPlayer();
 
         if (sizeof($this->game->gamestate->getActivePlayerList()) == 1) {
-            if (sizeof($playerIds) > 0) {
+            if (sizeof($playerIds) == 0) {
+                throw new Exception('No other players to fight');
+            } elseif (sizeof($playerIds) > 1) {
                 $this->game->gameData->setMultiActivePlayer(array_diff($playerIds, [$playerId]));
             }
         } else {
@@ -112,11 +114,14 @@ class DMTNT_Battle
     }
     public function argCharacterBattleSelection()
     {
+        $playerIds = $this->game->gameData->get('characterBattleSelection')['playerIds'];
+        $playerIds = array_unique(array_values($playerIds));
         $result = [
             'actions' => [],
             'resolving' => $this->game->actInterrupt->isStateResolving(),
             'character_name' => $this->game->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
+            'canSkipFight' => sizeof($playerIds) > 1,
             'characterBattleSelection' => $this->game->gameData->get('characterBattleSelection'),
         ];
         $this->game->getDecks($result);
@@ -347,7 +352,7 @@ class DMTNT_Battle
                     'count' => $battle['target']['battle'] - $battle['attack'],
                     'character_name' => $this->game->getCharacterHTML($battle['characterId']),
                 ]);
-                $this->game->character->adjustActiveFatigue($battle['target']['battle'] - $battle['attack']);
+                $this->game->character->adjustFatigue($battle['characterId'], $battle['target']['battle'] - $battle['attack']);
                 // Check if the character is dead
                 $battle = $this->game->gameData->getBattleData();
                 if (!$isGuard && (!array_key_exists('death', $battle) || !$battle['death'])) {
@@ -459,9 +464,6 @@ class DMTNT_Battle
                 if ($battle['resultRoll'] == 0) {
                     $this->game->nextState('startCharacterBattleSelection');
                 } elseif ($battle['resultRoll'] <= 2) {
-                    $this->game->eventLog(clienttranslate('${character_name} makes the crew retreat'), [
-                        'character_name' => $this->game->getCharacterHTML($battle['characterId']),
-                    ]);
                     $this->game->actMakeThemFlee();
                 } elseif ($battle['resultRoll'] <= 4) {
                     $this->game->actRetreat();

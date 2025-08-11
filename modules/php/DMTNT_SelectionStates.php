@@ -88,8 +88,8 @@ class DMTNT_SelectionStates
 
         if (sizeof($this->getPendingStates()) == 0) {
             if ($this->game->battle->battleLocation('playerTurn') == 0) {
-                $this->game->character->activateCharacter($this->game->character->getTurnCharacterId());
-                $this->game->nextState('playerTurn');
+                // $this->game->character->activateCharacter($this->game->character->getTurnCharacterId());
+                // $this->game->nextState('playerTurn');
             }
         }
     }
@@ -170,7 +170,11 @@ class DMTNT_SelectionStates
         $stateData = $this->getState(null);
         $currentCharacter = $stateData['currentCharacter'];
         $this->game->character->swapToCharacter($currentCharacter, $characterId);
-        $this->game->endTurn();
+        if ($this->game->character->getTurnCharacterId() === $characterId) {
+            $this->game->endTurn();
+        } else {
+            $this->game->nextState('playerTurn');
+        }
 
         $data = [
             'characterId' => $characterId,

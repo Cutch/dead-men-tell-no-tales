@@ -783,7 +783,7 @@ class Game extends \Table
                 $y = $data['y'];
                 $character = $data['character'];
                 $tile = $data['tile'];
-                $this->character->adjustActiveFatigue($fatigue);
+                $this->character->adjustFatigue($character['id'], $fatigue);
                 if ($functionName === 'actMove') {
                     $this->actions->spendActionCost('actMove');
                 }
@@ -791,8 +791,8 @@ class Game extends \Table
                 $this->markChanged('player');
                 if (array_key_exists('escape', $tile) && $tile['escape'] == 1) {
                     $this->gameData->set('escaped', true);
-                    $count = (int) ceil($this->character->getActiveFatigue() / 2);
-                    $this->character->adjustActiveFatigue(-$count);
+                    $count = (int) ceil($this->character->getCharacterData($character['id'])['fatigue'] / 2);
+                    $this->character->adjustFatigue($character['id'], -$count);
                     $this->eventLog(clienttranslate('${character_name} is taking a breather and recovered ${count} fatigue'), [
                         'usedActionId' => 'actMove',
                         'count' => $count,
@@ -1803,7 +1803,7 @@ class Game extends \Table
         $this->initStat('player', 'deckhands_eliminated', 0);
         $this->initStat('player', 'treasure_recovered', 0);
         $this->initStat('player', 'crew_eliminated', 0);
-        $this->reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
+        // $this->reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         $players = $this->loadPlayersBasicInfos();
 
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));

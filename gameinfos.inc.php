@@ -75,11 +75,11 @@ $gameinfos = [
     'language_dependency' => false,
 
     // Colors attributed to players
-    'player_colors' => ['ff0000', '008000', '0000ff', 'ffa500', '773300'],
+    'player_colors' => ['89357d', '282b2d', 'cd402a', '8a8a8a', '4a9746', 'dd8127', '008cb9'],
 
     // Favorite colors support : if set to "true", support attribution of favorite colors based on player's preferences (see reattributeColorsBasedOnPreferences PHP method)
     // NB: this parameter is used only to flag games supporting this feature; you must use (or not use) reattributeColorsBasedOnPreferences PHP method to actually enable or disable the feature.
-    'favorite_colors_support' => true,
+    'favorite_colors_support' => false,
 
     // When doing a rematch, the player order is swapped using a "rotation" so the starting player is not the same
     // If you want to disable this, set this to true

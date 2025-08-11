@@ -848,9 +848,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               this.bgaPerformAction('actFightMe', { characterId });
             });
           });
-          this.statusBar.addActionButton(_("Don't Fight"), () => {
-            this.bgaPerformAction('actDontFight');
-          });
+          if (this.gamedatas['canSkipFight'])
+            this.statusBar.addActionButton(_("Don't Fight"), () => {
+              this.bgaPerformAction('actDontFight');
+            });
           break;
         case 'characterSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCharacter, () => {
