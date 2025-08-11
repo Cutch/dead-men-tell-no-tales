@@ -180,6 +180,18 @@ class DMTNT_GameData
         }
         return $this->game->gamestate->setPlayersMultiactive($activePlayerIds, 'playerTurn', true);
     }
+    public function setMultiActivePlayer(array $playerIds): bool
+    {
+        if ($this->game->getBgaEnvironment() == 'studio') {
+            $this->game->log('setMultiActivePlayer', $playerIds);
+        }
+        $playerList = $this->game->gamestate->getActivePlayerList();
+        foreach (array_diff($playerIds, $playerList) as $playerId) {
+            $this->game->giveExtraTime($playerId);
+        }
+
+        return $this->game->gamestate->setPlayersMultiactive($playerIds, '', true);
+    }
     public function removeMultiActiveCharacter(string $characterId, string $state): bool
     {
         $activateCharacters = $this->getAllMultiActiveCharacterIds();

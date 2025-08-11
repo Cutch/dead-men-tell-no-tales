@@ -22,7 +22,7 @@ class DMTNT_Map
 
         return $directionNames[$direction];
     }
-    public function xy($x, $y)
+    public function xy($x, $y): string
     {
         return "{$x}x{$y}";
     }
@@ -246,10 +246,11 @@ class DMTNT_Map
     {
         return $this->xyMap[$key]['escape'] == 1;
     }
-    public function calculateMoves(bool $canRun = true): array
+    public function calculateMoves(bool $canRun = true, ?string $characterId = null): array
     {
-        $canRun = $canRun && !$this->game->actions->hasTreasure();
-        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        $characterId = $characterId ?? $this->game->character->getTurnCharacterId();
+        $canRun = $canRun && !$this->game->actions->hasTreasure($characterId);
+        [$x, $y] = $this->game->getCharacterPos($characterId);
         $currentFire = 0;
         $currentTiles = null;
         $key = $this->xy($x, $y);
@@ -269,7 +270,7 @@ class DMTNT_Map
                 $currentFire = $currentTiles[0]['fire'];
             }
         }
-        $data = ['hasTreasure' => $this->game->actions->hasTreasure()];
+        $data = ['hasTreasure' => $this->game->actions->hasTreasure($characterId)];
         $this->game->hooks->onCalculateMovesHasTreasure($data);
         $hasTreasure = $data['hasTreasure'];
         $fatigueList = [];
@@ -784,30 +785,32 @@ EOD;
             }
         }
         $this->game->markChanged('map');
-        $stateChanged = $this->game->map->checkCrewPosition();
-        if ($stateChanged) {
-            $nextState = false;
-        }
+        // $stateChanged = $this->game->map->checkCrewPosition();
+        // if ($stateChanged) {
+        //     $nextState = false;
+        // }
         return $nextState;
     }
 
-    public function checkCrewPosition(): bool
-    {
-        $addedLocation = false;
-        $crew = $this->getCrew();
-        foreach ($crew as $token) {
-            $currentPosId = $token['currentPos'];
+    // public function checkCrewPosition(?string $tokenId = null): bool
+    // {
+    //     $addedLocation = false;
+    //     $crew = $this->getCrew();
+    //     foreach ($crew as $token) {
+    //         if ($tokenId == null || $token['id'] == $tokenId) {
+    //             $currentPosId = $token['currentPos'];
 
-            $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
-                return $this->xy(...$xy) === $currentPosId;
-            });
-            if (sizeof($characters) > 0) {
-                $this->game->battle->addBattleLocation($currentPosId);
-                $addedLocation = true;
-            }
-        }
-        return $addedLocation;
-    }
+    //             $characters = array_filter($this->game->gameData->get('characterPositions'), function ($xy) use ($currentPosId) {
+    //                 return $this->xy(...$xy) === $currentPosId;
+    //             });
+    //             if (sizeof($characters) > 0) {
+    //                 $this->game->battle->battleLocation($currentPosId);
+    //                 $addedLocation = true;
+    //             }
+    //         }
+    //     }
+    //     return $addedLocation;
+    // }
 
     public function spreadDeckhand(): void
     {

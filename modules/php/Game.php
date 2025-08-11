@@ -691,12 +691,7 @@ class Game extends \Table
         );
         return [];
     }
-    public function stPlayerState()
-    {
-        if (sizeof($this->getEnemies()) > 0) {
-            $this->nextState('battleSelection');
-        }
-    }
+    public function stPlayerState() {}
     public function getUnequippedItems(): array
     {
         $equippedItems = array_map(
@@ -757,17 +752,17 @@ class Game extends \Table
     {
         $this->_actMove('actMove', $x, $y);
     }
-    public function _actMove(string $functionName, ?int $x, ?int $y): void
+    public function _actMove(string $functionName, ?int $x, ?int $y, ?string $characterId = null): void
     {
+        $character = $characterId ? $this->character->getCharacterData($characterId) : $this->character->getTurnCharacter();
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
             func_get_args(),
             [$this->hooks, 'onMove'],
-            function (Game $_this) use ($x, $y) {
+            function (Game $_this) use ($x, $y, $character) {
                 if ($x === null || $y === null) {
                     throw new BgaUserException(clienttranslate('Select a location'));
                 }
-                $character = $this->character->getTurnCharacter();
                 $moves = $this->map->calculateMoves()['fatigueList'];
                 $tile = $this->map->getTileByXY($x, $y);
                 $fatigue = (int) $moves[$tile['id']];
@@ -782,7 +777,7 @@ class Game extends \Table
                     'tile' => $tile,
                 ];
             },
-            function (Game $_this, bool $finalizeInterrupt, $data) use ($functionName) {
+            function (Game $_this, bool $finalizeInterrupt, $data, $character) use ($functionName) {
                 $fatigue = $data['fatigue'];
                 $x = $data['x'];
                 $y = $data['y'];
@@ -804,7 +799,6 @@ class Game extends \Table
                     ]);
 
                     if ($this->actions->hasTreasure()) {
-                        $character = $this->character->getTurnCharacter();
                         $characterId = $character['id'];
                         $tokenItems = $this->gameData->get('tokenItems');
                         $tokenItems[$characterId] = array_values(
@@ -1151,6 +1145,10 @@ class Game extends \Table
     {
         $this->battle->stCharacterBattleSelection();
     }
+    public function stStartCharacterBattleSelection()
+    {
+        $this->battle->stStartCharacterBattleSelection();
+    }
     public function argDrawRevengeCard()
     {
         $result = [
@@ -1236,6 +1234,7 @@ class Game extends \Table
     public function crewMove(): void
     {
         $this->map->crewMove();
+        $this->battle->battleLocation('nextCharacter');
         $this->completeAction();
     }
     public function stDrawRevengeCard()
@@ -1283,7 +1282,7 @@ class Game extends \Table
                             ]),
                         ]);
                     } elseif ($card['action'] === 'crew-move') {
-                        $nextState = $this->map->crewMove();
+                        $this->map->crewMove();
                         $this->eventLog(clienttranslate('${buttons} The crew moves'), [
                             'buttons' => notifyButtons([
                                 ['name' => $this->decks->getDeckName($card['deck']), 'dataId' => $card['id'], 'dataType' => 'revenge'],
@@ -1313,7 +1312,7 @@ class Game extends \Table
                 // ) {
                 // }
                 if ($currentState === $this->gamestate->state(true, false, true)['name']) {
-                    $this->nextState('nextCharacter');
+                    $this->battle->battleLocation('nextCharacter');
                 }
             }
         );

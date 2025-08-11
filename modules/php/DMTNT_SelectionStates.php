@@ -33,11 +33,11 @@ class DMTNT_SelectionStates
     public function actMoveSelection(?int $x, ?int $y): void
     {
         $stateData = $this->getState(null);
+        $characterId = $stateData['characterId'];
         if ($stateData['id'] === 'gusMovement') {
         } else {
-            $this->game->_actMove('actMoveSelection', $x, $y);
+            $this->game->_actMove('actMoveSelection', $x, $y, $characterId);
         }
-        $characterId = $stateData['characterId'];
         $data = [
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
@@ -77,7 +77,7 @@ class DMTNT_SelectionStates
         $tokenPositions[$targetPosId][] = $token;
         // $tokenPositions[$currentPosId]
         $this->game->gameData->set('tokenPositions', $tokenPositions);
-        $stateChanged = $this->game->map->checkCrewPosition($token['id']);
+        $stateChanged = $this->game->battle->battleLocation($stateData['nextState']);
 
         $this->game->markChanged('map');
         $data = [

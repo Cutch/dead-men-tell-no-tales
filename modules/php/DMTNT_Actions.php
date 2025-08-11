@@ -9,9 +9,9 @@ class DMTNT_Actions
 {
     private $actions;
     private Game $game;
-    public function isSweltering(): bool
+    public function isSweltering(?string $characterId = null): bool
     {
-        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        [$x, $y] = $this->game->getCharacterPos($characterId ?? $this->game->character->getTurnCharacterId());
         $currentTile = $this->game->map->getTileByXY($x, $y);
         if ($currentTile) {
             $badFatigueValues = $this->game->map->convertFatigueToDie();
@@ -23,26 +23,29 @@ class DMTNT_Actions
     {
         return $this->game->gameData->get('escaped');
     }
-    public function hasTreasure(): bool
+    public function hasTreasure(?string $characterId = null): bool
     {
         return sizeof(
-            array_filter($this->game->character->getTurnCharacter()['tokenItems'], function ($d) {
-                return $d['isTreasure'] && $d['treasure'] === 'treasure';
-            })
+            array_filter(
+                $this->game->character->getCharacterData($characterId ?? $this->game->character->getTurnCharacterId())['tokenItems'],
+                function ($d) {
+                    return $d['isTreasure'] && $d['treasure'] === 'treasure';
+                }
+            )
         ) > 0;
     }
-    public function tooManyDeckhands(): bool
+    public function tooManyDeckhands(?string $characterId = null): bool
     {
-        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        [$x, $y] = $this->game->getCharacterPos($characterId ?? $this->game->character->getTurnCharacterId());
         $currentTile = $this->game->map->getTileByXY($x, $y);
         if ($currentTile) {
             return $currentTile['deckhand'] >= 3;
         }
         return false;
     }
-    public function twoDeckhands(): bool
+    public function twoDeckhands(?string $characterId = null): bool
     {
-        [$x, $y] = $this->game->getCharacterPos($this->game->character->getTurnCharacterId());
+        [$x, $y] = $this->game->getCharacterPos($characterId ?? $this->game->character->getTurnCharacterId());
         $currentTile = $this->game->map->getTileByXY($x, $y);
         if ($currentTile) {
             return $currentTile['deckhand'] >= 2;

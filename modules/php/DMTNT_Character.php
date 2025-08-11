@@ -298,6 +298,9 @@ class DMTNT_Character
     }
     public function activateCharacter(string $characterId): void
     {
+        if ($this->game->getBgaEnvironment() == 'studio') {
+            $this->game->log('activateCharacter', $characterId);
+        }
         $characterData = $this->getCharacterData($characterId);
 
         $playerId = (int) $this->game->getActivePlayerId();

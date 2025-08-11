@@ -834,7 +834,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           }
           break;
         case 'characterBattleSelection':
-          console.log('characterBattleSelection', this.gamedatas.characterBattleSelection.playerIds, this.player_id);
           const playerIds = Object.entries(this.gamedatas.characterBattleSelection.playerIds).reduce((acc, [key, value]) => {
             if (!acc[value]) acc[value] = [];
             acc[value].push(key);
@@ -842,7 +841,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           }, {});
 
           playerIds[this.player_id].forEach((characterId) => {
-            this.statusBar.addActionButton(_('Fight ${characterId}').replace('${characterId}', characterId), () => {
+            this.statusBar.addActionButton(_('Fight ${character}').replace('${character}', this.data[characterId].options.name), () => {
               this.bgaPerformAction('actFightMe', { characterId });
             });
           });

@@ -61,12 +61,13 @@ $interrupt = 20;
 $battle = 30;
 $battleSelection = 31;
 $postBattle = 32;
+$startCharacterBattleSelection = 38;
+$characterBattleSelection = 39;
 $crewMovement = 70;
 $characterSelection = 71;
 $cardSelection = 72;
 $itemSelection = 73;
 $characterMovement = 74;
-$characterBattleSelection = 75;
 $undo = 96;
 $changeZombiePlayer = 97;
 $gameEnd = 99;
@@ -82,6 +83,7 @@ $interruptScreens = [
     'characterBattleSelection' => $characterBattleSelection,
     'undo' => $undo,
     'changeZombiePlayer' => $changeZombiePlayer,
+    'startCharacterBattleSelection' => $startCharacterBattleSelection,
 ];
 
 $machinestates = [
@@ -246,16 +248,6 @@ $machinestates = [
         'possibleactions' => ['actMoveSelection'],
         'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
-    $characterBattleSelection => [
-        'name' => 'characterBattleSelection',
-        'description' => clienttranslate('A battle is starting'),
-        'descriptionmyturn' => clienttranslate('A crew member must be battled'),
-        'type' => 'multipleactiveplayer',
-        'args' => 'argCharacterBattleSelection',
-        'action' => 'stCharacterBattleSelection',
-        'possibleactions' => ['actFightMe', 'actDontFight'],
-        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
-    ],
     $itemSelection => [
         'name' => 'itemSelection',
         'description' => clienttranslate('${character_name} is selecting an item'),
@@ -314,6 +306,24 @@ $machinestates = [
             'endTurn' => $nextCharacter,
             'changeZombiePlayer' => $changeZombiePlayer,
         ],
+    ],
+    $startCharacterBattleSelection => [
+        'name' => 'startCharacterBattleSelection',
+        'description' => clienttranslate('A battle is starting'),
+        'descriptionmyturn' => clienttranslate('A crew member must be battled'),
+        'type' => 'game',
+        'action' => 'stStartCharacterBattleSelection',
+        'transitions' => ['characterBattleSelection' => $characterBattleSelection],
+    ],
+    $characterBattleSelection => [
+        'name' => 'characterBattleSelection',
+        'description' => clienttranslate('A battle is starting'),
+        'descriptionmyturn' => clienttranslate('A crew member must be battled'),
+        'type' => 'multipleactiveplayer',
+        'args' => 'argCharacterBattleSelection',
+        'action' => 'stCharacterBattleSelection',
+        'possibleactions' => ['actFightMe', 'actDontFight'],
+        'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $interrupt => [
         'name' => 'interrupt',
