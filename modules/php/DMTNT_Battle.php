@@ -14,7 +14,7 @@ class DMTNT_Battle
     {
         $this->game = $game;
     }
-    private function getNextBattle(): ?string
+    public function getNextBattle(): ?string
     {
         $characters = $this->game->character->getAllCharacterData(false);
         $battleXY = null;
@@ -256,17 +256,22 @@ class DMTNT_Battle
                                 'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
                             ];
                         }, array_values($targets)),
-                        ...$battle['characterId'] === 'garrett'
-                            ? array_map(function ($d) {
-                                return [
-                                    'action' => 'actMakeThemFlee',
-                                    'type' => 'action',
-                                    'targetId' => $d['id'],
-                                    'targetName' => $d['enemyName'],
-                                    'targetDie' => $d['battle'],
-                                    'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
-                                ];
-                            }, array_values($targets))
+                        ...$battle['characterId'] === 'garrett' && !$battle['includeAdjacent']
+                            ? array_map(
+                                function ($d) {
+                                    return [
+                                        'action' => 'actMakeThemFlee',
+                                        'type' => 'action',
+                                        'targetId' => $d['id'],
+                                        'targetName' => $d['enemyName'],
+                                        'targetDie' => $d['battle'],
+                                        'suffix_name' => array_key_exists('suffix', $d) ? $d['suffix'] : '',
+                                    ];
+                                },
+                                array_filter(array_values($targets), function ($d) {
+                                    return $d['type'] != 'guard';
+                                })
+                            )
                             : [],
                     ]
                     : [],

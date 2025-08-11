@@ -116,6 +116,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 'Strength',
               )}: </span><span class="value"></span></div>
               <div class="item line"><div class="fa6 fa6-solid fa6-toolbox"></div><span class="label">${_('Item')}: </span><span class="value"></span></div>
+              <div class="treasure line" style="display:none"><div class="fa6 fa6-solid fa6-gem"></div><span class="label">${_('Carrying Treasure')}</div>
             </div>
           </div>`,
         );
@@ -139,6 +140,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
       const strength = Math.min(cutlassCount + parseInt(character.tempStrength ?? 0, 10), 4);
       playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
+      playerSideContainer.querySelector(`.treasure`).style.display = character.tokenItems.some((d) => d.treasure === 'treasure')
+        ? ''
+        : 'none';
 
       playerSideContainer.querySelector(`.item .value`).innerHTML = item
         ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
@@ -286,6 +290,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         `${this.gamedatas.tiles.reduce((acc, d) => acc + (d.deckhand ? parseInt(d.deckhand, 10) : 0), 0)}/30`;
       gameInfoSidePanel.querySelector('.characters-left .value').innerHTML = `${this.gamedatas.remainingCharacters ?? 0}`;
       gameInfoSidePanel.querySelector('.map-left .value').innerHTML = `${this.gamedatas.decks?.['tile']?.count ?? 20}`;
+      gameInfoSidePanel.querySelector('.explosions-left .value').innerHTML = `${this.gamedatas.explosions ?? 0}`;
     }
   },
   renderTokens(container, tokens) {
@@ -368,6 +373,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
         <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
         <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
+        <div class="explosions-left"><div class="fa6 fa6-solid fa6-explosion"></div><span class="label">${_('Explosions')}: </span><span class="value">0</span><span>/7</span></div>
         </div>`,
       );
     }

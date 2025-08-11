@@ -40,7 +40,6 @@ class DMTNT_GameData
         'activateCharacters' => [],
         'actInterruptState' => [],
         'characterPositions' => [],
-        'battleLocations' => [],
         'deadCharacters' => [],
         'destroyedItems' => [],
         'destroyedTokens' => [],
@@ -51,6 +50,7 @@ class DMTNT_GameData
         'tempActions' => 0,
         'escaped' => false,
         'treasures' => 0,
+        'battleLocationState' => null,
     ];
     public function __construct(Game $game)
     {

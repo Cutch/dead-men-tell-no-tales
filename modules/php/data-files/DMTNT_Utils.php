@@ -190,8 +190,10 @@ if (!function_exists('addId')) {
     }
     function toId(array $array)
     {
-        return array_map(function ($d) {
-            return $d['id'];
-        }, $array);
+        return array_values(
+            array_map(function ($d) {
+                return $d['id'];
+            }, $array)
+        );
     }
 }
