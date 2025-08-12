@@ -56,6 +56,23 @@ if (!function_exists('addId')) {
             )
         );
     }
+    function array_unique_nested_recursive(array $data, string $key)
+    {
+        $accumulator = [];
+        array_walk($data, function (&$items, $k) use ($key, &$accumulator) {
+            for ($i = 0; $i < sizeof($items); $i++) {
+                $item = $items[$i];
+                $id = $item[$key];
+                if (isset($accumulator[$id])) {
+                    $i--;
+                    array_splice($items, $i, 1);
+                }
+                $accumulator[$id] = true;
+            }
+        });
+
+        return $data;
+    }
     function array_orderby()
     {
         $args = func_get_args();

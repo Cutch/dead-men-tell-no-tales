@@ -122,6 +122,11 @@ class Game extends \Table
             return $args;
         });
     }
+    public function getTokenPositions(): array
+    {
+        $tokenPositions = array_unique_nested_recursive($this->gameData->get('tokenPositions'), 'id');
+        return $tokenPositions;
+    }
     public function getTreasuresNeeded(): int
     {
         $characterCount = sizeof($this->character->getAllCharacterIds());
@@ -274,7 +279,7 @@ class Game extends \Table
         });
         [$x, $y] = $this->getCharacterPos($characterId);
         $xyId = $this->map->xy($x, $y);
-        $tokenPositions = $this->gameData->get('tokenPositions');
+        $tokenPositions = $this->getTokenPositions();
         if (!array_key_exists($xyId, $tokenPositions)) {
             $tokenPositions[$xyId] = [];
         }
@@ -490,7 +495,7 @@ class Game extends \Table
                         $tokens[] = $this->getTokenData($card2);
                     }
                 }
-                $this->gameData->set('tokenPositions', [...$this->gameData->get('tokenPositions'), $this->map->xy($x, $y) => $tokens]);
+                $this->gameData->set('tokenPositions', [...$this->getTokenPositions(), $this->map->xy($x, $y) => $tokens]);
             }
 
             $this->map->placeMap(
@@ -604,7 +609,7 @@ class Game extends \Table
     {
         $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
         $xyId = $this->map->xy(...$xy);
-        $tokenPositions = $this->gameData->get('tokenPositions');
+        $tokenPositions = $this->getTokenPositions();
         if (array_key_exists($xyId, $tokenPositions)) {
             return array_values(
                 array_map(
@@ -633,7 +638,7 @@ class Game extends \Table
     }
     public function getEnemiesByLocation(bool $includeAdjacent, array $xy): array
     {
-        $tokenPositions = $this->gameData->get('tokenPositions');
+        $tokenPositions = $this->getTokenPositions();
         $xyIds = [$this->map->xy(...$xy)];
         if ($includeAdjacent) {
             if ($this->map->isEscapeTile($this->map->xy(...$xy))) {
@@ -895,7 +900,7 @@ class Game extends \Table
     {
         $this->actions->spendActionCost('actPickupToken');
 
-        $tokenPositions = $this->gameData->get('tokenPositions');
+        $tokenPositions = $this->getTokenPositions();
         $characterId = $this->character->getTurnCharacterId();
         [$x, $y] = $this->getCharacterPos($characterId);
         $xyId = $this->map->xy($x, $y);
@@ -942,7 +947,7 @@ class Game extends \Table
 
             [$x, $y] = $this->getCharacterPos($characterId);
             $xyId = $this->map->xy($x, $y);
-            $tokenPositions = $this->gameData->get('tokenPositions');
+            $tokenPositions = $this->getTokenPositions();
             if (!array_key_exists($xyId, $tokenPositions)) {
                 $tokenPositions[$xyId] = [];
             }
@@ -1537,7 +1542,7 @@ class Game extends \Table
                     return ['name' => $d['token'], 'id' => $d['id'], 'type' => 'enemy'];
                 }
             }, $tokens);
-        }, $this->gameData->get('tokenPositions'));
+        }, $this->getTokenPositions());
         $this->getAllPlayers($result);
     }
     public function getItemData(&$result): void

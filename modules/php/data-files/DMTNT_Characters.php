@@ -96,7 +96,7 @@ class DMTNT_CharactersData
                             }
                         };
                         $targetTile = $game->map->getTileByXY($data['x'], $data['y']);
-                        $tokenPositions = $game->gameData->get('tokenPositions');
+                        $tokenPositions = $game->getTokenPositions();
 
                         if (array_key_exists('path', $data)) {
                             $pathTile = $game->map->getTileById($data['path']);

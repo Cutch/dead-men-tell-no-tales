@@ -60,7 +60,7 @@ class DMTNT_SelectionStates
         $crewTokenId = $stateData['crew']['id'];
 
         $targetPosId = $this->game->map->xy($x, $y);
-        $tokenPositions = $this->game->gameData->get('tokenPositions');
+        $tokenPositions = $this->game->getTokenPositions();
         $token = array_values(
             array_filter(array_merge(...array_values($tokenPositions)), function ($d) use ($crewTokenId) {
                 return $d['id'] === $crewTokenId;

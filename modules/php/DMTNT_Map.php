@@ -535,7 +535,7 @@ EOD;
             }
 
             // Remove tokens from location, must come after character death if they drop
-            $tokenPositions = $this->game->gameData->get('tokenPositions');
+            $tokenPositions = $this->game->getTokenPositions();
             if (array_key_exists($tileXY, $tokenPositions)) {
                 $this->game->gameData->set('destroyedTokens', [
                     ...$this->game->gameData->get('destroyedTokens'),
@@ -665,7 +665,7 @@ EOD;
     public function getCrew(): array
     {
         $crew = [];
-        $tokenPositions = $this->game->gameData->get('tokenPositions');
+        $tokenPositions = $this->game->getTokenPositions();
         array_walk($tokenPositions, function ($tokens, $xy) use (&$crew) {
             foreach ($tokens as $token) {
                 if (!$token['isTreasure']) {
@@ -774,7 +774,7 @@ EOD;
                     $nextState = false;
                 } elseif (sizeof($targetTilesIds) === 1) {
                     $targetPosId = $targetTilesIds[0];
-                    $tokenPositions = $this->game->gameData->get('tokenPositions');
+                    $tokenPositions = $this->game->getTokenPositions();
                     $tokenPositions[$currentPosId] = array_values(
                         array_filter($tokenPositions[$currentPosId], function ($d) use ($crewToken) {
                             return $d['id'] !== $crewToken['id'];

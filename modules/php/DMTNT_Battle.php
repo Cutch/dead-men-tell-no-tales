@@ -330,7 +330,7 @@ class DMTNT_Battle
             $this->game->incStat(1, 'crew_eliminated', $this->game->character->getCharacterData($battle['characterId'])['playerId']);
 
             $isCaptain = $battle['target']['type'] == 'captain';
-            $tokenPositions = $this->game->gameData->get('tokenPositions');
+            $tokenPositions = $this->game->getTokenPositions();
             if ($isCaptain) {
                 $tokenPositions[$this->game->map->xy($x, $y)] = array_values(
                     array_filter($tokenPositions[$this->game->map->xy($x, $y)], function ($token) {
@@ -396,7 +396,7 @@ class DMTNT_Battle
         $this->game->eventLog(clienttranslate('${character_name} makes the crew retreat'), [
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
         ]);
-        $tokenPositions = $this->game->gameData->get('tokenPositions');
+        $tokenPositions = $this->game->getTokenPositions();
 
         $x = 0;
         $y = 0;

@@ -113,7 +113,7 @@ class DMTNT_Actions
                 'requires' => function (Game $game, $action) {
                     $xy = $game->getCharacterPos($game->character->getTurnCharacterId());
                     $xyId = $game->map->xy(...$xy);
-                    $tokenPositions = $game->gameData->get('tokenPositions');
+                    $tokenPositions = $game->getTokenPositions();
                     if (array_key_exists($xyId, $tokenPositions)) {
                         return sizeof(
                             array_filter($tokenPositions[$xyId], function ($d) {

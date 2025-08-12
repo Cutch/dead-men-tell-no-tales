@@ -204,9 +204,6 @@ export class Map {
     this.selectionPosition = null;
     if (Array.isArray(selection)) selection = selection.reduce((acc, d) => ({ ...acc, [d]: d }), {});
     Object.entries(selection).forEach(([tileId, count]) => {
-      // if (tileId == 'tracker') {
-      //   return;
-      // }
       const elem = this.container.querySelector(`.${tileId}-base .tile-selector`);
       elem.style.display = '';
       const dot = elem.querySelector('.dot');
