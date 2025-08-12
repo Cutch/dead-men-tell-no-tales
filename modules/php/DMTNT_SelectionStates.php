@@ -116,6 +116,7 @@ class DMTNT_SelectionStates
         }
         if ($took) {
             $this->game->eventLog(clienttranslate('${character_name} took the ${item}'), [
+                'i18n' => ['item'],
                 'usedActionId' => 'actPickupToken',
                 'item' => $this->game->data->getItems()[$itemId]['name'],
             ]);
@@ -133,6 +134,7 @@ class DMTNT_SelectionStates
             );
         } else {
             $this->game->eventLog(clienttranslate('${character_name} picked up ${item}'), [
+                'i18n' => ['item'],
                 'usedActionId' => 'actPickupToken',
                 'item' => $this->game->data->getItems()[$itemId]['name'],
                 'character_name' => $this->game->getCharacterHTML($characterId),

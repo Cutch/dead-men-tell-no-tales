@@ -342,6 +342,7 @@ class Game extends \Table
         ];
         $data['sendNotification'] = function () use ($value, $characterName, &$notificationSent, $action) {
             $this->notify('rollBattleDie', clienttranslate('${character_name} rolled a ${value} (${action})'), [
+                'i18n' => ['action'],
                 'value' => $value,
                 'character_name' => $this->getCharacterHTML($characterName),
                 'characterId' => $characterName,
@@ -923,6 +924,7 @@ class Game extends \Table
             $tokenItems[$characterId][] = $token;
             $this->gameData->set('tokenItems', $tokenItems);
             $this->eventLog(clienttranslate('${character_name} picked up a ${item}'), [
+                'i18n' => ['item'],
                 'usedActionId' => 'actPickupToken',
                 'item' => $this->data->getTreasure()[$item]['name'],
             ]);
@@ -956,6 +958,7 @@ class Game extends \Table
             $this->gameData->set('tokenPositions', $tokenPositions);
 
             $this->eventLog(clienttranslate('${character_name} dropped a ${item}'), [
+                'i18n' => ['item'],
                 'usedActionId' => 'actDrop',
                 'item' => $treasure['name'],
                 'character_name' => $this->getCharacterHTML($characterId),
@@ -1050,6 +1053,7 @@ class Game extends \Table
                 $notificationSent = false;
                 $skill['sendNotification'] = function () use (&$skill, $_this, &$notificationSent) {
                     $_this->notify('notify', clienttranslate('${character_name} used the skill ${skill_name}'), [
+                        'i18n' => ['skill_name'],
                         'skill_name' => $skill['name'],
                         'usedActionId' => 'actUseSkill',
                         'usedActionName' => $skill['name'],

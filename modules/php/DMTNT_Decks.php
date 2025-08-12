@@ -201,6 +201,7 @@ class DMTNT_Decks
             $gameData = [];
             $this->game->getDecks($gameData);
             $results = [
+                'i18n' => ['deckName'],
                 'deck' => $deck,
                 'deckName' => $this->getDeckName($deck),
                 'gameData' => $gameData,
