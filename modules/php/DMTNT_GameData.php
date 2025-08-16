@@ -49,6 +49,7 @@ class DMTNT_GameData
         'newTileCount' => 0,
         'tempActions' => 0,
         'escaped' => false,
+        'powderKegExplosion' => true,
         'treasures' => 0,
         'battleLocationState' => null,
     ];

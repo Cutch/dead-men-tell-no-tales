@@ -153,11 +153,12 @@ class DMTNT_CharactersData
                         $card1 = $data['card'];
                         $card2 = $game->decks->pickCard('revenge');
 
-                        $game->eventLog('Titian drew ${buttons}', [
+                        $game->eventLog(clienttranslate('${character_name} drew ${buttons}'), [
                             'buttons' => notifyButtons([
                                 ['name' => $game->decks->getDeckName('revenge'), 'dataId' => $card1['id'], 'dataType' => 'revenge'],
                                 ['name' => $game->decks->getDeckName('revenge'), 'dataId' => $card2['id'], 'dataType' => 'revenge'],
                             ]),
+                            'character_name' => $game->getCharacterHTML($char['id']),
                         ]);
 
                         $game->cardDrawEvent($card2, 'revenge');

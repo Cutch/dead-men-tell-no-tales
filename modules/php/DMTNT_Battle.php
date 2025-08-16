@@ -132,7 +132,6 @@ class DMTNT_Battle
     public function startBattle(int $targetId, ?string $characterId = null, ?string $nextState = 'playerTurn')
     {
         $characterId = $characterId ?? $this->game->character->getTurnCharacterId();
-        $this->game->log('character', $characterId);
         $this->game->character->activateCharacter($characterId);
 
         $battle = $this->game->gameData->getBattleData();

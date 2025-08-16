@@ -81,6 +81,7 @@ class Game extends \Table
             'random' => 103,
             'soloCount' => 104,
             'doubleCount' => 105,
+            'powderKegExplosion' => 106,
         ]);
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
@@ -1444,9 +1445,12 @@ class Game extends \Table
     }
     public function win()
     {
-        $eloMapping = [5, 10, 15];
+        $eloMapping = [7, 10, 15];
 
-        $score = $eloMapping[$this->gameData->get('difficulty')] + ($this->gameData->get('captainFromm') ? 2 : 0);
+        $score =
+            $eloMapping[$this->gameData->get('difficulty')] +
+            ($this->gameData->get('captainFromm') ? 2 : 0) -
+            ($this->gameData->get('powderKegExplosion') ? 3 : 0);
         $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
         $this->eventLog(clienttranslate('Win!'));
         $this->nextState('endGame');
@@ -1830,6 +1834,8 @@ class Game extends \Table
         $this->gameData->set('expansion', $this->getGameStateValue('expansion'));
         $this->gameData->set('difficulty', $this->getGameStateValue('difficulty'));
         $this->gameData->set('captainFromm', $this->getGameStateValue('captainFromm') == 0);
+        $this->gameData->set('powderKegExplosion', $this->getGameStateValue('powderKegExplosion') == 0);
+
         $this->gameData->set(
             'characterCount',
             sizeof($players) === 1

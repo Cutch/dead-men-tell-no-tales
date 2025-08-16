@@ -563,11 +563,13 @@ EOD;
             $tile['fire'] == $tile['explosion']
         ) {
             $tile['exploded'] = 1;
-            $this->game->incStat(1, 'explosions');
-            // Advance the tracker
-            $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
-            if ($this->game->gameData->get('explosions') == 7) {
-                $this->game->lose('explosion');
+            if ($this->game->gameData->get('powderKegExplosion')) {
+                $this->game->incStat(1, 'explosions');
+                // Advance the tracker
+                $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
+                if ($this->game->gameData->get('explosions') == 7) {
+                    $this->game->lose('explosion');
+                }
             }
 
             $this->game->eventLog(clienttranslate('The barrel in ${buttons} exploded'), [
