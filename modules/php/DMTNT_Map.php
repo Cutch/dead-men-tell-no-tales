@@ -768,6 +768,7 @@ EOD;
                             'id' => 'moveCrew',
                             'crew' => $crewToken,
                             'currentPosId' => $currentPosId,
+                            'currentState' => $this->game->gamestate->state(true, false, true)['name'],
                         ],
                         $this->game->character->getTurnCharacterId(),
                         false,

@@ -80,14 +80,18 @@ class DMTNT_SelectionStates
         $this->game->markChanged('map');
         $data = [
             'characterId' => $characterId,
-            'nextState' => $stateData['nextState'],
+            'nextState' => $this->game->battle->getBattleState() === 1 ? false : $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
         ];
         $this->completeSelectionState($data);
         // If this is the first call it will be player turn, otherwise it will use the battle's next state
 
         if (sizeof($this->getPendingStates()) == 0) {
-            if ($this->game->battle->battleLocation('playerTurn') == 0) {
+            if (
+                $this->game->battle->battleLocation(
+                    array_key_exists('currentState', $stateData) ? $stateData['currentState'] : 'playerTurn'
+                ) == 0
+            ) {
                 // $this->game->character->activateCharacter($this->game->character->getTurnCharacterId());
                 // $this->game->nextState('playerTurn');
             }

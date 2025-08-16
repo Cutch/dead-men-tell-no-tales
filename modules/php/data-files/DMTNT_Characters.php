@@ -85,6 +85,7 @@ class DMTNT_CharactersData
                                             'crew' => $crewToken,
                                             'currentPosId' => $game->map->xy($pathTile['x'], $pathTile['y']),
                                             'targetTile' => $targetTile,
+                                            'currentState' => $game->gamestate->state(true, false, true)['name'],
                                         ],
                                         $game->character->getTurnCharacterId(),
                                         false,

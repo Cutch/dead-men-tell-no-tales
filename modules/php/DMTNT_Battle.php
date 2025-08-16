@@ -33,18 +33,25 @@ class DMTNT_Battle
         });
         return $battleXY;
     }
-    public function battleLocation(string $nextState): int
+    public function getBattleState(): int
     {
         $battleXY = $this->getNextBattle();
         if ($battleXY) {
             if (!$this->game->gameData->get('battleLocationState')) {
-                $this->game->gameData->set('battleLocationState', $nextState);
-                $this->game->nextState('startCharacterBattleSelection');
                 return 1; // In Starting battle
             }
             return 2; // In Battle
         }
         return 0; // No battle
+    }
+    public function battleLocation(string $nextState): int
+    {
+        $battleState = $this->getBattleState();
+        if ($battleState === 1) {
+            $this->game->gameData->set('battleLocationState', $nextState);
+            $this->game->nextState('startCharacterBattleSelection');
+        }
+        return $battleState;
     }
 
     public function stStartCharacterBattleSelection()
@@ -56,6 +63,8 @@ class DMTNT_Battle
             }
             $this->game->nextState($this->game->gameData->get('battleLocationState'));
             $this->game->gameData->set('battleLocationState', null);
+
+            $this->game->gameData->set('battle', []);
             return;
         }
 
@@ -188,7 +197,7 @@ class DMTNT_Battle
     public function actBattleSelection(int $targetId)
     {
         $battle = $this->game->gameData->getBattleData();
-        $this->startBattle($targetId, $battle['characterId']);
+        $this->startBattle($targetId, $battle['characterId'], array_key_exists('nextState', $battle) ? $battle['nextState'] : 'playerTurn');
     }
     public function actUseStrength()
     {
@@ -387,7 +396,7 @@ class DMTNT_Battle
         $this->game->eventLog(clienttranslate('${character_name} battles again'), [
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
         ]);
-        $this->startBattle((int) $battle['target']['id'], $battle['characterId']);
+        $this->startBattle((int) $battle['target']['id'], $battle['characterId'], $battle['nextState']);
     }
     public function actMakeThemFlee(?string $targetId = null)
     {
@@ -418,6 +427,7 @@ class DMTNT_Battle
                 'id' => 'moveCrew',
                 'crew' => $crewToken,
                 'currentPosId' => $xy,
+                'currentState' => $this->game->gamestate->state(true, false, true)['name'],
             ],
             $battle['characterId'],
             false,
@@ -457,7 +467,7 @@ class DMTNT_Battle
         $isGuard = $battle['target']['type'] == 'guard';
         if (sizeof($this->game->map->getValidAdjacentTiles(...$this->game->getCharacterPos($battle['characterId']))) == 0) {
             $this->game->eventLog(clienttranslate('There is nowhere to move, battling again'));
-            $this->startBattle((int) $battle['target']['id'], $battle['characterId']);
+            $this->startBattle((int) $battle['target']['id'], $battle['characterId'], $battle['nextState']);
         } else {
             if ($isGuard) {
                 if ($battle['result'] == 'win') {
@@ -475,7 +485,7 @@ class DMTNT_Battle
                     $this->game->eventLog(clienttranslate('${character_name} battles again'), [
                         'character_name' => $this->game->getCharacterHTML($battle['characterId']),
                     ]);
-                    $this->startBattle((int) $battle['target']['id'], $battle['characterId']);
+                    $this->startBattle((int) $battle['target']['id'], $battle['characterId'], $battle['nextState']);
                 }
             }
         }
