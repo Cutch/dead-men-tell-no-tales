@@ -416,6 +416,7 @@ class DMTNT_Character
                 'pos' => $char['pos'],
                 'tempStrength' => $char['tempStrength'],
                 'tokenItems' => $char['tokenItems'],
+                'isSweltering' => $this->game->actions->isSweltering($char['characterId']),
             ];
         }, $this->getAllCharacterData());
     }

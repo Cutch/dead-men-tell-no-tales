@@ -135,6 +135,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
         });
       }
+      playerSideContainer.querySelector(`.fatigue`).style.color = character.isSweltering ? 'red' : '';
+      playerSideContainer.querySelector(`.fatigue`).style.fontWeight = character.isSweltering ? 'bold' : '';
+      playerSideContainer.querySelector(`.fatigue .label`).style.color = character.isSweltering ? 'red' : '';
       playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
       playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
       const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
