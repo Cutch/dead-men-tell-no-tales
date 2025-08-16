@@ -563,9 +563,11 @@ class Game extends \Table
     public function stInitializeTile()
     {
         if ($this->decks->getDeck('tile')->getCardOnTop('deck')) {
-            $card = $this->decks->pickCard('tile');
-            $this->gameData->set('newTile', $card);
-            $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+            if ($this->gameData->get('newTile') == null) {
+                $card = $this->decks->pickCard('tile');
+                $this->gameData->set('newTile', $card);
+                $this->gameData->set('newTileCount', $this->gameData->get('newTileCount') + 1);
+            }
             if (sizeof($this->getTilePlacementLocations(false)) > 0) {
                 $this->nextState('placeTile');
             } else {
@@ -597,8 +599,10 @@ class Game extends \Table
     public function stFinalizeTile()
     {
         if ($this->gameData->get('round') == 1 && $this->gameData->get('newTileCount') < 2) {
+            $this->gameData->set('newTile', null);
             $this->nextState('initializeTile');
         } elseif (!$this->decks->getDeck('tile')->getCardOnTop('deck') && !$this->gameData->get('dinghyChecked')) {
+            $this->gameData->set('newTile', null);
             $this->nextState('initializeTile');
         } else {
             $this->gameData->set('newTile', null);
@@ -1405,6 +1409,7 @@ class Game extends \Table
             'characterId' => $this->character->getTurnCharacterId(),
         ];
         $this->hooks->onEndTurn($data);
+        $this->gameData->set('revengePhase', true);
         $this->nextState('drawRevengeCard');
         $this->undo->clearUndoHistory();
     }
@@ -1423,6 +1428,7 @@ class Game extends \Table
     public function stNextCharacter(): void
     {
         $this->incStat(1, 'turn_count');
+        $this->gameData->set('revengePhase', false);
         $this->character->activateNextCharacter();
         $this->gameData->set('escaped', false);
         resetPerTurn($this);

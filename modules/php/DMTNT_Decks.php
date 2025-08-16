@@ -169,6 +169,7 @@ class DMTNT_Decks
         );
         if (sizeof($cards) > 0) {
             $this->getDeck($deck)->moveCard($cards[0]['id'], 'deck');
+            $this->getDeck($deck)->shuffle('deck');
             $gameData = [];
             $this->game->getDecks($gameData);
             $results = [

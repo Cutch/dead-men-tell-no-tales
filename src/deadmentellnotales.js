@@ -560,7 +560,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       case 'nextCharacter':
       case 'finalizeTile':
         if (args.args.characters) this.updatePlayers(args.args);
-        this.map.update(this.gamedatas);
+        this.map.update({ ...this.gamedatas, refresh: true });
         const mapCenter = this.map.getMapCenter();
         this.map.panzoom.pan(mapCenter.x, mapCenter.y);
         break;

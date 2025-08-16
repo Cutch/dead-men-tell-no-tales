@@ -477,10 +477,14 @@ export class Map {
       y: (y - this.minY) * 299 + 250,
     };
   }
-  update({ tiles, characters }) {
+  update({ tiles, characters, refresh }) {
     if (this.newCardPhase) return;
-    if (this.game.gamedatas.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) {
+    if (
+      (this.game.gamedatas.gamestate?.name !== 'characterSelect' && this.lastCharacters !== characters.map((d) => d.id).join(',')) ||
+      refresh
+    ) {
       document.querySelectorAll('.tracker-base .character-token-card-base').forEach((el) => el.remove());
+      document.querySelectorAll('.tile-back-base').forEach((el) => el.remove());
       document.querySelectorAll('.tile-card-base .character-token-card-base').forEach((el) => el.remove());
       document.querySelectorAll('.tile-flip').forEach((el) => el.remove());
     }
