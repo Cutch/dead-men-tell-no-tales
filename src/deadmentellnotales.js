@@ -1018,16 +1018,18 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     }
   },
 
-  addHelpTooltip: function ({ node, text = '', tooltipText = '', iconCSS, tooltipElem = this.tooltip }) {
+  addHelpTooltip: function ({ node, text = '', tooltipText = '', iconCSS, noIcon = false, tooltipElem = this.tooltip }) {
     // game.addTooltip(id, helpString, actionString);
-    if (!node.querySelector('.tooltip')) {
-      node.insertAdjacentHTML(
-        'beforeend',
-        `<div class="tooltip"><div class="dot"><i class="${iconCSS ?? 'fa fa-question'}"></i></div></div>`,
-      );
-
+    if (noIcon ? !node.classList.contains('tooltip') : !node.querySelector('.tooltip')) {
+      if (!noIcon)
+        node.insertAdjacentHTML(
+          'beforeend',
+          `<div class="tooltip"><div class="dot"><i class="${iconCSS ?? 'fa fa-question'}"></i></div></div>`,
+        );
+      else node.classList.add('tooltip');
+      console.log(noIcon, node, node.querySelector('.tooltip'));
       addClickListener(
-        node.querySelector('.tooltip'),
+        noIcon ? node : node.querySelector('.tooltip'),
         'Tooltip',
         () => {
           tooltipElem.show();

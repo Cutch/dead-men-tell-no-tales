@@ -21,7 +21,12 @@ export class Map {
     this.maxY = 0;
     this.minY = 0;
     this.firstLoad = true;
-    const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons"><button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button><button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button><button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button></div></div>`;
+    const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons">
+      <button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button>
+      <button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button>
+      <button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button>
+      <button id="toggle-token"><i class="fa6 fa6-solid fa6-eye-slash"></i></button>
+    </div></div>`;
     document.getElementById('game_play_area').insertAdjacentHTML(
       'beforeend',
       `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;">
@@ -44,6 +49,10 @@ export class Map {
     });
     this.wrapper = $('map-wrapper');
     this.container = $('map-container');
+    on($('toggle-token'), 'click', () => {
+      if (this.wrapper.classList.contains('hide-tokens')) this.wrapper.classList.remove('hide-tokens');
+      else this.wrapper.classList.add('hide-tokens');
+    });
     this.newCardContainer = $('new-card-container');
     this.leftCardContainer = $('left-card-container');
     const defaultScale = 0.5;
@@ -504,7 +513,7 @@ export class Map {
       this.maxY = Math.max(this.maxY, y);
     });
     (tiles ?? this.game.gamedatas.tiles)?.forEach(
-      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed }) => {
+      ({ id: name, x, y, rotate, fire, fire_color: fireColor, deckhand, has_trapdoor: hasTrapdoor, exploded, destroyed, explosion }) => {
         if (name == 'tracker') return;
         const tileKey = this.getKey({ x, y });
         this.positions[tileKey] = name;
@@ -574,12 +583,19 @@ export class Map {
             'beforeend',
             `<div class="trapdoor"></div>
             <div class="dice"></div>
+            <div class="fire-warning" style="display: none"><i class="fa6 fa6-solid fa6-fire"></i></div>
             <div class="barrel-marker"></div>
             <div class="deckhands"></div>
             <div class="tokens treasures"></div>
             <div class="tokens characters"></div>
             <div class="tile-selector" style="display: none"><div class="dot dot--number counter"></div></div>`,
           );
+
+          this.game.addHelpTooltip({
+            node: tileElem.querySelector(`.fire-warning`),
+            text: _('Warning, the next fire level will cause an explosion (either a barrel or the room).'),
+            noIcon: true,
+          });
 
           if (name !== 'dinghy') {
             const diceElem = tileElem.querySelector(`.dice`);
@@ -600,6 +616,9 @@ export class Map {
             card: false,
             scale: 1.5,
           });
+        tileElem.querySelector(`.fire-warning`).style.display =
+          exploded != 1 && destroyed != 1 && (parseInt(fire, 10) + 1 == explosion || fire == 5) ? '' : 'none';
+
         const deckhandElem = tileElem.querySelector(`.deckhands`);
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
