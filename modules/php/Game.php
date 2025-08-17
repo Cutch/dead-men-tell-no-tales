@@ -786,7 +786,7 @@ class Game extends \Table
                     'fatigue' => $fatigue,
                     'character' => $character,
                     'tile' => $tile,
-                    'functionName' => $functionName,
+                    'currentFunctionName' => $functionName,
                 ];
             },
             function (Game $_this, bool $finalizeInterrupt, $data, $character) use ($functionName) {

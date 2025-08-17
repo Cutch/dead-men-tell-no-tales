@@ -855,10 +855,9 @@ EOD;
             $total += $map['deckhand'];
         });
         $this->game->markChanged('map');
-        var_dump($total);
-        // if ($total > 30) {
-        //     $this->game->lose('deckhand');
-        // }
+        if ($total > 30) {
+            $this->game->lose('deckhand');
+        }
     }
     public function decreaseDeckhand(int $x, int $y): void
     {
