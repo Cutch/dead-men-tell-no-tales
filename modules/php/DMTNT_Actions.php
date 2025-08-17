@@ -14,7 +14,7 @@ class DMTNT_Actions
         [$x, $y] = $this->game->getCharacterPos($characterId ?? $this->game->character->getTurnCharacterId());
         $currentTile = $this->game->map->getTileByXY($x, $y);
         if ($currentTile) {
-            $badFatigueValues = $this->game->map->convertFatigueToDie();
+            $badFatigueValues = $this->game->map->convertFatigueToDie($characterId);
             return $currentTile['fire'] >= $badFatigueValues;
         }
         return false;

@@ -84,7 +84,7 @@ class DMTNT_ItemsData
                         $data['actions'] = 0;
                     }
                 },
-                'onMove' => function (Game $game, $item, &$data) {
+                'onMoveFinalize' => function (Game $game, $item, &$data) {
                     if ($item['isActive'] && getUsePerTurn('compass', $game) == 0) {
                         usePerTurn('compass', $game);
                     }

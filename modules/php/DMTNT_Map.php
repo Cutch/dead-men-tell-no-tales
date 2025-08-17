@@ -373,9 +373,10 @@ class DMTNT_Map
 
         return true;
     }
-    public function convertFatigueToDie(): int
+    public function convertFatigueToDie(?string $characterId = null): int
     {
-        $fatigue = $this->game->character->getTurnCharacter()['fatigue'];
+        $characterId = $characterId ?? $this->game->character->getTurnCharacterId();
+        $fatigue = $this->game->character->getCharacterData($characterId)['fatigue'];
         if ($fatigue >= 14) {
             return 2;
         } elseif ($fatigue >= 12) {
