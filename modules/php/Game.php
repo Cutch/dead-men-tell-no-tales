@@ -1759,6 +1759,33 @@ class Game extends \Table
                 }
             }
         }
+        // Temp fix can remove later
+        $deckData = $this->decks->getDecksData();
+        if (
+            $deckData['decks']['tile']['count'] == 0 &&
+            sizeof(
+                array_filter($deckData['decksDiscards']['bag'], function ($d) {
+                    return str_starts_with($d, 'guard');
+                })
+            ) > 0
+        ) {
+            $this->decks->discardCards('bag', 'discard', function ($data, $card) {
+                $isGuard = str_contains($card['type_arg'], 'guard');
+                if ($isGuard) {
+                    $tokens = $this->getTokenPositions();
+                    $pos = bga_rand(0, sizeof($tokens) - 1);
+                    $i = 0;
+                    array_walk($tokens, function (&$value) use ($card, &$i, $pos) {
+                        if ($i === $pos) {
+                            $value = [...$value, $this->getTokenData($card)];
+                        }
+                        $i++;
+                    });
+                    $this->gameData->set('tokenPositions', $tokens);
+                }
+                return $isGuard;
+            });
+        }
 
         if ($stateName === 'placeTile' && $this->gameData->get('newTile') && $this->gameData->get('newTile')['id'] !== 'dinghy') {
             if (sizeof($this->getTilePlacementLocations(false)) == 0) {
