@@ -1,16 +1,3 @@
-@keyframes dmtnt_red-color-transition {
-  0% {
-    color: #f3ff00;
-  }
-
-  70% {
-    color: red;
-  }
-
-  to {
-    color: #f3ff00;
-  }
-}
 #map-container {
   position: relative;
 }
@@ -118,7 +105,7 @@
       left: 175px;
       font-size: 3rem;
       text-shadow: 0 0 5px #000;
-      animation: dmtnt_red-color-transition 2s 1s infinite;
+      animation: dmtnt_red-color-transition 5s infinite;
     }
     > .trapdoor {
       position: absolute;

@@ -1547,6 +1547,9 @@ class Game extends \Table
             unset($d['connections']);
             return $d;
         }, array_values($this->map->getMap()));
+        $result['testSpreadDeckhand'] = $this->map->testSpreadDeckhand();
+        $result['testIncreaseDeckhand'] = $this->map->testIncreaseDeckhand();
+
         $result['explosions'] = $this->gameData->get('explosions');
         $result['tokenPositions'] = array_map(function ($tokens) {
             return array_map(function ($d) {

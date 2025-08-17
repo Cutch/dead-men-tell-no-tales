@@ -294,6 +294,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       gameInfoSidePanel.querySelector('.characters-left .value').innerHTML = `${this.gamedatas.remainingCharacters ?? 0}`;
       gameInfoSidePanel.querySelector('.map-left .value').innerHTML = `${this.gamedatas.decks?.['tile']?.count ?? 20}`;
       gameInfoSidePanel.querySelector('.explosions-left .value').innerHTML = `${this.gamedatas.explosions ?? 0}`;
+      gameInfoSidePanel.querySelector('.deckhand-spread-warning').style.display = this.gamedatas.testSpreadDeckhand ? '' : 'none';
+      gameInfoSidePanel.querySelector('.deckhand-increase-warning').style.display = this.gamedatas.testIncreaseDeckhand ? '' : 'none';
     }
   },
   renderTokens(container, tokens) {
@@ -373,12 +375,22 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         'beforeend',
         `<div class="game-info-panel">
         <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
-        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span></div>
+        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-spread-warning" style="display: none"></i> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-increase-warning" style="display: none"></i></div>
         <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
         <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
         <div class="explosions-left"><div class="fa6 fa6-solid fa6-explosion"></div><span class="label">${_('Explosions')}: </span><span class="value">0</span><span>/7</span></div>
         </div>`,
       );
+      this.addHelpTooltip({
+        node: $('game_play_area').querySelector(`.deckhand-spread-warning`),
+        text: _('Warning, the spread of deckhands will cause a game loss'),
+        noIcon: true,
+      });
+      this.addHelpTooltip({
+        node: $('game_play_area').querySelector(`.deckhand-increase-warning`),
+        text: _('Warning, the spawn of deckhands will cause a game loss'),
+        noIcon: true,
+      });
     }
     this.updateInfoPanel();
   },
@@ -1019,7 +1031,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   },
 
   addHelpTooltip: function ({ node, text = '', tooltipText = '', iconCSS, noIcon = false, tooltipElem = this.tooltip }) {
-    // game.addTooltip(id, helpString, actionString);
     if (noIcon ? !node.classList.contains('tooltip') : !node.querySelector('.tooltip')) {
       if (!noIcon)
         node.insertAdjacentHTML(
@@ -1027,7 +1038,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           `<div class="tooltip"><div class="dot"><i class="${iconCSS ?? 'fa fa-question'}"></i></div></div>`,
         );
       else node.classList.add('tooltip');
-      console.log(noIcon, node, node.querySelector('.tooltip'));
       addClickListener(
         noIcon ? node : node.querySelector('.tooltip'),
         'Tooltip',

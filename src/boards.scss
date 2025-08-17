@@ -136,7 +136,21 @@
   left: 0;
   bottom: 0;
   z-index: 1;
-  .fa6 {
-    width: 1rem;
+  > div {
+    line-height: 1.25;
+  }
+  i.fa6 {
+    font-size: 1.25rem;
+  }
+  div.fa6 {
+    width: 1.25rem;
+    font-size: 1rem;
+  }
+  .deckhand-warning {
+    animation: dmtnt_warning-transition 5s infinite;
+  }
+  .tooltip {
+    transform: unset;
+    position: unset;
   }
 }

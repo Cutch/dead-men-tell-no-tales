@@ -4,6 +4,12 @@ namespace Bga\Games\DeadMenTellNoTales;
 use Exception;
 
 if (!function_exists('addId')) {
+    function array_clone($array)
+    {
+        return array_map(function ($element) {
+            return is_array($element) ? array_clone($element) : (is_object($element) ? clone $element : $element);
+        }, $array);
+    }
     function clamp($current, $min, $max)
     {
         return max($min, min($max, $current));

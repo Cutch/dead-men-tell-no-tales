@@ -593,7 +593,7 @@ export class Map {
 
           this.game.addHelpTooltip({
             node: tileElem.querySelector(`.fire-warning`),
-            text: _('Warning, the next fire level will cause an explosion (either a barrel or the room).'),
+            text: _('Warning, the next fire level will cause an explosion (either a powder keg or the room)'),
             noIcon: true,
           });
 

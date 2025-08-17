@@ -6,6 +6,38 @@ html {
   background-size: 100%;
 }
 .dmtnt {
+  @keyframes dmtnt_red-color-transition {
+    0% {
+      color: red;
+    }
+
+    30% {
+      color: #f3ff00;
+    }
+
+    40% {
+      color: red;
+    }
+    to {
+      color: red;
+    }
+  }
+  @keyframes dmtnt_warning-transition {
+    0% {
+      color: #000;
+    }
+
+    30% {
+      color: red;
+    }
+    40% {
+      color: #000;
+    }
+
+    to {
+      color: #000;
+    }
+  }
   @include meta.load-css('utils/deck');
   @include meta.load-css('utils/dice');
   @include meta.load-css('utils/images');

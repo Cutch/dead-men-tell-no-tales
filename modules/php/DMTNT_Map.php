@@ -572,7 +572,7 @@ EOD;
                 }
             }
 
-            $this->game->eventLog(clienttranslate('The barrel in ${buttons} exploded'), [
+            $this->game->eventLog(clienttranslate('The powder keg in ${buttons} exploded'), [
                 'buttons' => notifyButtons([
                     ['name' => $this->game->decks->getDeckName('tile'), 'dataId' => $tile['id'], 'dataType' => 'tile'],
                 ]),
@@ -798,15 +798,49 @@ EOD;
         // }
         return $nextState;
     }
-
+    public function testIncreaseDeckhand(): bool
+    {
+        $total = 0;
+        array_walk($this->cachedMap, function ($map) use (&$total) {
+            if ($map['has_trapdoor']) {
+                $total += $map['deckhand'] + 1;
+            } else {
+                $total += $map['deckhand'];
+            }
+        });
+        return $total > 30;
+    }
+    public function testSpreadDeckhand(): bool
+    {
+        $this->iterateMap(function ($tile) {
+            if ($tile['has_trapdoor']) {
+                $currentDeckhand = $tile['deckhand'];
+                $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
+                foreach ($adjacentTiles as $aTileR) {
+                    $aTile = &$this->getTileById($aTileR['id']);
+                    if (!$aTile['has_trapdoor'] && $currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
+                        $aTile['deckhand']++;
+                    }
+                    unset($aTile);
+                }
+            }
+            unset($tile);
+        });
+        $total = 0;
+        array_walk($this->cachedMap, function ($map) use (&$total) {
+            $total += $map['deckhand'];
+        });
+        $this->reloadCache();
+        return $total > 30;
+    }
     public function spreadDeckhand(): void
     {
         $this->iterateMap(function ($tile) {
             if ($tile['has_trapdoor']) {
                 $currentDeckhand = $tile['deckhand'];
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
-                foreach ($adjacentTiles as $aTile) {
-                    $aTile = &$this->getTileById($aTile['id']);
+                foreach ($adjacentTiles as $aTileR) {
+                    $aTile = &$this->getTileById($aTileR['id']);
                     if (!$aTile['has_trapdoor'] && $currentDeckhand > $aTile['deckhand'] && $aTile['escape'] != 1) {
                         $aTile['deckhand']++;
                     }
@@ -820,9 +854,10 @@ EOD;
             $total += $map['deckhand'];
         });
         $this->game->markChanged('map');
-        if ($total > 30) {
-            $this->game->lose('deckhand');
-        }
+        var_dump($total);
+        // if ($total > 30) {
+        //     $this->game->lose('deckhand');
+        // }
     }
     public function decreaseDeckhand(int $x, int $y): void
     {
