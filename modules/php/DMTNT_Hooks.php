@@ -106,11 +106,6 @@ class DMTNT_Hooks
         $this->callHooks(__FUNCTION__, $args, $data);
         return $data;
     }
-    function onGetValidActions(&$data, array $args = [])
-    {
-        $this->callHooks(__FUNCTION__, $args, $data);
-        return $data;
-    }
     function onGetActionCost(&$data, array $args = [])
     {
         $this->callHooks(__FUNCTION__, $args, $data);

@@ -770,7 +770,7 @@ class Game extends \Table
             __FUNCTION__,
             func_get_args(),
             [$this->hooks, 'onMove'],
-            function (Game $_this) use ($x, $y, $character) {
+            function (Game $_this) use ($x, $y, $character, $functionName) {
                 if ($x === null || $y === null) {
                     throw new BgaUserException(clienttranslate('Select a location'));
                 }
@@ -786,6 +786,7 @@ class Game extends \Table
                     'fatigue' => $fatigue,
                     'character' => $character,
                     'tile' => $tile,
+                    'functionName' => $functionName,
                 ];
             },
             function (Game $_this, bool $finalizeInterrupt, $data, $character) use ($functionName) {
@@ -1674,7 +1675,7 @@ class Game extends \Table
         if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn'])) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
-                'actions' => array_values($this->actions->getValidActions()),
+                'actions' => array_values($this->actions->getValidActions(true)),
                 'actionCount' => $character['actions'] + ($character['isActive'] ? $this->gameData->get('tempActions') : 0),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
@@ -1700,7 +1701,7 @@ class Game extends \Table
             $result = [
                 ...$result,
                 'character_name' => $this->getCharacterHTML(),
-                'actions' => array_values($this->actions->getValidActions()),
+                'actions' => array_values($this->actions->getValidActions(true)),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'activeTurnPlayerId' => $character['player_id'],
                 'moves' => $this->map->calculateMoves()['fatigueList'],

@@ -81,13 +81,16 @@ class DMTNT_Actions
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
                     [$x, $y] = $game->getCharacterPos($game->character->getTurnCharacterId());
-                    if ($this->tooManyDeckhands() || $this->hasTreasure() || $this->escaped()) {
+                    if ($this->hasTreasure() || $this->escaped()) {
                         return false;
                     }
                     if (sizeof($game->map->calculateFires()) > 0) {
                         return true;
                     }
                     return false;
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['deckhand' => $this->tooManyDeckhands()];
                 },
             ],
             'actEliminateDeckhand' => [
@@ -103,7 +106,10 @@ class DMTNT_Actions
                     array_walk($tiles, function ($tile) use (&$any) {
                         $any = $any || $tile['deckhand'];
                     });
-                    return $any && !$this->isSweltering() && !$this->hasTreasure() && !$this->escaped();
+                    return $any && !$this->hasTreasure() && !$this->escaped();
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['sweltering' => $this->isSweltering()];
                 },
             ],
             'actPickupToken' => [
@@ -120,13 +126,13 @@ class DMTNT_Actions
                                 return $d['isTreasure'];
                             })
                         ) > 0 &&
-                            !$this->isSweltering() &&
-                            !$this->tooManyDeckhands() &&
-                            !$this->twoDeckhands() &&
                             !$this->hasTreasure() &&
                             !$this->escaped();
                     }
                     return false;
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['sweltering' => $this->isSweltering(), 'deckhand' => $this->twoDeckhands()];
                 },
             ],
             'actRest' => [
@@ -134,7 +140,10 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return $game->character->getTurnCharacter()['fatigue'] > 0 && !$this->tooManyDeckhands() && !$this->escaped();
+                    return $game->character->getTurnCharacter()['fatigue'] > 0 && !$this->escaped();
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['deckhand' => $this->tooManyDeckhands()];
                 },
             ],
             'actDrop' => [
@@ -142,10 +151,10 @@ class DMTNT_Actions
                 'actions' => 0,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0 &&
-                        !$this->isSweltering() &&
-                        !$this->tooManyDeckhands() &&
-                        !$this->escaped();
+                    return sizeof($game->character->getTurnCharacter()['tokenItems']) > 0 && !$this->escaped();
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['sweltering' => $this->isSweltering(), 'deckhand' => $this->tooManyDeckhands()];
                 },
             ],
             'actIncreaseBattleStrength' => [
@@ -160,10 +169,11 @@ class DMTNT_Actions
                         }, $character['tokenItems'])
                     );
                     return (array_key_exists('cutlass', $tokens) ? min($tokens['cutlass'], 4) : 0) + $character['tempStrength'] < 4 &&
-                        !$this->isSweltering() &&
-                        !$this->tooManyDeckhands() &&
                         !$this->hasTreasure() &&
                         !$this->escaped();
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['sweltering' => $this->isSweltering(), 'deckhand' => $this->tooManyDeckhands()];
                 },
             ],
             'actSwapItem' => [
@@ -171,7 +181,10 @@ class DMTNT_Actions
                 'actions' => 1,
                 'type' => 'action',
                 'requires' => function (Game $game, $action) {
-                    return true && !$this->isSweltering() && !$this->tooManyDeckhands() && !$this->escaped();
+                    return !$this->escaped();
+                },
+                'blockedBy' => function (Game $game, $action) {
+                    return ['sweltering' => $this->isSweltering(), 'deckhand' => $this->tooManyDeckhands()];
                 },
             ],
             'actUseSkill' => [
@@ -247,6 +260,9 @@ class DMTNT_Actions
         } else {
             $actionObj = $this->getActions()[$actionId];
             $actionObj['action'] = $actionId;
+            if (array_key_exists('blockedBy', $actionObj)) {
+                $actionObj['blockedBy'] = $actionObj['blockedBy']($this->game, $actionObj);
+            }
             return $actionObj;
         }
     }
@@ -339,17 +355,15 @@ class DMTNT_Actions
             in_array($this->game->gamestate->state(true, false, true)['name'], $actionObj['getState']())) &&
             (!array_key_exists('state', $actionObj) ||
                 in_array($this->game->gamestate->state(true, false, true)['name'], $actionObj['state'])) &&
-            // (!array_key_exists('interruptState', $actionObj)
-            //  ||
-            //     ($this->game->actInterrupt->getLatestInterruptState() &&
-            //         in_array(
-            //             $this->game->actInterrupt->getLatestInterruptState()['data']['currentState'],
-            //             $actionObj['interruptState']
-            //         ))) &&
             (!array_key_exists('interruptState', $actionObj) ||
                 ($this->game->actInterrupt->getLatestInterruptState() &&
                     in_array($actionObj['id'], toId($this->game->actInterrupt->getLatestInterruptState()['data']['skills'])))) &&
             (!array_key_exists('requires', $actionObj) || $actionObj['requires']($this->game, $actionObj, ...$args));
+    }
+    public function checkBlockedBy(array $actionObj, ...$args): array
+    {
+        $blockedBy = array_key_exists('blockedBy', $actionObj) ? $actionObj['blockedBy']($this->game, $actionObj, ...$args) : [];
+        return $blockedBy;
     }
     public function spendActionCost(string $action, ?string $subAction = null, ?string $characterId = null)
     {
@@ -405,16 +419,17 @@ class DMTNT_Actions
             throw new BgaUserException(clienttranslate('This action can not be used this turn'));
         }
     }
-    public function getValidActions()
+    public function getValidActions($leaveBlocked = false)
     {
         // Get some values from the current game situation from the database.
-        $validActionsFiltered = array_filter($this->getActions(), function ($v) {
+        $validActionsFiltered = array_filter($this->getActions(), function ($v) use ($leaveBlocked) {
             $actionCost = $this->getActionCost($v['id']);
             $actions = $this->game->character->getActiveActions();
             $fatigue = $this->game->character->getActiveFatigue();
             // Rock only needs 1 actions, this is in the hindrance expansion
             $this->game->hooks->onSpendActionCost($actionCost);
-            return $this->checkRequirements($v) &&
+            return ($leaveBlocked || sizeof($this->checkBlockedBy($v)) === 0) &&
+                $this->checkRequirements($v) &&
                 (!array_key_exists('actions', $actionCost) || $actions >= $actionCost['actions']) &&
                 (!array_key_exists('fatigue', $actionCost) || $fatigue >= $actionCost['fatigue']);
         });
@@ -429,6 +444,6 @@ class DMTNT_Actions
             1,
             0
         );
-        return $this->game->hooks->onGetValidActions($data);
+        return $data;
     }
 }

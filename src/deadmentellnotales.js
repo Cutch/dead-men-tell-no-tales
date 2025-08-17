@@ -654,15 +654,21 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   //
   getActionSuffixHTML: function (action) {
     let suffix = '';
+    const isBlocked = action['blockedBy'] && Object.values(action['blockedBy']).filter(Boolean).length > 0;
     if (action['targetName']) suffix += ` (${_(action['targetName'])} ${action['targetDie']})`;
     else if (action['character'] != null && !action['global']) suffix += ` (${action['character']})`;
     if (action['suffix']) suffix += ` (${action['suffix']})`;
     if (action['suffix_name']) suffix += ` (${_(action['suffix_name'])})`;
     if (action['tempStrength'] != null)
       suffix += ` +${action['tempStrength']} (${action['defense']} <i class="fa6 fa6-solid fa6-skull"></i> <i class="fa6 fa6-solid fa6-right-left"></i> ${parseInt(action['attack'], 10) + parseInt(action['tempStrength'], 10)} <i class="fa6 fa6-solid fa6-hand-fist"></i>)`;
-    if (action['actions'] != null) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
+    if (action['actions'] != null && !isBlocked) suffix += ` <i class="fa6 fa6-solid fa6-bolt dmtnt__stamina"></i> ${action['actions']}`;
     if (action['fatigue'] != null) suffix += ` <i class="fa6 fa6-solid fa6-person-running dmtnt__health"></i> ${action['fatigue']}`;
     if (action['random'] != null) suffix += ` <i class="fa6 fa6-solid fa6-dice-d6 dmtnt__dice"></i>`;
+    action['blockedBy'] &&
+      Object.keys(action['blockedBy']).forEach((name) => {
+        if (name === 'deckhand' && action['blockedBy'][name]) suffix += ` <i class="fa6 fa6-solid fa6-skull"></i>`;
+        else if (name === 'sweltering' && action['blockedBy'][name]) suffix += ` <i class="fa6 fa6-solid fa6-fire-flame-curved"></i>`;
+      });
     if (action['perTurn'] != null)
       suffix += ` <i class="fa fa-sun-o dmtnt__sun"></i> ` + _('${remaining} left').replace(/\$\{remaining\}/, action['perTurn']);
     return suffix;
@@ -694,121 +700,97 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             const actionId = action.action;
             if (actionId === 'actUseSkill') return;
             const suffix = this.getActionSuffixHTML(action);
-            return this.statusBar.addActionButton(`${this.getActionMappings()[actionId]}${suffix}`, () => {
-              if (actionId === 'actPlaceTile') {
-                this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
-              } else if (actionId === 'actSwapItem') {
-                this.bgaPerformAction('actSwapItem');
-              } else if (actionId === 'actBattleSelection') {
-                this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
-              } else if (actionId === 'actMakeThemFlee') {
-                if (action.targetId) this.bgaPerformAction('actMakeThemFlee', { targetId: action.targetId });
-                else this.bgaPerformAction('actMakeThemFlee');
-              } else if (actionId === 'actDontUseStrength') {
-                if (action.willDie) {
-                  this.confirmationDialog(
-                    _("If you don't use your strength, you will gain > 15 fatigue and be eliminated. Are you sure you want to do this?"),
-                    () => this.bgaPerformAction('actDontUseStrength'),
-                  );
-                } else this.bgaPerformAction('actDontUseStrength');
-              } else if (actionId === 'actDrop') {
-                this.clearActionButtons();
-
-                const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
-                const items = character.tokenItems;
-                items.forEach(({ id, treasure }) => {
-                  const suffix = treasure.split('-')?.[1];
-                  this.statusBar.addActionButton(
-                    this.getActionMappings().actDrop + ` ${getAllData()[treasure + '-token'].options.name}` + (suffix ? ' ' + suffix : ''),
-                    () => {
-                      this.bgaPerformAction('actDrop', { id });
-                    },
-                  );
-                });
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                  },
-                  { color: 'secondary' },
-                );
-              } else if (actionId === 'actDrinkGrog') {
-                this.clearActionButtons();
-
-                const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
-                const rums = character.tokenItems.filter((d) => d.treasure.includes('rum'));
-                rums.forEach(({ id, treasure }) => {
-                  const amount = treasure.split('-')[1];
-                  this.statusBar.addActionButton(this.getActionMappings().actDrinkGrog + ` ${amount}`, () => {
-                    this.bgaPerformAction('actDrinkGrog', { id });
-                  });
-                });
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                  },
-                  { color: 'secondary' },
-                );
-              } else if (actionId === 'actPickupToken') {
-                this.clearActionButtons();
-                const items = this.gamedatas.tokenPositions[this.gamedatas.currentPosition]
-                  .filter((d) => d.type === 'treasure')
-                  .map((d) => d.name);
-                items.forEach((item) => {
-                  const suffix = item.split('-')?.[1];
-                  this.statusBar.addActionButton(
-                    `${_('Pickup')} ${getAllData()[item + '-token'].options.name}` + (suffix ? ' ' + suffix : ''),
-                    () => {
-                      this.bgaPerformAction('actPickupToken', { item });
-                    },
-                  );
-                });
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                  },
-                  { color: 'secondary' },
-                );
-              } else if (actionId === 'actMove') {
-                this.clearActionButtons();
-                this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
-                const showId = this.map.showId;
-                this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
-                  this.bgaPerformAction('actMove', this.map.getSelectionPosition())
-                    .then(() => this.map.hideTileSelectionScreen(showId))
-                    .catch(console.error);
-                });
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                    this.map.hideTileSelectionScreen(showId);
-                  },
-                  { color: 'secondary' },
-                );
-              } else if (actionId === 'actFightFire') {
-                if (!this.gamedatas.canUseBlanket && this.gamedatas.fires.length === 1) {
-                  const id = this.gamedatas.fires[0];
-                  const { x, y } = this.gamedatas.tiles.find((d) => d.id === id);
-                  this.bgaPerformAction('actFightFire', { x, y }).catch(console.error);
-                } else {
+            const isBlocked = action['blockedBy'] && Object.values(action['blockedBy']).filter(Boolean).length > 0;
+            return this.statusBar.addActionButton(
+              `${this.getActionMappings()[actionId]}${suffix}`,
+              () => {
+                if (actionId === 'actPlaceTile') {
+                  this.bgaPerformAction('actPlaceTile', this.map.getNewCardPosition());
+                } else if (actionId === 'actSwapItem') {
+                  this.bgaPerformAction('actSwapItem');
+                } else if (actionId === 'actBattleSelection') {
+                  this.bgaPerformAction('actBattleSelection', { targetId: action.targetId });
+                } else if (actionId === 'actMakeThemFlee') {
+                  if (action.targetId) this.bgaPerformAction('actMakeThemFlee', { targetId: action.targetId });
+                  else this.bgaPerformAction('actMakeThemFlee');
+                } else if (actionId === 'actDontUseStrength') {
+                  if (action.willDie) {
+                    this.confirmationDialog(
+                      _("If you don't use your strength, you will gain > 15 fatigue and be eliminated. Are you sure you want to do this?"),
+                      () => this.bgaPerformAction('actDontUseStrength'),
+                    );
+                  } else this.bgaPerformAction('actDontUseStrength');
+                } else if (actionId === 'actDrop') {
                   this.clearActionButtons();
-                  this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
+
+                  const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
+                  const items = character.tokenItems;
+                  items.forEach(({ id, treasure }) => {
+                    const suffix = treasure.split('-')?.[1];
+                    this.statusBar.addActionButton(
+                      this.getActionMappings().actDrop +
+                        ` ${getAllData()[treasure + '-token'].options.name}` +
+                        (suffix ? ' ' + suffix : ''),
+                      () => {
+                        this.bgaPerformAction('actDrop', { id });
+                      },
+                    );
+                  });
+                  this.statusBar.addActionButton(
+                    _('Cancel'),
+                    () => {
+                      this.onUpdateActionButtons(stateName, args);
+                    },
+                    { color: 'secondary' },
+                  );
+                } else if (actionId === 'actDrinkGrog') {
+                  this.clearActionButtons();
+
+                  const character = this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter);
+                  const rums = character.tokenItems.filter((d) => d.treasure.includes('rum'));
+                  rums.forEach(({ id, treasure }) => {
+                    const amount = treasure.split('-')[1];
+                    this.statusBar.addActionButton(this.getActionMappings().actDrinkGrog + ` ${amount}`, () => {
+                      this.bgaPerformAction('actDrinkGrog', { id });
+                    });
+                  });
+                  this.statusBar.addActionButton(
+                    _('Cancel'),
+                    () => {
+                      this.onUpdateActionButtons(stateName, args);
+                    },
+                    { color: 'secondary' },
+                  );
+                } else if (actionId === 'actPickupToken') {
+                  this.clearActionButtons();
+                  const items = this.gamedatas.tokenPositions[this.gamedatas.currentPosition]
+                    .filter((d) => d.type === 'treasure')
+                    .map((d) => d.name);
+                  items.forEach((item) => {
+                    const suffix = item.split('-')?.[1];
+                    this.statusBar.addActionButton(
+                      `${_('Pickup')} ${getAllData()[item + '-token'].options.name}` + (suffix ? ' ' + suffix : ''),
+                      () => {
+                        this.bgaPerformAction('actPickupToken', { item });
+                      },
+                    );
+                  });
+                  this.statusBar.addActionButton(
+                    _('Cancel'),
+                    () => {
+                      this.onUpdateActionButtons(stateName, args);
+                    },
+                    { color: 'secondary' },
+                  );
+                } else if (actionId === 'actMove') {
+                  this.clearActionButtons();
+                  this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
                   const showId = this.map.showId;
-                  this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
-                    this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
+                  this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
+                    this.bgaPerformAction('actMove', this.map.getSelectionPosition())
                       .then(() => this.map.hideTileSelectionScreen(showId))
                       .catch(console.error);
                   });
-                  if (this.gamedatas.canUseBlanket)
-                    this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
-                      this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
-                        .then(() => this.map.hideTileSelectionScreen(showId))
-                        .catch(console.error);
-                    });
-
                   this.statusBar.addActionButton(
                     _('Cancel'),
                     () => {
@@ -817,27 +799,58 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                     },
                     { color: 'secondary' },
                   );
+                } else if (actionId === 'actFightFire') {
+                  if (!this.gamedatas.canUseBlanket && this.gamedatas.fires.length === 1) {
+                    const id = this.gamedatas.fires[0];
+                    const { x, y } = this.gamedatas.tiles.find((d) => d.id === id);
+                    this.bgaPerformAction('actFightFire', { x, y }).catch(console.error);
+                  } else {
+                    this.clearActionButtons();
+                    this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
+                    const showId = this.map.showId;
+                    this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
+                      this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
+                        .then(() => this.map.hideTileSelectionScreen(showId))
+                        .catch(console.error);
+                    });
+                    if (this.gamedatas.canUseBlanket)
+                      this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
+                        this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
+                          .then(() => this.map.hideTileSelectionScreen(showId))
+                          .catch(console.error);
+                      });
+
+                    this.statusBar.addActionButton(
+                      _('Cancel'),
+                      () => {
+                        this.onUpdateActionButtons(stateName, args);
+                        this.map.hideTileSelectionScreen(showId);
+                      },
+                      { color: 'secondary' },
+                    );
+                  }
+                } else if (actionId === 'actEliminateDeckhand') {
+                  this.clearActionButtons();
+                  this.map.showDeckhandSelection();
+                  this.statusBar.addActionButton(this.getActionMappings().actEliminateDeckhand + `${suffix}`, () => {
+                    this.bgaPerformAction('actEliminateDeckhand', { data: JSON.stringify(this.map.getDeckhandSelection()) })
+                      .then(() => this.map.hideDeckhandSelection())
+                      .catch(console.error);
+                  });
+                  this.statusBar.addActionButton(
+                    _('Cancel'),
+                    () => {
+                      this.onUpdateActionButtons(stateName, args);
+                      this.map.hideDeckhandSelection();
+                    },
+                    { color: 'secondary' },
+                  );
+                } else {
+                  return this.bgaPerformAction(actionId);
                 }
-              } else if (actionId === 'actEliminateDeckhand') {
-                this.clearActionButtons();
-                this.map.showDeckhandSelection();
-                this.statusBar.addActionButton(this.getActionMappings().actEliminateDeckhand + `${suffix}`, () => {
-                  this.bgaPerformAction('actEliminateDeckhand', { data: JSON.stringify(this.map.getDeckhandSelection()) })
-                    .then(() => this.map.hideDeckhandSelection())
-                    .catch(console.error);
-                });
-                this.statusBar.addActionButton(
-                  _('Cancel'),
-                  () => {
-                    this.onUpdateActionButtons(stateName, args);
-                    this.map.hideDeckhandSelection();
-                  },
-                  { color: 'secondary' },
-                );
-              } else {
-                return this.bgaPerformAction(actionId);
-              }
-            });
+              },
+              { disabled: isBlocked },
+            );
           });
       }
       const addSelectionCancelButton = () => {
