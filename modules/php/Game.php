@@ -1766,6 +1766,7 @@ class Game extends \Table
         // Temp fix can remove later
         $deckData = $this->decks->getDecksData();
         if (
+            $stateName === 'playerTurn' &&
             $deckData['decks']['tile']['count'] == 0 &&
             sizeof(
                 array_filter($deckData['decksDiscards']['bag'], function ($d) {
