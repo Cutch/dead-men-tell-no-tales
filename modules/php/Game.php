@@ -479,27 +479,28 @@ class Game extends \Table
             $this->map->placeMap($newTile['id'], $x, $y, $rotate, 0, 'both', 0, 0, 0, 1);
         } else {
             // Get tokens
-            $card = $this->decks->pickCardWithoutLookup('bag');
             $trapdoor = false;
-            if ($card['type_arg'] === 'trapdoor') {
-                $trapdoor = true;
-            } else {
-                $tokens = [$this->getTokenData($card)];
-                if (str_contains($card['type_arg'], 'captain')) {
-                    // TODO check this for captain
-                    $this->decks->discardCards('bag', 'discard', function ($data, $card) {
-                        return str_contains($card['type_arg'], 'captain');
-                    });
-                    $card2 = $this->decks->pickCardWithoutLookup('bag');
-                    if ($card2['type_arg'] === 'trapdoor') {
-                        $trapdoor = true;
-                    } else {
-                        $tokens[] = $this->getTokenData($card2);
+            if ($this->decks->getDeck('bag')->getCardOnTop('deck')) {
+                $card = $this->decks->pickCardWithoutLookup('bag');
+                if ($card['type_arg'] === 'trapdoor') {
+                    $trapdoor = true;
+                } else {
+                    $tokens = [$this->getTokenData($card)];
+                    if (str_contains($card['type_arg'], 'captain')) {
+                        // TODO check this for captain
+                        $this->decks->discardCards('bag', 'discard', function ($data, $card) {
+                            return str_contains($card['type_arg'], 'captain');
+                        });
+                        $card2 = $this->decks->pickCardWithoutLookup('bag');
+                        if ($card2['type_arg'] === 'trapdoor') {
+                            $trapdoor = true;
+                        } else {
+                            $tokens[] = $this->getTokenData($card2);
+                        }
                     }
+                    $this->gameData->set('tokenPositions', [...$this->getTokenPositions(), $this->map->xy($x, $y) => $tokens]);
                 }
-                $this->gameData->set('tokenPositions', [...$this->getTokenPositions(), $this->map->xy($x, $y) => $tokens]);
             }
-
             $this->map->placeMap(
                 $newTile['id'],
                 $x,
@@ -603,7 +604,6 @@ class Game extends \Table
             $this->gameData->set('newTile', null);
             $this->nextState('initializeTile');
         } elseif (!$this->decks->getDeck('tile')->getCardOnTop('deck') && !$this->gameData->get('dinghyChecked')) {
-            $this->gameData->set('newTile', null);
             $this->nextState('initializeTile');
         } else {
             $this->gameData->set('newTile', null);
