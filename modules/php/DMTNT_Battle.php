@@ -44,6 +44,10 @@ class DMTNT_Battle
         }
         return 0; // No battle
     }
+    public function getBattlePhase(): ?string
+    {
+        return $this->game->gameData->get('battleLocationState');
+    }
     public function battleLocation(string $nextState): int
     {
         $battleState = $this->getBattleState();
@@ -198,6 +202,7 @@ class DMTNT_Battle
     {
         $battle = $this->game->gameData->getBattleData();
         $this->startBattle($targetId, $battle['characterId'], array_key_exists('nextState', $battle) ? $battle['nextState'] : 'playerTurn');
+        $this->game->completeAction();
     }
     public function actUseStrength()
     {
@@ -397,6 +402,7 @@ class DMTNT_Battle
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
         ]);
         $this->startBattle((int) $battle['target']['id'], $battle['characterId'], $battle['nextState']);
+        $this->game->completeAction();
     }
     public function actMakeThemFlee(?string $targetId = null)
     {
@@ -455,6 +461,7 @@ class DMTNT_Battle
                 'startCharacterBattleSelection'
             );
         }
+        $this->game->completeAction();
     }
     public function stPostBattle()
     {

@@ -304,7 +304,15 @@ class Game extends \Table
             $this->markChanged('token');
             $this->markChanged('actions');
             $this->markRandomness();
-            $this->nextState($this->gamestate->state(true, false, true)['name'] == 'drawRevengeCard' ? 'nextCharacter' : 'playerTurn');
+            if ($this->battle->getBattlePhase()) {
+                if ($this->battle->getBattlePhase() == 'playerTurn') {
+                    $this->endTurn();
+                } elseif (sizeof($this->selectionStates->getPendingStates()) == 0) {
+                    $this->nextState('startCharacterBattleSelection');
+                }
+            } else {
+                $this->endTurn();
+            }
         } else {
             $this->selectionStates->initiateState(
                 'characterSelection',
@@ -315,7 +323,7 @@ class Game extends \Table
                 ],
                 $this->character->getTurnCharacterId(),
                 false,
-                $this->gamestate->state(true, false, true)['name'] == 'drawRevengeCard' ? 'nextCharacter' : 'playerTurn'
+                $this->gamestate->state(true, false, true)['name'] == 'drawRevengeCard' ? 'nextCharacter' : false
             );
         }
     }
@@ -514,6 +522,16 @@ class Game extends \Table
             );
         }
 
+        $this->eventLog(clienttranslate('${character_name} placed ${buttons}'), [
+            'buttons' => notifyButtons([
+                [
+                    'name' => $newTile['id'] === 'dinghy' ? clienttranslate('Dinghy') : $this->decks->getDeckName('tile'),
+                    'dataId' => $newTile['id'],
+                    'dataType' => 'tile',
+                ],
+            ]),
+            'character_name' => $this->getCharacterHTML(),
+        ]);
         $this->nextState('finalizeTile');
         $this->completeAction(false);
     }
@@ -702,22 +720,24 @@ class Game extends \Table
         );
         return [];
     }
-    public function stPlayerState() {}
+    public function stPlayerState()
+    {
+        $this->gameData->set('battleLocationState', null);
+    }
     public function getUnequippedItems(): array
     {
-        $equippedItems = array_map(
-            function ($d) {
-                return $d['item']['id'];
-            },
-            array_filter($this->character->getAllCharacterData(true), function ($d) {
-                return $d['item'] && !in_array($d['item']['id'], $this->gameData->get('destroyedItems'));
-            })
+        $equippedItems = array_filter(
+            array_merge(
+                array_map(function ($d) {
+                    return $d['item'];
+                }, $this->character->getAllCharacterData(true))
+            )
         );
         $items = [...$this->data->getItems()];
-        array_walk($equippedItems, function ($id, $k) use (&$items) {
-            unset($items[$id]);
+        array_walk($equippedItems, function ($d) use (&$items) {
+            unset($items[$d['id']]);
         });
-        return array_values(toId($items));
+        return array_values(array_diff(array_values(toId($items)), $this->gameData->get('destroyedItems')));
     }
     public function actSwapItem(): void
     {
@@ -1097,6 +1117,7 @@ class Game extends \Table
     }
     public function actEndTurn(): void
     {
+        $this->gameData->set('battleLocationState', null);
         // TODO: Can't end turn early if sweltering
         // Notify all players about the choice to pass.
         // at the end of the action, move to the next state
@@ -1565,20 +1586,9 @@ class Game extends \Table
     }
     public function getItemData(&$result): void
     {
-        $equippedItems = array_filter(
-            array_merge(
-                array_map(function ($d) {
-                    return $d['item'];
-                }, $this->character->getAllCharacterData(true))
-            )
-        );
-        $items = [...$this->data->getItems()];
-        array_walk($equippedItems, function ($d) use (&$items) {
-            unset($items[$d['id']]);
-        });
         $result['treasuresLooted'] = $this->gameData->get('treasures');
         $result['treasuresNeeded'] = $this->getTreasuresNeeded();
-        $result['availableItems'] = array_values(array_diff(array_values(toId($items)), $this->gameData->get('destroyedItems')));
+        $result['availableItems'] = $this->getUnequippedItems();
     }
     public function getGameData(&$result): void
     {

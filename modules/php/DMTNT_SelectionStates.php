@@ -176,12 +176,15 @@ class DMTNT_SelectionStates
         $stateData = $this->getState(null);
         $currentCharacter = $stateData['currentCharacter'];
         $this->game->character->swapToCharacter($currentCharacter, $characterId);
-        if ($this->game->character->getTurnCharacterId() === $characterId) {
-            $this->game->endTurn();
+        if ($this->game->battle->getBattlePhase()) {
+            if ($this->game->battle->getBattlePhase() == 'playerTurn') {
+                $this->game->endTurn();
+            } elseif (sizeof($this->game->selectionStates->getPendingStates()) == 0) {
+                $this->game->nextState('startCharacterBattleSelection');
+            }
         } else {
-            $this->game->nextState('playerTurn');
+            $this->game->endTurn();
         }
-
         $data = [
             'characterId' => $characterId,
             'nextState' => false,
