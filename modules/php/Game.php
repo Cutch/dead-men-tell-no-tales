@@ -794,7 +794,7 @@ class Game extends \Table
                 if ($x === null || $y === null) {
                     throw new BgaUserException(clienttranslate('Select a location'));
                 }
-                $moves = $this->map->calculateMoves()['fatigueList'];
+                $moves = $this->map->calculateMoves(true, $character['id'])['fatigueList'];
                 $tile = $this->map->getTileByXY($x, $y);
                 $fatigue = (int) $moves[$tile['id']];
                 if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
