@@ -92,17 +92,26 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     }
     this.lastCharacters = characters.map((d) => d.id).join(',');
     const scale = 3;
-    characters.forEach((character) => {
-      // Player side board
-      const playerPanel = this.getPlayerPanelElement(character.playerId);
-      const item = character.item;
-      const tokenItems = character.tokenItems;
-      const characterSideId = `player-side-${character.playerId}-${character.id}`;
-      let playerSideContainer = $(characterSideId);
-      if (!playerSideContainer) {
-        playerPanel.insertAdjacentHTML(
-          'beforeend',
-          `<div id="${characterSideId}" class="character-side-container">
+    const playerOrder = this.gamedatas.playerorder.map((d) => parseInt(d, 10));
+    const currentOrder = characters.map((d) => d.id);
+    characters
+      .sort(
+        (a, b) =>
+          playerOrder.indexOf(parseInt(a.playerId, 10)) - playerOrder.indexOf(parseInt(b.playerId, 10)) ||
+          currentOrder.indexOf(a.id) - currentOrder.indexOf(b.id) ||
+          0,
+      )
+      .forEach((character) => {
+        // Player side board
+        const playerPanel = this.getPlayerPanelElement(character.playerId);
+        const item = character.item;
+        const tokenItems = character.tokenItems;
+        const characterSideId = `player-side-${character.playerId}-${character.id}`;
+        let playerSideContainer = $(characterSideId);
+        if (!playerSideContainer) {
+          playerPanel.insertAdjacentHTML(
+            'beforeend',
+            `<div id="${characterSideId}" class="character-side-container">
             <div class="character-image"></div>
             <div>
               <div class="character-name">${this.data[character.id].options.name}</div>
@@ -119,57 +128,58 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               <div class="treasure line" style="display:none"><div class="fa6 fa6-solid fa6-gem"></div><span class="label">${_('Carrying Treasure')}</div>
             </div>
           </div>`,
-        );
-        playerSideContainer = $(characterSideId);
-        addClickListener(playerSideContainer.querySelector(`.character-name`), character.id, () => {
-          this.tooltip.show();
-          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
-        });
-        renderImage(character.id + '-token', playerSideContainer.querySelector(`.character-image`), {
-          scale: 2,
-          pos: 'replace',
-          styles: { '--color': character.characterColor },
-        });
-        addClickListener(playerSideContainer.querySelector(`.character-image`), character.id, () => {
-          this.tooltip.show();
-          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
-        });
-      }
-      playerSideContainer.querySelector(`.fatigue`).style.color = character.isSweltering ? 'red' : '';
-      playerSideContainer.querySelector(`.fatigue`).style.fontWeight = character.isSweltering ? 'bold' : '';
-      playerSideContainer.querySelector(`.fatigue .label`).style.color = character.isSweltering ? 'red' : '';
-      playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
-      playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
-      const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
-      const strength = Math.min(cutlassCount + parseInt(character.tempStrength ?? 0, 10), 4);
-      playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
-      playerSideContainer.querySelector(`.treasure`).style.display = character.tokenItems.some((d) => d.treasure === 'treasure')
-        ? ''
-        : 'none';
-
-      playerSideContainer.querySelector(`.item .value`).innerHTML = item
-        ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
-        : _('None');
-      if (gameData.gamestate?.name !== 'characterSelect') playerSideContainer.style['background-color'] = character?.isActive ? '#fff' : '';
-      if (item)
-        addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.name), () => {
-          this.tooltip.show();
-          renderImage(item.id, this.tooltip.renderByElement(), {
-            withText: true,
-            type: 'tooltip-item',
-            pos: 'replace',
-            rotate: item.rotate,
-            centered: true,
+          );
+          playerSideContainer = $(characterSideId);
+          addClickListener(playerSideContainer.querySelector(`.character-name`), character.id, () => {
+            this.tooltip.show();
+            renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
           });
-        });
+          renderImage(character.id + '-token', playerSideContainer.querySelector(`.character-image`), {
+            scale: 2,
+            pos: 'replace',
+            styles: { '--color': character.characterColor },
+          });
+          addClickListener(playerSideContainer.querySelector(`.character-image`), character.id, () => {
+            this.tooltip.show();
+            renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+          });
+        }
+        playerSideContainer.querySelector(`.fatigue`).style.color = character.isSweltering ? 'red' : '';
+        playerSideContainer.querySelector(`.fatigue`).style.fontWeight = character.isSweltering ? 'bold' : '';
+        playerSideContainer.querySelector(`.fatigue .label`).style.color = character.isSweltering ? 'red' : '';
+        playerSideContainer.querySelector(`.fatigue .value`).innerHTML = `${character.fatigue ?? 0}/${character.maxFatigue ?? 0}`;
+        playerSideContainer.querySelector(`.actions .value`).innerHTML = `${character.actions ?? 0}/${character.maxActions ?? 0}`;
+        const cutlassCount = character.tokenItems.reduce((acc, d) => acc + (d.treasure === 'cutlass' ? 1 : 0), 0);
+        const strength = Math.min(cutlassCount + parseInt(character.tempStrength ?? 0, 10), 4);
+        playerSideContainer.querySelector(`.strength .value`).innerHTML = `${strength ?? 0}`;
+        playerSideContainer.querySelector(`.treasure`).style.display = character.tokenItems.some((d) => d.treasure === 'treasure')
+          ? ''
+          : 'none';
 
-      // Player main board
-      if (gameData.gamestate.name !== 'characterSelect') {
-        const container = $(`players-container`);
-        if (!$(`player-${character.id}`)) {
-          container.insertAdjacentHTML(
-            'beforeend',
-            `<div id="player-${character.id}" class="player-card">
+        playerSideContainer.querySelector(`.item .value`).innerHTML = item
+          ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
+          : _('None');
+        if (gameData.gamestate?.name !== 'characterSelect')
+          playerSideContainer.style['background-color'] = character?.isActive ? '#fff' : '';
+        if (item)
+          addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.name), () => {
+            this.tooltip.show();
+            renderImage(item.id, this.tooltip.renderByElement(), {
+              withText: true,
+              type: 'tooltip-item',
+              pos: 'replace',
+              rotate: item.rotate,
+              centered: true,
+            });
+          });
+
+        // Player main board
+        if (gameData.gamestate.name !== 'characterSelect') {
+          const container = $(`players-container`);
+          if (!$(`player-${character.id}`)) {
+            container.insertAdjacentHTML(
+              'beforeend',
+              `<div id="player-${character.id}" class="player-card">
                 <div class="card">
                   <div class="extra-token"></div>
                   <div class="fatigue-dial"></div>
@@ -183,103 +193,95 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   <div class="token-items"></div>
                 </div>
               </div>`,
-          );
-          renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
-        }
-        document.querySelector(`#player-${character.id} .card`).style['outline'] = character?.isActive
-          ? `5px solid #fff` //#${character.playerColor}
-          : '';
+            );
+            renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
+          }
+          document.querySelector(`#player-${character.id} .card`).style['outline'] = character?.isActive
+            ? `5px solid #fff` //#${character.playerColor}
+            : '';
 
-        const extraTokenElem = document.querySelector(`#player-${character.id} .extra-token`);
-        extraTokenElem.innerHTML = '';
-        const degs = [-2, 19, 35, 57, 76, 98, 118, 138, 156, 181, 208, 225, 248, 272, 294, 320, 341];
-        const dial = document.querySelector(`#player-${character.id} .fatigue-dial .dial-base`);
-        if (dial) dial.style.setProperty('--rotate', `${degs[character.fatigue]}deg`);
-        else
-          renderImage('dial', document.querySelector(`#player-${character.id} .fatigue-dial`), {
+          const extraTokenElem = document.querySelector(`#player-${character.id} .extra-token`);
+          extraTokenElem.innerHTML = '';
+          const degs = [-2, 19, 35, 57, 76, 98, 118, 138, 156, 181, 208, 225, 248, 272, 294, 320, 341];
+          const dial = document.querySelector(`#player-${character.id} .fatigue-dial .dial-base`);
+          if (dial) dial.style.setProperty('--rotate', `${degs[character.fatigue]}deg`);
+          else
+            renderImage('dial', document.querySelector(`#player-${character.id} .fatigue-dial`), {
+              scale,
+              pos: 'replace',
+              card: false,
+              styles: { '--rotate': `${degs[character.fatigue]}deg` },
+            });
+          renderImage('token-action', document.querySelector(`#player-${character.id} .actions-marker`), {
             scale,
             pos: 'replace',
             card: false,
-            styles: { '--rotate': `${degs[character.fatigue]}deg` },
           });
-        renderImage('token-action', document.querySelector(`#player-${character.id} .actions-marker`), {
-          scale,
-          pos: 'replace',
-          card: false,
-        });
 
-        document
-          .querySelector(`#player-${character.id} .actions-marker .image`)
-          .insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${character.actions ?? 0}</div>`);
+          document
+            .querySelector(`#player-${character.id} .actions-marker .image`)
+            .insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${character.actions ?? 0}</div>`);
 
-        character.actions ?? 0;
+          character.actions ?? 0;
 
-        renderImage(character.id + '-token', document.querySelector(`#player-${character.id} .strength-marker`), {
-          scale,
-          pos: 'replace',
-          styles: { '--color': character.characterColor },
-        });
-        const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
-        cutlassMarkersElem.innerHTML = '';
-        for (let i = 0; i < Math.min(cutlassCount, 4); i++) {
-          renderImage('cutlass-token', cutlassMarkersElem, {
+          renderImage(character.id + '-token', document.querySelector(`#player-${character.id} .strength-marker`), {
             scale,
-            pos: 'append',
-            baseCss: 'cutlass-marker',
-            styles: { '--color': '#000', 'box-shadow': '0px 0px 2px 3px var(--color)', left: `${i * 62 + 18}px` },
-          });
-        }
-        document.querySelector(`#player-${character.id} .strength-marker`).style.left = `${strength * 62 + 18}px`;
-        const characterElem = document.querySelector(`#player-${character.id} .character`);
-        renderImage(character.id, characterElem, { scale: 5, pos: 'replace' });
-        addClickListener(characterElem, character.id, () => {
-          this.tooltip.show();
-          renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
-        });
-
-        if (item) {
-          renderImage(item.id, document.querySelector(`#player-${character.id} .item`), {
-            scale: scale,
             pos: 'replace',
+            styles: { '--color': character.characterColor },
           });
-          addClickListener(document.querySelector(`#player-${character.id} .item`), _(item.id), () => {
+          const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
+          cutlassMarkersElem.innerHTML = '';
+          for (let i = 0; i < Math.min(cutlassCount, 4); i++) {
+            renderImage('cutlass-token', cutlassMarkersElem, {
+              scale,
+              pos: 'append',
+              baseCss: 'cutlass-marker',
+              styles: { '--color': '#000', 'box-shadow': '0px 0px 2px 3px var(--color)', left: `${i * 62 + 18}px` },
+            });
+          }
+          document.querySelector(`#player-${character.id} .strength-marker`).style.left = `${strength * 62 + 18}px`;
+          const characterElem = document.querySelector(`#player-${character.id} .character`);
+          renderImage(character.id, characterElem, { scale: 5, pos: 'replace' });
+          addClickListener(characterElem, character.id, () => {
             this.tooltip.show();
-            renderImage(item.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
+            renderImage(character.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
           });
-        } else {
-          document.querySelector(`#player-${character.id} .item`).innerHTML = '';
-        }
 
-        if (tokenItems != null) {
-          let removed = 0;
-          this.renderTokens(
-            document.querySelector(`#player-${character.id} .token-items`),
-            tokenItems.filter((d) => {
-              if (d.treasure === 'cutlass' && removed < 4) {
-                removed++;
-                return false;
-              }
-              return true;
-            }),
-          );
-        } else {
-          document.querySelector(`#player-${character.id} .token-items`).innerHTML = '';
+          if (item) {
+            renderImage(item.id, document.querySelector(`#player-${character.id} .item`), {
+              scale: scale,
+              pos: 'replace',
+            });
+            addClickListener(document.querySelector(`#player-${character.id} .item`), _(item.id), () => {
+              this.tooltip.show();
+              renderImage(item.id, this.tooltip.renderByElement(), { withText: true, type: 'tooltip-item', pos: 'replace' });
+            });
+          } else {
+            document.querySelector(`#player-${character.id} .item`).innerHTML = '';
+          }
+
+          if (tokenItems != null) {
+            let removed = 0;
+            this.renderTokens(
+              document.querySelector(`#player-${character.id} .token-items`),
+              tokenItems.filter((d) => {
+                if (d.treasure === 'cutlass' && removed < 4) {
+                  removed++;
+                  return false;
+                }
+                return true;
+              }),
+            );
+          } else {
+            document.querySelector(`#player-${character.id} .token-items`).innerHTML = '';
+          }
         }
-      }
-    });
+      });
 
     Object.entries(this.gamedatas.players).forEach(([playerId, { player_color }]) => {
       document.querySelector(`#player_name_${playerId} > a`).style.color = `#${player_color}`;
     });
 
-    const selections = $('player_boards');
-    [...selections.children].forEach((elem) => {
-      if (elem.id?.includes('overall_player_board_')) {
-        elem.style.order = this.gamedatas.players[elem.id.replace('overall_player_board_', '')].player_no;
-      } else if (elem.id == 'token-container') {
-        elem.style.order = 5;
-      }
-    });
     if (Object.keys(this.gamedatas.players ?? {}).length === 1) {
       document.querySelector('.player-board-game-specific-content').classList.add('one-player');
     }
