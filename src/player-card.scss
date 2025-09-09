@@ -43,6 +43,28 @@
       transform-origin: 50% 82px;
     }
   }
+  .fatigue-tooltips {
+    &-2 {
+      position: absolute;
+      top: 56x;
+      left: 15px;
+    }
+    &-3 {
+      position: absolute;
+      top: 170px;
+      left: 15px;
+    }
+    &-4 {
+      position: absolute;
+      top: 222px;
+      left: 195px;
+    }
+    &-5 {
+      position: absolute;
+      top: 140px;
+      right: 40px;
+    }
+  }
   .strength-marker {
     position: absolute;
     bottom: 20px;

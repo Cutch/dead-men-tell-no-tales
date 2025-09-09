@@ -193,6 +193,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 <div class="card">
                   <div class="extra-token"></div>
                   <div class="fatigue-dial"></div>
+                  <div class="fatigue-tooltips"><div class="fatigue-tooltips-2"></div><div class="fatigue-tooltips-3"></div><div class="fatigue-tooltips-4"></div><div class="fatigue-tooltips-5"></div></div>
                   <div class="actions-marker"></div>
                   <div class="cutlass-markers"></div>
                   <div class="strength-marker"></div>
@@ -205,6 +206,17 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               </div>`,
             );
             renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
+            for (let i = 2; i <= 5; i++) {
+              this.addHelpTooltip({
+                node: document.querySelector(`#player-${character.id} .fatigue-tooltips-${i}`),
+                text: [
+                  dojo.string.substitute(_('When ${fatigue} fatigue is reached you cannot enter a room with ${fatigue} fatigue'), {
+                    fatigue: i,
+                  }),
+                  _('You must either rest, fight the fire, or leave'),
+                ],
+              });
+            }
 
             this.addHelpTooltip({
               node: document.querySelector(`#player-${character.id} .strength-marker`),
@@ -219,7 +231,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             this.addHelpTooltip({
               node: document.querySelector(`#player-${character.id} .actions-marker`),
               text: _(
-                'The number of actions you can take. Leftover actions are passed to the next player, leftover actions passed that were passed to you are passed back to the previous player',
+                'The number of actions you can take. Leftover actions are passed to the next player, except for any leftover actions that were passed to you',
               ),
               noIcon: true,
             });
