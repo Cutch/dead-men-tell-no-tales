@@ -592,8 +592,43 @@ export class Map {
           );
 
           this.game.addHelpTooltip({
+            node: tileElem.querySelector(`.trapdoor`),
+            text: _('Trapdoors will fill the room with deckhands'),
+            noIcon: true,
+          });
+          this.game.addHelpTooltip({
+            node: tileElem.querySelector(`.barrel-marker`),
+            text: _('Powder Kegs explode when the corresponding fire level is reached'),
+            noIcon: true,
+          });
+          this.game.addHelpTooltip({
             node: tileElem.querySelector(`.fire-warning`),
             text: _('Warning, the next fire level will cause an explosion (either a powder keg or the room)'),
+            noIcon: true,
+          });
+          this.game.addHelpTooltip({
+            node: tileElem.querySelector(`.deckhands`),
+            text: [
+              [_('Deckhands will spread to other rooms without a trapdoor')],
+              [{ bold: true, text: _('2 Deckhands in a room:') }, ' ', _('The Pirates cannot pick up any tokens in this room')],
+              [{ bold: true, text: _('3 or more Deckhands in a room:') }, ' ', _('No Pirate can enter this room')],
+            ],
+            noIcon: true,
+          });
+          this.game.addHelpTooltip({
+            node: tileElem.querySelector(`.treasures`),
+            text: [
+              [{ bold: true, text: _('Skeleton Crew:') }, ' ', _('Must be battled before the guards, can move')],
+              [{ bold: true, text: _('Guards:') }, ' ', _('Never Move, drop treasure when defeated')],
+              [
+                { bold: true, text: _('Captain Fromm:') },
+                ' ',
+                _('Similar to the crew, however he goes back in the draw pile when defeated, and must be defeated to win the game'),
+              ],
+              [{ bold: true, text: _('Grog:') }, ' ', _('Recover your fatigue by the number listed on the token')],
+              [{ bold: true, text: _('Cutlass:') }, ' ', _('Give permanent strength increase to the character holding it')],
+              [{ bold: true, text: _('Treasure:') }, ' ', _('Escape the ship with these to win the game')],
+            ],
             noIcon: true,
           });
 

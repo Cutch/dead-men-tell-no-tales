@@ -22,7 +22,18 @@ import { getAllData } from './assets/index';
 import { CardSelectionScreen } from './screens/card-selection-screen';
 import { CharacterSelectionScreen } from './screens/character-selection-screen';
 import { ItemsScreen } from './screens/items-screen';
-import { addClickListener, Deck, Dice, isStudio, renderImage, renderText, Selector, Tooltip, Tweening } from './utils/index';
+import {
+  addClickListener,
+  Deck,
+  Dice,
+  isStudio,
+  renderImage,
+  renderText,
+  renderTextArray,
+  Selector,
+  Tooltip,
+  Tweening,
+} from './utils/index';
 import { Map } from './utils/map';
 
 declare('bgagame.deadmentellnotales', Gamegui, {
@@ -39,7 +50,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.cardSelectionScreen = new CardSelectionScreen(this);
     this.characterSelectionScreen = new CharacterSelectionScreen(this);
     this.itemsScreen = new ItemsScreen(this);
-
     this.currentResources = { prevResources: {}, resources: {} };
     this.animations = [];
   },
@@ -195,6 +205,44 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               </div>`,
             );
             renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
+
+            this.addHelpTooltip({
+              node: document.querySelector(`#player-${character.id} .strength-marker`),
+              text: _('Strength is determined by this marker, once used any temporary strength will be removed'),
+              noIcon: true,
+            });
+            this.addHelpTooltip({
+              node: document.querySelector(`#player-${character.id} .cutlass-markers`),
+              text: _('A cutlass is permanent strength and will not be removed unless the item is dropped'),
+              noIcon: true,
+            });
+            this.addHelpTooltip({
+              node: document.querySelector(`#player-${character.id} .actions-marker`),
+              text: _(
+                'The number of actions you can take. Leftover actions are passed to the next player, leftover actions passed that were passed to you are passed back to the previous player',
+              ),
+              noIcon: true,
+            });
+            // this.addTooltip(
+            //   `player-${character.id}-strength-marker`,
+            //   _('Strength is determined by this marker, once used any temporary strength will be removed'),
+            //   '',
+            //   0,
+            // );
+            // this.addTooltip(
+            //   `player-${character.id}-cutlass-marker`,
+            //   _('A cutlass is permanent strength and will not be removed unless the item is dropped'),
+            //   '',
+            //   0,
+            // );
+            // this.addTooltip(
+            //   `player-${character.id}-actions-marker`,
+            //   _(
+            //     'The number of actions you can take. Leftover actions are passed to the next player, leftover actions passed that were passed to you are passed back to the previous player',
+            //   ),
+            //   '',
+            //   0,
+            // );
           }
           document.querySelector(`#player-${character.id} .card`).style['outline'] = character?.isActive
             ? `5px solid #fff` //#${character.playerColor}
@@ -229,6 +277,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             pos: 'replace',
             styles: { '--color': character.characterColor },
           });
+
           const cutlassMarkersElem = document.querySelector(`#player-${character.id} .cutlass-markers`);
           cutlassMarkersElem.innerHTML = '';
           for (let i = 0; i < Math.min(cutlassCount, 4); i++) {
@@ -1050,7 +1099,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       if (!noIcon)
         node.insertAdjacentHTML(
           'beforeend',
-          `<div class="tooltip"><div class="dot"><i class="${iconCSS ?? 'fa fa-question'}"></i></div></div>`,
+          `<div class="tooltip icon"><div class="dot"><i class="${iconCSS ?? 'fa fa-question'}"></i></div></div>`,
         );
       else node.classList.add('tooltip');
       addClickListener(
@@ -1062,7 +1111,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             .renderByElement()
             .insertAdjacentHTML(
               'beforeend',
-              `<div class="tooltip-box"><i class="fa fa-question-circle-o fa-2x" aria-hidden="true"></i><span>${tooltipText ? renderText({ name: tooltipText }) : text}</span></div>`,
+              `<div class="tooltip-box"><i class="fa fa-question-circle-o fa-2x" aria-hidden="true"></i><span>${tooltipText ? renderText({ name: tooltipText }) : renderTextArray(text)}</span></div>`,
             );
         },
         true,

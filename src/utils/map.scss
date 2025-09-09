@@ -137,6 +137,8 @@
       left: 50%;
       pointer-events: none;
       transform: translate(-50%, -50%) rotateZ(calc(var(--rotate) * 1deg)) translate(0%, 95px);
+      width: 100px;
+      height: 100px;
     }
     > .tokens {
       --count: 0;

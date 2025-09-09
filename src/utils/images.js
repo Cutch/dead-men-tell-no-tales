@@ -10,8 +10,28 @@ export const getSpriteSize = (name, scale = 2) => {
 const scaleLookups = { 'tooltip-item': 1, 'tooltip-character': 1, 'tooltip-tile': 1, 'tooltip-revenge': 1.5 };
 export const renderText = ({ name }) => {
   const text = getAllData()[name]?.options?.text;
+  return renderTextArray(text);
+};
+export const renderTextArray = (text) => {
+  if (text && typeof text === 'string') return text;
   return text
-    ? `<div class="tooltip-text">${text.map((d) => (d.title ? `<div class="tooltip-line"><b class="tooltip-title">${d.title}</b></div>` : `<div class="tooltip-line">${d}</div>`)).join('')}</div>`
+    ? `<div class="tooltip-text">${text
+        .map((d) => {
+          if (Array.isArray(d)) {
+            return `<div class="tooltip-line">${d
+              .map((str) => {
+                if (typeof str === 'string') return `<span>${str}</span>`;
+                if (str.bold) return `<b class="tooltip-title">${str.text}</b>`;
+                if (str.italic) return `<i class="tooltip-title">${str.text}</i>`;
+                return `<span>${str}</span>`;
+              })
+              .join('')}</div>`;
+          }
+          return d.title
+            ? `<div class="tooltip-line"><b class="tooltip-title">${d.title}</b></div>`
+            : `<div class="tooltip-line">${d}</div>`;
+        })
+        .join('')}</div>`
     : '';
 };
 export const renderImage = (
