@@ -206,13 +206,18 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               </div>`,
             );
             renderImage(`character-board`, document.querySelector(`#player-${character.id} .card`), { scale, pos: 'insert' });
+            const fatigueMapping = { 2: 14, 3: 12, 4: 9, 5: 5 };
             for (let i = 2; i <= 5; i++) {
               this.addHelpTooltip({
                 node: document.querySelector(`#player-${character.id} .fatigue-tooltips-${i}`),
                 text: [
-                  dojo.string.substitute(_('When ${fatigue} fatigue is reached you cannot enter a room with ${fatigue} fatigue'), {
-                    fatigue: i,
-                  }),
+                  dojo.string.substitute(
+                    _('When ${fatigue} fatigue is reached you cannot enter a room with a fire level of ${fireLevel} or more'),
+                    {
+                      fireLevel: i,
+                      fatigue: fatigueMapping[i],
+                    },
+                  ),
                   _('You must either rest, fight the fire, or leave'),
                 ],
               });

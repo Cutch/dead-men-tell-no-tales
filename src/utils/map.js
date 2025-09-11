@@ -477,6 +477,11 @@ export class Map {
           baseCss: 'id' + id,
           styles: { '--color': color ?? '#000' },
         });
+        if (color)
+          addClickListener(this.container.querySelector(`.id${id}`), name, () => {
+            this.game.tooltip.show();
+            renderImage(name, this.game.tooltip.renderByElement(), { withText: true, type: 'tooltip-character', pos: 'replace' });
+          });
       }
     });
   }
