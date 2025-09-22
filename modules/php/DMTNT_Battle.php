@@ -131,7 +131,6 @@ class DMTNT_Battle
         $playerIds = array_unique(array_values($playerIds));
         $result = [
             'actions' => [],
-            'resolving' => $this->game->actInterrupt->isStateResolving(),
             'character_name' => $this->game->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
             'canSkipFight' => sizeof($playerIds) > 1,
@@ -252,7 +251,6 @@ class DMTNT_Battle
             return array_key_exists($d['suffix'], $hasCrew) && $hasCrew[$d['suffix']] > 0 ? $d['type'] != 'guard' : $d['type'] == 'guard';
         });
         $result = [
-            'resolving' => $this->game->actInterrupt->isStateResolving(),
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
             'activeTurnPlayerId' => 0,
             'canUndo' => $this->game->undo->canUndo(),
@@ -305,7 +303,6 @@ class DMTNT_Battle
             }, $character['tokenItems'])
         );
         $result = [
-            'resolving' => $this->game->actInterrupt->isStateResolving(),
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
             'activeTurnPlayerId' => 0,
             'attack' => $battle['attack'],
@@ -503,7 +500,6 @@ class DMTNT_Battle
         $isGuard = $battle['target']['type'] == 'guard';
         $canMove = sizeof($this->game->map->calculateMoves(false, $battle['characterId'])['fatigueList']) > 0;
         $result = [
-            'resolving' => $this->game->actInterrupt->isStateResolving(),
             'character_name' => $this->game->getCharacterHTML($battle['characterId']),
             'activeTurnPlayerId' => 0,
             'actions' =>

@@ -334,7 +334,6 @@ class Game extends \Table
         $result = [
             'card' => $card,
             'deck' => $deck,
-            'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
             'gameData' => $gameData,
             ...$arg,
@@ -1187,7 +1186,6 @@ class Game extends \Table
     public function argDrawRevengeCard()
     {
         $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
         ];
@@ -1198,7 +1196,6 @@ class Game extends \Table
     public function argNextCharacter()
     {
         $result = [
-            'resolving' => $this->actInterrupt->isStateResolving(),
             'character_name' => $this->getCharacterHTML(),
             'activeTurnPlayerId' => 0,
         ];
@@ -1701,7 +1698,6 @@ class Game extends \Table
             'version' => $this->getVersion(),
             'activeCharacter' => $this->character->getTurnCharacterId(),
             'activeCharacters' => $this->gameData->getAllMultiActiveCharacterIds(),
-            'resolving' => $this->actInterrupt->isStateResolving(),
             'tiles' => [],
         ];
 

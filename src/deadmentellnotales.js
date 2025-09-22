@@ -676,12 +676,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         this.updateItems(args.args);
         this.map.setCurrentPlayerCenter();
         break;
-      // case 'drawCard':
-      //   if (!args.args.resolving) {
-      //     this.decks[args.args.deck].drawCard(args.args.card.id);
-      //     this.decks[args.args.deck].updateDeckCounts(args.args.decks[args.args.deck]);
-      //   }
-      //   break;
     }
   },
 

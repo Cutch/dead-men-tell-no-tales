@@ -91,18 +91,6 @@ class DMTNT_ActInterrupt
             $this->setState($functionName, null);
         }
     }
-    public function isStateResolving(): bool
-    {
-        $state = $this->getDataForState() ?? $this->getLatestInterruptState();
-        if (!$state) {
-            return false;
-        }
-        $data = $state['data'];
-
-        return $data &&
-            array_key_exists('currentState', $data) &&
-            $data['currentState'] == $this->game->gamestate->state(true, false, true)['name'];
-    }
     public function checkForInterrupt(): bool
     {
         $state = $this->getDataForState() ?? $this->getLatestInterruptState();

@@ -55,10 +55,10 @@ class DMTNT_CharactersData
                 'onMoveSelection' => function (Game $game, $char, &$data) {
                     $selectionState = $game->selectionStates->getState('characterMovement');
                     if ($selectionState['id'] == 'gusMovement') {
-                        $state = $game->actInterrupt->getState('actMove');
+                        $state = $game->actInterrupt->getState('_actMove');
                         $pathTile = $game->map->getTileByXY($data['x'], $data['y']);
                         $state['data']['path'] = $pathTile['id'];
-                        $game->actInterrupt->setState('actMove', $state);
+                        $game->actInterrupt->setState('_actMove', $state);
                     }
                 },
                 'onMoveFinalize' => function (Game $game, $char, &$data) {
