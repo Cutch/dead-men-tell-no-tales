@@ -1552,7 +1552,7 @@ class Game extends \Table
             },
             []
         );
-        $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no, player_color FROM `player`');
+        $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no, `player_name` as `name` FROM `player`');
     }
     public function getDecks(&$result): void
     {
