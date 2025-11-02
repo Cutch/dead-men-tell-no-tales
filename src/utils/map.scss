@@ -150,6 +150,13 @@
         left: 20px;
         // pointer-events: none;
         z-index: 10;
+
+        .character-token-card-base {
+          opacity: 1;
+          &.flash {
+            animation: dld_flash 0.75s 4;
+          }
+        }
       }
       &.treasures {
         bottom: 20px;
@@ -236,4 +243,16 @@
 /* Style the back side */
 .token-flip-back {
   transform: rotateY(180deg);
+}
+
+@keyframes dld_flash {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }

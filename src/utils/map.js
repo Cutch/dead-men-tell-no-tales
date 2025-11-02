@@ -24,7 +24,7 @@ export class Map {
     const buttonHTML = `<div class="map-buttons-wrapper"><div class="map-buttons">
       <button id="zoom-in"><i class="fa6 fa6-solid fa6-magnifying-glass-plus"></i></button>
       <button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button>
-      <button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button>
+      <button id="locate"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button>
       <button id="toggle-token"><i class="fa6 fa6-solid fa6-eye-slash"></i></button>
       <button id="fullscreen"><i class="fa6 fa6-solid fa6-down-left-and-up-right-to-center"></i></button>
     </div></div>`;
@@ -49,8 +49,9 @@ export class Map {
       this.zoom('out');
       this.savePanZoom();
     });
-    on($('reset'), 'click', () => {
+    on($('locate'), 'click', () => {
       this.panzoom.reset();
+      this.flickerPlayerTokens();
       this.savePanZoom();
     });
     this.wrapper = $('map-wrapper');
@@ -203,6 +204,19 @@ export class Map {
       this.fullscreen = data.fullscreen;
       this.updateFullscreen();
     }
+  }
+  flickerPlayerTokens() {
+    document.querySelectorAll('.tokens.characters .character-token-card-base').forEach((e) => {
+      e.classList.add('flash');
+    });
+    setTimeout(
+      () => {
+        document.querySelectorAll('.tokens.characters .character-token-card-base').forEach((e) => {
+          e.classList.remove('flash');
+        });
+      },
+      0.75 * 4 * 1000,
+    );
   }
   hideTileSelectionScreen(showId) {
     if (showId && this.showId !== showId) return;

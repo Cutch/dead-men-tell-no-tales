@@ -287,8 +287,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             .querySelector(`#player-${character.id} .actions-marker .image`)
             .insertAdjacentHTML('beforeend', `<div class="counter dot dot--number">${character.actions ?? 0}</div>`);
 
-          character.actions ?? 0;
-
           renderImage(character.id + '-token', document.querySelector(`#player-${character.id} .strength-marker`), {
             scale,
             pos: 'replace',
