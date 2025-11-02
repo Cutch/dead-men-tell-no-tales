@@ -860,9 +860,19 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   this.map.showTileSelectionScreen('actMove', this.gamedatas.moves);
                   const showId = this.map.showId;
                   this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
-                    this.bgaPerformAction('actMove', this.map.getSelectionPosition())
-                      .then(() => this.map.hideTileSelectionScreen(showId))
-                      .catch(console.error);
+                    if (
+                      this.map.getSelectionPosition().count >=
+                      16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+                    )
+                      this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
+                        this.bgaPerformAction('actMove', this.map.getSelectionPosition())
+                          .then(() => this.map.hideTileSelectionScreen(showId))
+                          .catch(console.error),
+                      );
+                    else
+                      this.bgaPerformAction('actMove', this.map.getSelectionPosition())
+                        .then(() => this.map.hideTileSelectionScreen(showId))
+                        .catch(console.error);
                   });
                   this.statusBar.addActionButton(
                     _('Cancel'),
@@ -927,6 +937,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           });
       }
       const addSelectionCancelButton = () => {
+        if (isActive && this.gamedatas.selectionState?.backState)
+          this.statusBar.addActionButton(
+            _('Back'),
+            () => {
+              this.bgaPerformAction('actBack').then(() => this.selector.hide());
+            },
+            { color: 'secondary' },
+          );
         if (isActive && this.gamedatas.selectionState?.cancellable === true)
           this.statusBar.addActionButton(
             _('Cancel'),
@@ -978,8 +996,16 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           break;
         case 'characterMovement':
           this.statusBar.addActionButton(this.getActionMappings().actMove, () => {
-            this.bgaPerformAction('actMoveSelection', this.map.getSelectionPosition());
+            if (
+              this.map.getSelectionPosition().count >=
+              16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+            )
+              this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
+                this.bgaPerformAction('actMoveSelection', this.map.getSelectionPosition()),
+              );
+            else this.bgaPerformAction('actMoveSelection', this.map.getSelectionPosition());
           });
+          addSelectionCancelButton();
           break;
         case 'cardSelection':
           this.statusBar.addActionButton(this.getActionMappings().actSelectCard, () => {

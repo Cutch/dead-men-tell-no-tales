@@ -236,7 +236,7 @@ $machinestates = [
         'descriptionmyturn' => clienttranslate('${character_name} Select where the crew moves'),
         'type' => 'multipleactiveplayer',
         'args' => 'argSelectionState',
-        'possibleactions' => ['actMoveCrew', 'actCancel'],
+        'possibleactions' => ['actMoveCrew', 'actCancel', 'actBack'],
         'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $characterMovement => [
@@ -245,7 +245,7 @@ $machinestates = [
         'descriptionmyturn' => '${character_name} ${title}',
         'type' => 'activeplayer',
         'args' => 'argSelectionState',
-        'possibleactions' => ['actMoveSelection'],
+        'possibleactions' => ['actMoveSelection', 'actBack'],
         'transitions' => ['playerTurn' => $playerTurn, 'changeZombiePlayer' => $changeZombiePlayer],
     ],
     $itemSelection => [

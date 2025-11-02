@@ -262,6 +262,12 @@ class DMTNT_SelectionStates
         $stateName = $this->stateToStateNameMapping();
         $this->cancelState($stateName);
     }
+    public function actBack(): void
+    {
+        $stateName = $this->stateToStateNameMapping();
+        $state = $this->game->gameData->get($stateName);
+        $this->game->nextState($state['backState']);
+    }
     public function getState(?string $stateName = null): array
     {
         $stateNameState = $this->stateToStateNameMapping($stateName);

@@ -267,7 +267,7 @@ export class Map {
           if (x == this.selectionPosition?.x && y == this.selectionPosition?.y) return;
           document.querySelectorAll('.tile-selector').forEach((e) => e.classList.remove('tile-selected'));
           elem.classList.add('tile-selected');
-          this.selectionPosition = { x, y };
+          this.selectionPosition = { x, y, count };
         }),
       );
     });

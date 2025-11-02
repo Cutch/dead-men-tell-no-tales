@@ -803,9 +803,9 @@ class Game extends \Table
                 $moves = $this->map->calculateMoves(true, $character['id'])['fatigueList'];
                 $tile = $this->map->getTileByXY($x, $y);
                 $fatigue = (int) $moves[$tile['id']];
-                if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
-                    throw new BgaUserException(clienttranslate('Not enough fatigue'));
-                }
+                // if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
+                //     throw new BgaUserException(clienttranslate('Not enough fatigue'));
+                // }
                 return [
                     'x' => $x,
                     'y' => $y,
@@ -1257,6 +1257,10 @@ class Game extends \Table
     public function actCancel(): void
     {
         $this->selectionStates->actCancel();
+    }
+    public function actBack(): void
+    {
+        $this->selectionStates->actBack();
     }
     public function argSelectionState(): array
     {
