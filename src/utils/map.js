@@ -26,6 +26,7 @@ export class Map {
       <button id="zoom-out"><i class="fa6 fa6-solid fa6-magnifying-glass-minus"></i></button>
       <button id="reset"><i class="fa6 fa6-solid fa6-map-location-dot"></i></button>
       <button id="toggle-token"><i class="fa6 fa6-solid fa6-eye-slash"></i></button>
+      <button id="fullscreen"><i class="fa6 fa6-solid fa6-down-left-and-up-right-to-center"></i></button>
     </div></div>`;
     document.getElementById('game_play_area').insertAdjacentHTML(
       'beforeend',
@@ -35,6 +36,11 @@ export class Map {
         <div id="left-card-container" style="display: none; opacity: 0"></div>
         </div>`,
     );
+    on($('fullscreen'), 'click', () => {
+      this.fullscreen = !this.fullscreen;
+      this.updateFullscreen();
+      this.savePanZoom();
+    });
     on($('zoom-in'), 'click', () => {
       this.zoom('in');
       this.savePanZoom();
@@ -103,6 +109,9 @@ export class Map {
     this.update(gameData);
     this.panzoom.pan(this.panzoom.getOptions().startX, this.panzoom.getOptions().startY);
     this.loadPanZoom();
+  }
+  updateFullscreen() {
+    $('map-wrapper').style.height = this.fullscreen ? '90vh' : '60vh';
   }
   zoom(inOut = 'in', duration = 250) {
     const start = this.panzoom.getScale();
@@ -178,6 +187,7 @@ export class Map {
         // pan: this.panzoom.getPan(),
         scale: this.panzoom.getScale(),
         id: this.game.table_id,
+        fullscreen: this.fullscreen,
       });
       localStorage.setItem('dmtnt_data', data);
     }
@@ -190,6 +200,8 @@ export class Map {
       this.panzoom.setOptions(data.options);
       // this.panzoom.pan(data.pan.x, data.pan.y);
       this.panzoom.zoom(data.scale);
+      this.fullscreen = data.fullscreen;
+      this.updateFullscreen();
     }
   }
   hideTileSelectionScreen(showId) {
