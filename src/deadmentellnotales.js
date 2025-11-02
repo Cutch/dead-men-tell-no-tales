@@ -1282,7 +1282,30 @@ declare('bgagame.deadmentellnotales', Gamegui, {
   notif_rollBattleDie: async function (notification) {
     if (await this.notificationWrapper(notification)) return;
     if (isStudio()) console.log('notif_rollBattleDie', notification);
-    return this.dice.roll(notification.args);
+    if (notification.args.actionType === 'post')
+      notification.args.info = `<div class="dice-info-panel-position">
+      <div class="dice-info-panel">
+        <div class="dice-info-line">
+          <div class="fa6 fa6-solid fa6-dice-one"></div>
+          <div class="fa6 fa6-solid fa6-dice-two"></div>
+          <span class="label">${_('The skeleton crew retreats')}</span>
+        </div>
+        <div class="dice-info-line">
+          <div class="fa6 fa6-solid fa6-dice-three"></div>
+          <div class="fa6 fa6-solid fa6-dice-four"></div>
+          <span class="label">${_('The player retreats')}</span>
+        </div>
+        <div class="dice-info-line">
+          <div class="fa6 fa6-solid fa6-dice-five"></div>
+          <span class="label">${_('Battle again')}</span>
+        </div>
+        <div class="dice-info-line">
+          <div class="fa6 fa6-solid fa6-dice-six"></div>
+          <span class="label">${_('Choose any of the above')}</span>
+        </div>
+      </div>
+    </div>`;
+    await this.dice.roll(notification.args);
   },
   notif_cardDrawn: async function (notification) {
     if (isStudio()) console.log('notif_cardDrawn', notification);

@@ -340,7 +340,7 @@ class Game extends \Table
         ];
         $this->notify('cardDrawn', '', $result);
     }
-    public function rollBattleDie(string $action, string $characterName): int
+    public function rollBattleDie(string $type, string $characterName): int
     {
         $this->markRandomness();
         $value = bga_rand(1, 6);
@@ -348,14 +348,21 @@ class Game extends \Table
         $data = [
             'value' => $value,
         ];
-        $data['sendNotification'] = function () use ($value, $characterName, &$notificationSent, $action) {
+        $actionName = '';
+        if ($type === 'attack') {
+            $actionName = clienttranslate('Attack');
+        } elseif ($type === 'post') {
+            $actionName = clienttranslate('Post Battle');
+        }
+        $data['sendNotification'] = function () use ($value, $characterName, &$notificationSent, $type, $actionName) {
             $this->notify('rollBattleDie', clienttranslate('${character_name} rolled a ${value} (${action})'), [
                 'i18n' => ['action'],
                 'value' => $value,
                 'character_name' => $this->getCharacterHTML($characterName),
                 'characterId' => $characterName,
                 'roll' => $value,
-                'action' => $action,
+                'action' => $actionName,
+                'actionType' => $type,
             ]);
             $notificationSent = true;
         };

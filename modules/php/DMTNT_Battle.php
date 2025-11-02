@@ -186,7 +186,7 @@ class DMTNT_Battle
             );
         }
         $data = [
-            'attack' => $this->game->rollBattleDie(clienttranslate('Attack'), $battle['characterId']),
+            'attack' => $this->game->rollBattleDie('attack', $battle['characterId']),
         ];
         $this->game->hooks->onGetAttack($data);
         $result = '';
@@ -392,7 +392,7 @@ class DMTNT_Battle
                     );
                     if (sizeof($this->game->map->getValidAdjacentTiles(...$this->game->getCharacterPos($battle['characterId']))) > 0) {
                         while ($resultRoll == 0 || (($resultRoll == 3 || $resultRoll == 4) && !$hasValidMove)) {
-                            $resultRoll = $this->game->rollBattleDie(clienttranslate('Post Battle'), $battle['characterId']);
+                            $resultRoll = $this->game->rollBattleDie('post', $battle['characterId']);
                         }
                     }
                 }

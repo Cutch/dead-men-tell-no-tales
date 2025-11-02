@@ -16,7 +16,7 @@ export class Dice {
       html += `<div class="image"></div>`;
       html += `</div></div>`;
     }
-    html += `</div></div><div class="dice-container-character"></div></div>`;
+    html += `</div></div><div class="dice-container-character"></div><div class="dice-container-info"></div></div>`;
     this.div.insertAdjacentHTML('beforeend', html);
     this.container = this.div.querySelector('.dice-container');
     this.diceBase = this.div.querySelector('.dice-mover');
@@ -73,12 +73,16 @@ export class Dice {
         styles: { '--color': color ?? '#000' },
       });
     }
+    if (args.info) {
+      this.div.querySelector('.dice-container-info').innerHTML = args.info;
+    }
     const animation = new dojo.Animation({
       curve: [0, 1],
       duration: 3000,
       onEnd: () => {
         this.container.style['visibility'] = 'hidden';
         this.div.querySelector('.dice-container-character').innerHTML = '';
+        this.div.querySelector('.dice-container-info').innerHTML = '';
         this.dice.style['transition'] = 'unset';
         this.diceBase.style['transition'] = 'unset';
         this.diceBase.style['left'] = '80%';
