@@ -437,16 +437,20 @@ declare('bgagame.deadmentellnotales', Gamegui, {
     this.map = new Map(this, gameData);
     // renderImage(`board`, document.querySelector(`#board-container > .board`), { scale: 2, pos: 'insert' });
 
-    const gameInfoSidePanel = document.querySelector('.game-info-panel');
+    const gameInfoSidePanel = document.querySelector('.game-info-container');
     if (!gameInfoSidePanel) {
       $('game_play_area').insertAdjacentHTML(
         'beforeend',
-        `<div class="game-info-panel">
-        <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
-        <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-spread-warning" style="display: none"></i> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-increase-warning" style="display: none"></i></div>
-        <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
-        <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
-        <div class="explosions-left"><div class="fa6 fa6-solid fa6-explosion"></div><span class="label">${_('Explosions')}: </span><span class="value">0</span><span>/7</span></div>
+        `<div class="game-info-container">
+          <div class="game-info-notifications">
+          </div>
+          <div class="game-info-panel">
+            <div class="treasure"><div class="fa6 fa6-solid fa6-coins"></div><span class="label">${_('Treasure')}: </span><span class="value">0/0</span></div>
+            <div class="deckhands"><div class="fa6 fa6-solid fa6-skull"></div><span class="label">${_('Deckhands')}: </span><span class="value">0/30</span> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-spread-warning" style="display: none"></i> <i class="fa6 fa6-solid fa6-triangle-exclamation deckhand-warning deckhand-increase-warning" style="display: none"></i></div>
+            <div class="characters-left"><div class="fa6 fa6-solid fa6-user-group"></div><span class="label">${_('Characters Left')}: </span><span class="value">0</span></div>
+            <div class="map-left"><div class="fa6 fa6-solid fa6-map"></div><span class="label">${_('Tiles Left')}: </span><span class="value">20</span></div>
+            <div class="explosions-left"><div class="fa6 fa6-solid fa6-explosion"></div><span class="label">${_('Explosions')}: </span><span class="value">0</span><span>/7</span></div>
+          </div>
         </div>`,
       );
       this.addHelpTooltip({
@@ -675,6 +679,15 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
         this.map.setCurrentPlayerCenter();
+        console.log(this.gamedatas.actionsTaken === 0, this.gamedatas.tempActionCount > 0, this.gamedatas.gamestate.name);
+        if (
+          isActive &&
+          this.gamedatas.actionsTaken === 0 &&
+          this.gamedatas.tempActionCount > 0 &&
+          this.gamedatas.gamestate.name === 'playerTurn'
+        ) {
+          this.sendTempActionNotification();
+        }
         break;
     }
   },
@@ -1046,7 +1059,21 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               this.statusBar.addActionButton(_('Undo'), () => this.bgaPerformAction('actUndo'), { color: 'secondary' });
             this.statusBar.addActionButton(
               _('End Turn'),
-              () => this.confirmationDialog(_('End Turn'), () => this.bgaPerformAction('actEndTurn')),
+              () =>
+                this.confirmationDialog(
+                  this.gamedatas.actionCount === 0
+                    ? _('Are you sure you want to end your turn?')
+                    : dojo.string.substitute(
+                        _(
+                          'You have ${actionsLeft} action(s) left, do you want to pass ${notTempActionsLeft} action(s) to the next player?',
+                        ),
+                        {
+                          actionsLeft: this.gamedatas.actionCount,
+                          notTempActionsLeft: this.gamedatas.actionCount - this.gamedatas.tempActionCount,
+                        },
+                      ),
+                  () => this.bgaPerformAction('actEndTurn'),
+                ),
               { color: 'secondary' },
             );
           }
@@ -1104,7 +1131,37 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       }
     }
   },
+  sendTempActionNotification: function () {
+    if (this.lastSentNotification === this.gamedatas.activeCharacter) return;
+    this.lastSentNotification = this.gamedatas.activeCharacter;
+    const notificationsContainer = document.querySelector('.game-info-notifications');
+    const id = `notif_${Math.round(Math.random() * 100000000)}`;
+    notificationsContainer.insertAdjacentHTML(
+      'beforeend',
+      `<div id="${id}" class="notification">
+        <div class="actions-marker"></div><div>${_(
+          dojo.string.substitute(_('${tempActionCount} action(s) have been passed to you'), {
+            tempActionCount: this.gamedatas.tempActionCount,
+          }),
+        )}</div>
+      </div>`,
+    );
 
+    renderImage('token-action', document.querySelector(`#${id} .actions-marker`), {
+      scale: 2,
+      pos: 'replace',
+      card: false,
+    });
+    setTimeout(() => {
+      $(id).style.transform = 'translateX(0px)';
+    }, 0);
+    setTimeout(() => {
+      $(id).style.transform = 'translateX(-120%)';
+    }, 5000);
+    setTimeout(() => {
+      $(id).remove();
+    }, 6000);
+  },
   addHelpTooltip: function ({ node, text = '', tooltipText = '', iconCSS, noIcon = false, tooltipElem = this.tooltip }) {
     if (noIcon ? !node.classList.contains('tooltip') : !node.querySelector('.tooltip')) {
       if (!noIcon)

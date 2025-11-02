@@ -125,17 +125,37 @@
   justify-content: center;
   gap: 1em;
 }
-
+.game-info-container {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+}
+.game-info-notifications {
+  margin: 0 0.5rem;
+  .notification {
+    background-color: #ebd5bd;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px #0000004d;
+    padding: 5px 12px;
+    display: flex;
+    transition: 1s transform;
+    transform: translateX(-120%);
+    gap: 16px;
+    max-width: 250px;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+}
 .game-info-panel {
   background-color: #ebd5bd;
   border-radius: 8px;
   box-shadow: 0 3px 8px #0000004d;
   padding: 5px 12px;
-  margin: 0.5rem;
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  z-index: 1;
+  margin: 0 0.5rem 0.5rem;
   > div {
     line-height: 1.25;
   }

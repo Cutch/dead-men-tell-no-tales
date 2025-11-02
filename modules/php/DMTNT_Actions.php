@@ -369,6 +369,8 @@ class DMTNT_Actions
     {
         $cost = $this->getActionCost($action, $subAction, $characterId);
         $this->spendCost($cost);
+        $this->game->incStat(1, 'actions_used', $this->game->character->getSubmittingCharacter()['playerId']);
+        $this->game->gameData->set('actionsTaken', $this->game->gameData->get('actionsTaken') + 1);
     }
     public function spendCost(array $cost)
     {
@@ -379,9 +381,9 @@ class DMTNT_Actions
         if (array_key_exists('actions', $cost)) {
             $this->game->character->adjustActiveActions(-$cost['actions']);
 
-            if ($cost['actions'] > 0) {
-                $this->game->incStat($cost['actions'], 'actions_used', $this->game->character->getSubmittingCharacter()['playerId']);
-            }
+            // if ($cost['actions'] > 0) {
+            //     $this->game->incStat($cost['actions'], 'actions_used', $this->game->character->getSubmittingCharacter()['playerId']);
+            // }
         }
     }
     public function validateSelectable(

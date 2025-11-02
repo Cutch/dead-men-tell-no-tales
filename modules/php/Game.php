@@ -1430,6 +1430,7 @@ class Game extends \Table
         ];
         $this->hooks->onEndTurn($data);
         $this->gameData->set('revengePhase', true);
+        $this->gameData->set('actionsTaken', 0);
         $this->nextState('drawRevengeCard');
         $this->undo->clearUndoHistory();
     }
@@ -1636,7 +1637,6 @@ class Game extends \Table
     {
         if ($saveState) {
             $this->undo->saveState();
-            $this->incStat(1, 'actions_used', $this->character->getSubmittingCharacter()['playerId']);
         }
         if ($this->changed['token']) {
             $result = [];
@@ -1684,6 +1684,8 @@ class Game extends \Table
             $result = [
                 'actions' => array_values($this->actions->getValidActions(true)),
                 'actionCount' => $character['actions'] + ($character['isActive'] ? $this->gameData->get('tempActions') : 0),
+                'tempActionCount' => $character['isActive'] ? $this->gameData->get('tempActions') : 0,
+                'actionsTaken' => $this->gameData->get('actionsTaken'),
                 'availableSkills' => $this->actions->getAvailableSkills(),
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item']['itemId'] === 'blanket',
                 'canUndo' => $this->undo->canUndo(),
@@ -1716,6 +1718,8 @@ class Game extends \Table
                 'adjacentTiles' => $this->map->getValidAdjacentTiles(...$character['pos']),
                 'deckhandTargetCount' => $this->getDeckhandTargetCount(),
                 'actionCount' => $character['actions'] + ($character['isActive'] ? $this->gameData->get('tempActions') : 0),
+                'tempActionCount' => $character['isActive'] ? $this->gameData->get('tempActions') : 0,
+                'actionsTaken' => $this->gameData->get('actionsTaken'),
                 'canUseBlanket' => getUsePerTurn('blanket', $this) == 0 && $character['item'] && $character['item']['itemId'] === 'blanket',
             ];
             $this->getAllPlayers($result);
