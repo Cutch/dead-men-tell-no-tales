@@ -152,7 +152,10 @@ class DMTNT_CharactersData
                 'onDrawRevengeCardPre' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $card1 = $data['card'];
-                        $card2 = $game->decks->pickCard('revenge');
+                        $game->decks->removeFromDeck('revenge', $card1['id']);
+                        $card2 = $game->decks->pickCard('revenge', 'hand');
+                        $game->decks->addBackToDeck('revenge', $card1['id']);
+                        $game->decks->addBackToDeck('revenge', $card2['id']);
 
                         $game->eventLog(clienttranslate('${character_name} drew ${buttons}'), [
                             'buttons' => notifyButtons([

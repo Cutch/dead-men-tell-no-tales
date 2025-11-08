@@ -317,7 +317,7 @@ export class Map {
             'beforeend',
             `<div class="new-card">
               <div class="new-card-image"></div>
-              <div class="new-card-buttons" style="display: ${id !== 'dinghy' ? 'unset' : 'none'}">
+              <div class="new-card-buttons" style="display: ${id !== 'dinghy' ? 'flex' : 'none'}">
                 <button id="rotate-left"><i class="fa6 fa6-solid fa6-rotate-left"></i></button>
                 <button id="rotate-right"><i class="fa6 fa6-solid fa6-rotate-right"></i></button>
               </div>

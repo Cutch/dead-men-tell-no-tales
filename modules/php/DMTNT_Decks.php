@@ -214,7 +214,34 @@ class DMTNT_Decks
             }
         }
     }
-    public function pickCard(string $deck): array
+    public function addBackToDeck(string $deck, string $cardName): void
+    {
+        $cards = array_values(
+            array_filter($this->getDeck($deck)->getCardsInLocation('hand'), function ($card) use ($cardName) {
+                return $card['type_arg'] == $cardName;
+            })
+        );
+        if (sizeof($cards) > 0) {
+            $this->getDeck($deck)->moveCard($cards[0]['id'], 'discard');
+        } else {
+            throw new Exception('Missing card id');
+        }
+    }
+    public function removeFromDeck(string $deck, string $cardName): void
+    {
+        $cards = [...$this->getDeck($deck)->getCardsInLocation('discard'), ...$this->getDeck($deck)->getCardsInLocation('deck')];
+        $cards = array_values(
+            array_filter($cards, function ($card) use ($cardName) {
+                return $card['type_arg'] == $cardName;
+            })
+        );
+        if (sizeof($cards) > 0) {
+            $this->getDeck($deck)->moveCard($cards[0]['id'], 'hand');
+        } else {
+            throw new Exception('Missing card id');
+        }
+    }
+    public function pickCard(string $deck, string $target = 'discard'): array
     {
         // $partials = $this->game->gameData->get('partials');
         // if (!array_key_exists($deck, $partials)) {
@@ -227,7 +254,7 @@ class DMTNT_Decks
             $this->shuffleInDiscard($deck);
             $topCard = $this->getDeck($deck)->getCardOnTop('deck');
         }
-        $this->getDeck($deck)->insertCardOnExtremePosition($topCard['id'], 'discard', true);
+        $this->getDeck($deck)->insertCardOnExtremePosition($topCard['id'], $target, true);
         $card = $this->getCard($topCard['type_arg']);
         unset($this->cachedData[$deck]);
         return $card;
