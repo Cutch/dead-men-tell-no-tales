@@ -11,6 +11,7 @@ export class Map {
   constructor(game, gameData) {
     this.game = game;
     this.positions = {};
+    this.positionsLookup = {};
     this.deckhandSelection = [];
     this.placeListeners = [];
     this.selectionListeners = [];
@@ -30,7 +31,7 @@ export class Map {
     </div></div>`;
     document.getElementById('game_play_area').insertAdjacentHTML(
       'beforeend',
-      `<div id="map-wrapper" class="map-wrapper" style="height: 60vh;">
+      `<div id="map-wrapper" class="map-wrapper" style="height: calc(60vh / var(--bga-game-zoom, 1));">
         <div id="map-container"></div>${buttonHTML}
         <div id="new-card-container" style="display: none"></div>
         <div id="left-card-container" style="display: none; opacity: 0"></div>
@@ -112,7 +113,7 @@ export class Map {
     this.loadPanZoom();
   }
   updateFullscreen() {
-    $('map-wrapper').style.height = this.fullscreen ? '90vh' : '60vh';
+    $('map-wrapper').style.height = this.fullscreen ? 'calc(90vh / var(--bga-game-zoom, 1))' : 'calc(60vh / var(--bga-game-zoom, 1))';
   }
   zoom(inOut = 'in', duration = 250) {
     const start = this.panzoom.getScale();
@@ -316,21 +317,40 @@ export class Map {
             'beforeend',
             `<div class="new-card">
               <div class="new-card-image"></div>
-              <div class="new-card-buttons">
+              <div class="new-card-buttons" style="display: ${id !== 'dinghy' ? 'unset' : 'none'}">
                 <button id="rotate-left"><i class="fa6 fa6-solid fa6-rotate-left"></i></button>
                 <button id="rotate-right"><i class="fa6 fa6-solid fa6-rotate-right"></i></button>
               </div>
             </div>`,
           );
+          if (id === 'dinghy') {
+            const xy = this.positionsLookup[this.game.gamedatas.lastPlacedTileId];
+            const { x: nx, y: ny } = this.getXY(xy);
+            const dx = nx - x;
+            const dy = ny - y;
+            const [, , rotate] = [
+              [0, -1, 180],
+              [-1, 0, 270],
+              [1, 0, 90],
+              [0, 1, 0],
+            ].find(([fx, fy]) => {
+              return fx === dx && fy === dy;
+            });
+            console.log(dx, dy, rotate);
+            this.cardRotation = rotate;
+          }
           renderImage(id, elem.querySelector('.new-card-image'), { scale: 1, rotate: this.cardRotation, card: false });
-          addClickListener($('rotate-left'), 'Rotate Left', () => {
-            this.cardRotation = (this.cardRotation ?? 0) - 90;
-            elem.querySelector('.new-card-image .tile-card').style.transform = `rotate(${this.cardRotation}deg)`;
-          });
-          addClickListener($('rotate-right'), 'Rotate Right', () => {
-            this.cardRotation = (this.cardRotation ?? 0) + 90;
-            elem.querySelector('.new-card-image .tile-card').style.transform = `rotate(${this.cardRotation}deg)`;
-          });
+          elem.querySelector('.new-card-image .tile-card').style.transform = `rotate(${this.cardRotation}deg)`;
+          if (id !== 'dinghy') {
+            addClickListener($('rotate-left'), 'Rotate Left', () => {
+              this.cardRotation = (this.cardRotation ?? 0) - 90;
+              elem.querySelector('.new-card-image .tile-card').style.transform = `rotate(${this.cardRotation}deg)`;
+            });
+            addClickListener($('rotate-right'), 'Rotate Right', () => {
+              this.cardRotation = (this.cardRotation ?? 0) + 90;
+              elem.querySelector('.new-card-image .tile-card').style.transform = `rotate(${this.cardRotation}deg)`;
+            });
+          }
         }),
       );
     });
@@ -548,6 +568,7 @@ export class Map {
         if (name == 'tracker') return;
         const tileKey = this.getKey({ x, y });
         this.positions[tileKey] = name;
+        this.positionsLookup[name] = tileKey;
         let tileElem = this.container.querySelector(`.${name}-base:not(.tile-flip)`);
         const { x: tileX, y: tileY } = this.calcTilePosition(x, y);
         if (destroyed == 1) {

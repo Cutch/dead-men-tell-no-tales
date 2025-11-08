@@ -677,7 +677,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         if (args.args.characters) this.updatePlayers(args.args);
         this.updateItems(args.args);
         this.map.setCurrentPlayerCenter();
-        console.log(this.gamedatas.actionsTaken === 0, this.gamedatas.tempActionCount > 0, this.gamedatas.gamestate.name);
         if (
           isActive &&
           this.gamedatas.actionsTaken === 0 &&
@@ -861,8 +860,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   const showId = this.map.showId;
                   this.statusBar.addActionButton(this.getActionMappings().actMove + `${suffix}`, () => {
                     if (
+                      this.map.getSelectionPosition() &&
                       this.map.getSelectionPosition().count >=
-                      16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+                        16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
                     )
                       this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
                         this.bgaPerformAction('actMove', this.map.getSelectionPosition())
@@ -997,8 +997,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
         case 'characterMovement':
           this.statusBar.addActionButton(this.getActionMappings().actMove, () => {
             if (
+              this.map.getSelectionPosition() &&
               this.map.getSelectionPosition().count >=
-              16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+                16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
             )
               this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
                 this.bgaPerformAction('actMoveSelection', this.map.getSelectionPosition()),
