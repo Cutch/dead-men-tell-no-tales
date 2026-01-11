@@ -74,6 +74,11 @@ class DMTNT_Battle
                         ? $this->game->gameData->get('battle')['nextState']
                         : 'playerTurn'
                 );
+            } elseif (
+                $this->game->gameData->get('battleLocationState') === 'stDrawRevengeCard' ||
+                $this->game->gameData->get('battleLocationState') === 'drawRevengeCard'
+            ) {
+                $this->game->nextState('nextCharacter');
             } else {
                 $this->game->nextState($this->game->gameData->get('battleLocationState'));
             }

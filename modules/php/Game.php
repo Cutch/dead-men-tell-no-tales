@@ -1346,12 +1346,16 @@ class Game extends \Table
                     $this->decks->shuffleInDiscard('revenge');
                 }
                 if ($currentState === $this->gamestate->state(true, false, true)['name']) {
-                    if ($this->battle->battleLocation('nextCharacter') == 0) {
+                    $battleState = $this->battle->battleLocation('nextCharacter');
+                    if ($battleState === 0) {
                         $this->nextState('nextCharacter');
+                    } elseif ($battleState === 2) {
+                        $this->nextState('startCharacterBattleSelection');
                     }
                 }
             }
         );
+        $this->log('currentState2', $currentState, $this->gamestate->state(true, false, true)['name']);
     }
 
     public function argSelectionCount(): array

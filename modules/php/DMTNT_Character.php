@@ -201,7 +201,33 @@ class DMTNT_Character
             "UPDATE `character` SET `character_id` = '$toCharacterId', `item` = '$item', `fatigue` = 0, `tempStrength` = 0 WHERE `character_id` = '$fromCharacterId'"
         );
     }
-    public function getCharacterData(string $name, $_skipHooks = false): array
+    private function turnOrderFix()
+    {
+        $stateName = $this->game->gamestate->state(true, false, true)['name'];
+        if ($stateName == 'characterSelect' && !$this->game->gameData->get('turnOrderStart')) {
+            $players = $this->game->loadPlayersBasicInfos();
+            $characters = array_values(
+                $this->game->getCollectionFromDb('SELECT character_name, player_id FROM `character` order by character_name')
+            );
+            $players = array_orderby($players, 'player_no', SORT_ASC);
+            $turnOrder = [];
+            array_walk($players, function ($player) use (&$turnOrder, $characters) {
+                $turnOrder = [
+                    ...$turnOrder,
+                    ...array_map(
+                        function ($d) {
+                            return $d['character_name'];
+                        },
+                        array_filter($characters, function ($char) use ($player) {
+                            return $char['player_id'] == $player['player_id'];
+                        })
+                    ),
+                ];
+            });
+            $this->game->gameData->set('turnOrder', $turnOrder);
+        }
+    }
+    public function _getCharacterData(string $name, $_skipHooks = false): array
     {
         if (array_key_exists($name, $this->cachedData)) {
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
@@ -210,6 +236,16 @@ class DMTNT_Character
                 "SELECT c.*, character_id as characterId, player_color, player_zombie FROM `character` c INNER JOIN `player` p ON p.player_id = c.player_id WHERE character_id = '$name'"
             )[$name];
             return $this->getCalculatedData($this->cachedData[$name], $_skipHooks);
+        }
+    }
+    public function getCharacterData(?string $name, $_skipHooks = false): array
+    {
+        try {
+            return $this->_getCharacterData($name, $_skipHooks);
+        } catch (Exception $e) {
+            $this->game->log($e);
+            $this->turnOrderFix();
+            return $this->_getCharacterData($name, $_skipHooks);
         }
     }
     public function setCharacterItem(string $characterId, array $item): void
