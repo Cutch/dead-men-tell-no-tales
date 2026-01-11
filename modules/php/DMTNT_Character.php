@@ -207,7 +207,7 @@ class DMTNT_Character
         if ($stateName == 'characterSelect' && !$this->game->gameData->get('turnOrderStart')) {
             $players = $this->game->loadPlayersBasicInfos();
             $characters = array_values(
-                $this->game->getCollectionFromDb('SELECT character_name, player_id FROM `character` order by character_name')
+                $this->game->getCollectionFromDb('SELECT character_id, player_id FROM `character` order by character_id')
             );
             $players = array_orderby($players, 'player_no', SORT_ASC);
             $turnOrder = [];
@@ -216,7 +216,7 @@ class DMTNT_Character
                     ...$turnOrder,
                     ...array_map(
                         function ($d) {
-                            return $d['character_name'];
+                            return $d['character_id'];
                         },
                         array_filter($characters, function ($char) use ($player) {
                             return $char['player_id'] == $player['player_id'];
