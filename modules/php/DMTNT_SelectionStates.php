@@ -297,7 +297,7 @@ class DMTNT_SelectionStates
         array $state,
         string $characterId,
         bool $cancellable = true,
-        string $nextState = 'playerTurn',
+        string|bool $nextState = 'playerTurn',
         ?string $title = null,
         bool $isInterrupt = false,
         bool $isPendingState = false,

@@ -105,16 +105,16 @@ class Game extends \Table
             }
             if (!array_key_exists('player_name', $args) && str_contains($message, '${player_name}')) {
                 if (array_key_exists('playerId', $args)) {
-                    $args['player_name'] = $this->getPlayerNameById($args['playerId']);
+                    $args['player_name'] = $this->getPlayerNameById((int) $args['playerId']);
                 } elseif (array_key_exists('characterId', $args)) {
                     $playerId = (int) $this->character->getCharacterData($args['characterId'])['playerId'];
-                    $args['player_name'] = $this->getPlayerNameById($playerId);
+                    $args['player_name'] = $this->getPlayerNameById((int) $playerId);
                 } elseif (array_key_exists('character_name', $args)) {
                     $playerId = (int) $this->character->getCharacterData($args['character_name'])['playerId'];
-                    $args['player_name'] = $this->getPlayerNameById($playerId);
+                    $args['player_name'] = $this->getPlayerNameById((int) $playerId);
                 } else {
                     $playerId = (int) $this->getActivePlayerId();
-                    $args['player_name'] = $this->getPlayerNameById($playerId);
+                    $args['player_name'] = $this->getPlayerNameById((int) $playerId);
                 }
             }
             if (!array_key_exists('character_name', $args) && $this->character->getTurnCharacterId()) {
@@ -219,7 +219,7 @@ class Game extends \Table
             $char = $this->character->getSubmittingCharacter();
         }
         $name = $char['name'];
-        $playerName = $this->getPlayerNameById($char['playerId']);
+        $playerName = $this->getPlayerNameById((int) $char['playerId']);
         $playerColor = $char['player_color'];
         return "<!--PNS--><span class=\"playername\" style=\"color:#$playerColor;\">$name ($playerName)</span><!--PNE-->";
     }
