@@ -955,6 +955,13 @@ class Game extends \Bga\GameFramework\Table
             }
             $tokenItems[$characterId][] = $token;
             $this->gameData->set('tokenItems', $tokenItems);
+            if ($this->data->getTreasure()[$item]['id'] === 'cutlass') {
+                if ($this->character->getCharacterData($characterId)['tempStrength'] >= 1) {
+                    $this->character->updateCharacterData($characterId, function (&$data) {
+                        $data['tempStrength']--;
+                    });
+                }
+            }
             $this->eventLog(clienttranslate('${character_name} picked up a ${item}'), [
                 'i18n' => ['item'],
                 'usedActionId' => 'actPickupToken',
