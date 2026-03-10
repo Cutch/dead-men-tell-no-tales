@@ -70,6 +70,7 @@ $itemSelection = 73;
 $characterMovement = 74;
 $undo = 96;
 $changeZombiePlayer = 97;
+$gameEnd = 99;
 
 $interruptScreens = [
     'drawRevengeCard' => $drawRevengeCard,
@@ -349,7 +350,7 @@ foreach ($machinestates as $key => $state) {
     $machinestates[$changeZombiePlayer]['transitions'][$state['name']] = $key;
 }
 foreach ($machinestates as $key => $state) {
-    if (array_key_exists('transitions', $machinestates[$key]) && $key != $gameSetup) {
+    if (array_key_exists('transitions', $machinestates[$key])) {
         $machinestates[$key]['transitions']['endGame'] = $gameEnd;
     }
 }

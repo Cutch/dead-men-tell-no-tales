@@ -2066,6 +2066,7 @@ EOD;
     public function increaseFire(int $roll, string $color)
     {
         $this->map->increaseFire($roll, $color);
+        $this->map->saveMapChanges();
         $this->completeAction();
     }
 }

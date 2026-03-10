@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
@@ -499,6 +500,9 @@ EOD;
     }
     public function checkExplosion(array &$tile)
     {
+
+        $characters = $this->game->character->getAllCharacterData(false);
+
         if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
             $tile['destroyed'] = 1;
             $tile['deckhand'] = 0;
@@ -520,6 +524,12 @@ EOD;
                 $aTile = &$this->getTileById($aTile['id']);
                 if ($aTile['escape'] != 1) {
                     $aTile['fire'] = min($aTile['fire'] + 1, 6);
+                    foreach ($characters as $character) {
+                        if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {
+                            $this->game->character->adjustFatigue($character['id'], 1);
+                            $this->game->markChanged('player');
+                        }
+                    }
                     $this->checkExplosion($aTile);
                 }
                 unset($aTile);
@@ -589,6 +599,14 @@ EOD;
             foreach (range($start, $start + 4) as $i) {
                 if (array_key_exists($i, $directions)) {
                     $directions[$i]['fire'] = min($directions[$i]['fire'] + 1, 6);
+                    $tile = $directions[$i];
+                    foreach ($characters as $character) {
+                        if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {
+                            $this->game->character->adjustFatigue($character['id'], 1);
+                            $this->game->markChanged('player');
+                        }
+                    }
+
                     $this->checkExplosion($directions[$i]);
                     break;
                 }
