@@ -1,8 +1,10 @@
 <?php
+
 namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\Games\DeadMenTellNoTales\Game;
 use BgaUserException;
+
 class DMTNT_CharactersData
 {
     public function getData(): array
@@ -205,7 +207,7 @@ class DMTNT_CharactersData
             'fallen' => [
                 'type' => 'character',
                 'actions' => '5',
-                'name' => 'Cobalt Fallen',
+                'name' => 'Cobalt Kallen',
                 'color' => '#008cb9',
                 'onCalculateMovesHasTreasure' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {

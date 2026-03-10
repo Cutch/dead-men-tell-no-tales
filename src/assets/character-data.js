@@ -103,10 +103,10 @@ export default {
           h: 480,
         },
         options: {
-          name: 'Cobalt Fallen',
+          name: 'Cobalt Kallen',
           type: 'character',
           color: '#008cb9',
-          text: [{ title: 'Cobalt Fallen' }, _('While looting this player is Fatigued as if he were not looting')],
+          text: [{ title: 'Cobalt Kallen' }, _('While looting this player is Fatigued as if he were not looting')],
         },
       },
     },

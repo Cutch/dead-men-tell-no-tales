@@ -1,4 +1,5 @@
 <?php
+
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
@@ -14,6 +15,7 @@
  *
  * In this PHP file, you are going to defines the rules of the game.
  */
+
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
@@ -24,12 +26,12 @@ use Bga\GameFramework\Actions\Types\JsonParam;
 use BgaUserException;
 use ErrorException;
 use Exception;
+
 set_error_handler(function ($severity, $message, $file, $line) {
     if (error_reporting() & $severity) {
         throw new ErrorException($message, 0, $severity, $file, $line);
     }
 });
-require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Battle.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Data.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Actions.php';
@@ -43,7 +45,7 @@ require_once dirname(__DIR__) . '/php/data-files/DMTNT_Characters.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_RevengeDeck.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Items.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Tile.php';
-class Game extends \Table
+class Game extends \Bga\GameFramework\Table
 {
     public DMTNT_Character $character;
     public DMTNT_Actions $actions;
@@ -82,6 +84,7 @@ class Game extends \Table
             'soloCount' => 104,
             'doubleCount' => 105,
             'powderKegExplosion' => 106,
+            'game_version' => 300,
         ]);
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
@@ -181,10 +184,8 @@ class Game extends \Table
     }
     public function getVersion(): int
     {
-        if (!array_key_exists(300, $this->gamestate->table_globals)) {
-            $this->gamestate->reloadState();
-        }
-        return intval($this->gamestate->table_globals[300]);
+        $current_version = $this->bga->tableOptions->get(300);
+        return intval($current_version);
     }
     protected function initTable(): void
     {
@@ -225,9 +226,8 @@ class Game extends \Table
     }
     public function initDeck($type = 'card')
     {
-        $deck = $this->getNew('module.common.deck');
+        $deck = $this->deckFactory->createDeck($type);
         $deck->autoreshuffle = true;
-        $deck->init($type);
         return $deck;
     }
     public function getCurrentPlayer(bool $bReturnNullIfNotLogged = false): int
@@ -1305,11 +1305,11 @@ class Game extends \Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                        $card['color'] === 'both'
-                            ? clienttranslate('All')
-                            : ($card['color'] === 'red'
-                                ? clienttranslate('Red')
-                                : clienttranslate('Yellow')),
+                    $card['color'] === 'both'
+                        ? clienttranslate('All')
+                        : ($card['color'] === 'red'
+                            ? clienttranslate('Red')
+                            : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
@@ -1486,7 +1486,7 @@ class Game extends \Table
             $eloMapping[$this->gameData->get('difficulty')] +
             ($this->gameData->get('captainFromm') ? 2 : 0) -
             ($this->gameData->get('powderKegExplosion') ? 3 : 0);
-        $this->DbQuery("UPDATE player SET player_score={$score} WHERE 1=1");
+        $this->playerScore->setAll($score);
         $this->eventLog(clienttranslate('Win!'));
         $this->nextState('endGame');
     }
@@ -1505,7 +1505,7 @@ class Game extends \Table
         } elseif ($reason === 'trapped') {
             $this->eventLog(clienttranslate('The ship can\'t be searched, the expedition is lost'));
         }
-        $this->DbQuery('UPDATE player SET player_score=0 WHERE 1=1');
+        $this->playerScore->setAll(0);
         $this->nextState('endGame');
     }
 
@@ -1835,16 +1835,6 @@ class Game extends \Table
     }
 
     /**
-     * Returns the game name.
-     *
-     * IMPORTANT: Please do not modify.
-     */
-    protected function getGameName()
-    {
-        return 'deadmentellnotales';
-    }
-
-    /**
      * This method is called only once, when a new game is launched. In this method, you must setup the game
      *  according to the game rules, so that the game is ready to be played.
      */
@@ -1909,6 +1899,8 @@ class Game extends \Table
 
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();
+
+        return 2;
     }
 
     public function zombieBack(): void
@@ -1925,7 +1917,7 @@ class Game extends \Table
         if ($stateType === 'activeplayer') {
             if ($returningPlayerId == $this->character->getTurnCharacter()['playerId']) {
                 $this->nextState('changeZombiePlayer');
-                $this->gamestate->changeActivePlayer($returningPlayerId);
+                $this->gamestate->changeActivePlayer((int) $returningPlayerId);
                 $this->nextState($stateName);
             }
         } elseif ($stateType === 'multipleactiveplayer') {
@@ -1994,7 +1986,7 @@ class Game extends \Table
             )[0];
 
             $this->nextState('changeZombiePlayer');
-            $this->gamestate->changeActivePlayer($newPlayerId);
+            $this->gamestate->changeActivePlayer((int) $newPlayerId);
             $this->nextState($stateName);
         } elseif ($state['type'] === 'multipleactiveplayer') {
             $this->gameData->resetMultiActiveCharacter();

@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use Deck;
 use Exception;
 
 class DMTNT_Decks
@@ -24,7 +24,7 @@ class DMTNT_Decks
             $this->decks[$deck] = $this->game->initDeck(str_replace('-', '', $deck));
         }
     }
-    public function getDeck(string $name): Deck
+    public function getDeck(string $name): \Bga\GameFramework\Components\Deck
     {
         return $this->decks[$name];
     }

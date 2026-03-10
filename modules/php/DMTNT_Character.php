@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
@@ -341,7 +342,7 @@ class DMTNT_Character
 
         $playerId = (int) $this->game->getActivePlayerId();
         if ($playerId != $characterData['playerId']) {
-            $this->game->gamestate->changeActivePlayer($characterData['playerId']);
+            $this->game->gamestate->changeActivePlayer((int) $characterData['playerId']);
             $this->addExtraTime();
         }
     }
