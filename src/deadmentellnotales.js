@@ -126,14 +126,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             <div>
               <div class="character-name">${this.data[character.id].options.name}</div>
               <div class="fatigue line"><div class="fa6 fa6-solid fa6-person-running"></div><span class="label">${_(
-                'Fatigue',
-              )}: </span><span class="value"></span></div>
+              'Fatigue',
+            )}: </span><span class="value"></span></div>
               <div class="actions line"><div class="fa6 fa6-solid fa6-bolt"></div><span class="label">${_(
-                'Actions',
-              )}: </span><span class="value"></span></div>
+              'Actions',
+            )}: </span><span class="value"></span></div>
               <div class="strength line"><div class="fa6 fa6-solid fa6-hand-fist"></div><span class="label">${_(
-                'Strength',
-              )}: </span><span class="value"></span></div>
+              'Strength',
+            )}: </span><span class="value"></span></div>
               <div class="item line"><div class="fa6 fa6-solid fa6-toolbox"></div><span class="label">${_('Item')}: </span><span class="value"></span></div>
               <div class="treasure line" style="display:none"><div class="fa6 fa6-solid fa6-gem"></div><span class="label">${_('Carrying Treasure')}</div>
             </div>
@@ -515,7 +515,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             character3: this.mySelectedCharacters?.[2],
             character4: this.mySelectedCharacters?.[3],
             character5: this.mySelectedCharacters?.[4],
-          }).catch(() => {
+          }).then(() => { }).catch(() => {
             this.mySelectedCharacters = saved;
           });
         });
@@ -801,8 +801,8 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                     const suffix = treasure.split('-')?.[1];
                     this.statusBar.addActionButton(
                       this.getActionMappings().actDrop +
-                        ` ${getAllData()[treasure + '-token'].options.name}` +
-                        (suffix ? ' ' + suffix : ''),
+                      ` ${getAllData()[treasure + '-token'].options.name}` +
+                      (suffix ? ' ' + suffix : ''),
                       () => {
                         this.bgaPerformAction('actDrop', { id });
                       },
@@ -862,7 +862,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                     if (
                       this.map.getSelectionPosition() &&
                       this.map.getSelectionPosition().count >=
-                        16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+                      16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
                     )
                       this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
                         this.bgaPerformAction('actMove', this.map.getSelectionPosition())
@@ -886,7 +886,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   if (!this.gamedatas.canUseBlanket && this.gamedatas.fires.length === 1) {
                     const id = this.gamedatas.fires[0];
                     const { x, y } = this.gamedatas.tiles.find((d) => d.id === id);
-                    this.bgaPerformAction('actFightFire', { x, y }).catch(console.error);
+                    this.bgaPerformAction('actFightFire', { x, y }).then(() => { }).catch(console.error);
                   } else {
                     this.clearActionButtons();
                     this.map.showTileSelectionScreen('actFightFire', this.gamedatas.fires);
@@ -999,7 +999,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
             if (
               this.map.getSelectionPosition() &&
               this.map.getSelectionPosition().count >=
-                16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
+              16 - this.gamedatas.characters.find((d) => d.id === this.gamedatas.activeCharacter).fatigue
             )
               this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
                 this.bgaPerformAction('actMoveSelection', this.map.getSelectionPosition()),
@@ -1053,7 +1053,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
               character3: this.mySelectedCharacters?.[2],
               character4: this.mySelectedCharacters?.[3],
               character5: this.mySelectedCharacters?.[4],
-            }).catch(() => {
+            }).then(() => { }).catch(() => {
               this.mySelectedCharacters = saved;
             });
           });
@@ -1089,14 +1089,14 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   this.gamedatas.actionCount === 0
                     ? _('Are you sure you want to end your turn?')
                     : dojo.string.substitute(
-                        _(
-                          'You have ${actionsLeft} action(s) left, do you want to pass ${notTempActionsLeft} action(s) to the next player?',
-                        ),
-                        {
-                          actionsLeft: this.gamedatas.actionCount,
-                          notTempActionsLeft: this.gamedatas.actionCount - this.gamedatas.tempActionCount,
-                        },
+                      _(
+                        'You have ${actionsLeft} action(s) left, do you want to pass ${notTempActionsLeft} action(s) to the next player?',
                       ),
+                      {
+                        actionsLeft: this.gamedatas.actionCount,
+                        notTempActionsLeft: this.gamedatas.actionCount - this.gamedatas.tempActionCount,
+                      },
+                    ),
                   () => this.bgaPerformAction('actEndTurn'),
                 ),
               { color: 'secondary' },
@@ -1146,7 +1146,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   if (actionId === 'actUseSkill') {
                     return this.gamedatas.availableSkills?.forEach((skill) => {
                       const suffix = this.getActionSuffixHTML(skill);
-                      this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => {}, { disabled: true });
+                      this.statusBar.addActionButton(`${_(skill.name)}${suffix}`, () => { }, { disabled: true });
                     });
                   }
                 });
@@ -1165,10 +1165,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       'beforeend',
       `<div id="${id}" class="notification">
         <div class="actions-marker"></div><div>${_(
-          dojo.string.substitute(_('${tempActionCount} action(s) have been passed to you'), {
-            tempActionCount: this.gamedatas.tempActionCount,
-          }),
-        )}</div>
+        dojo.string.substitute(_('${tempActionCount} action(s) have been passed to you'), {
+          tempActionCount: this.gamedatas.tempActionCount,
+        }),
+      )}</div>
       </div>`,
     );
 
@@ -1299,10 +1299,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       if (moveId > lastMoveId) {
         try {
           $(`log_${logId}`).remove();
-        } catch (e) {}
+        } catch (e) { }
         try {
           $(`dockedlog_${logId - 1}`).remove();
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   },
