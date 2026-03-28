@@ -1312,11 +1312,11 @@ class Game extends \Bga\GameFramework\Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                    $card['color'] === 'both'
-                        ? clienttranslate('All')
-                        : ($card['color'] === 'red'
-                            ? clienttranslate('Red')
-                            : clienttranslate('Yellow')),
+                        $card['color'] === 'both'
+                            ? clienttranslate('All')
+                            : ($card['color'] === 'red'
+                                ? clienttranslate('Red')
+                                : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
@@ -2005,37 +2005,47 @@ class Game extends \Bga\GameFramework\Table
     }
 
     // TEST FUNCTIONS START HERE
-    public function resetActions()
+    #[Debug(reload: true)]
+    public function debug_resetActions()
     {
         $this->character->updateCharacterData($this->character->getSubmittingCharacter()['id'], function (&$data) {
             $data['actions'] = $data['maxActions'];
         });
         $this->completeAction();
     }
-    public function noActions()
+    #[Debug(reload: true)]
+    public function debug_noActions()
     {
         $this->character->updateCharacterData($this->character->getSubmittingCharacter()['id'], function (&$data) {
             $data['actions'] = 0;
         });
         $this->completeAction();
     }
-    public function spreadDeckhand()
+    #[Debug(reload: true)]
+    public function debug_spreadDeckhand()
     {
         $this->map->spreadDeckhand();
         $this->completeAction();
     }
-    public function setup()
+    #[Debug(reload: true)]
+    public function debug_setfire(int $x, int $y, int $fire)
     {
-        $this->decks->setup();
+        $tile = &$this->map->getTileByXY($x, $y);
+        $tile['fire'] = $fire;
+        unset($tile);
+        $this->map->saveMapChanges();
+        $this->completeAction();
     }
-    public function resetFatigue()
+    #[Debug(reload: true)]
+    public function debug_resetFatigue()
     {
         $this->character->updateCharacterData($this->character->getSubmittingCharacter()['id'], function (&$data) {
             $data['fatigue'] = 0;
         });
         $this->completeAction();
     }
-    public function highFatigue(?string $char = null)
+    #[Debug(reload: true)]
+    public function debug_highFatigue(?string $char = null)
     {
         if (!$char) {
             $char = $this->character->getSubmittingCharacter()['id'];
@@ -2045,12 +2055,14 @@ class Game extends \Bga\GameFramework\Table
         });
         $this->completeAction();
     }
-    public function checkTreasures()
+    #[Debug(reload: true)]
+    public function debug_checkTreasures()
     {
         $this->gameData->set('treasures', $this->gameData->get('treasures') + 3);
         $this->checkWin();
     }
-    public function clearMap()
+    #[Debug(reload: true)]
+    public function debug_clearMap()
     {
         $this->map->iterateMap(function (&$tile) {
             $tile['fire'] = 0;
@@ -2059,7 +2071,8 @@ class Game extends \Bga\GameFramework\Table
         $this->map->saveMapChanges();
         $this->completeAction();
     }
-    public function dinghy()
+    #[Debug(reload: true)]
+    public function debug_dinghy()
     {
         $card = $this->decks->getDeck('tile')->getCardOnTop('deck');
 
@@ -2070,10 +2083,22 @@ WHERE card_location='deck' AND card_id != {$card['id']}
 EOD;
         $this::DbQuery($query);
     }
-    public function increaseFire(int $roll, string $color)
+    #[Debug(reload: true)]
+    public function debug_increaseFire(int $roll, string $color)
     {
         $this->map->increaseFire($roll, $color);
         $this->map->saveMapChanges();
         $this->completeAction();
+    }
+    #[Debug(reload: true)]
+    public function debug_setExplosions(int $explosionCount)
+    {
+        $this->gameData->set('explosions', $explosionCount);
+        $this->completeAction();
+    }
+    #[Debug(reload: true)]
+    public function debug_setup()
+    {
+        $this->decks->setup();
     }
 }

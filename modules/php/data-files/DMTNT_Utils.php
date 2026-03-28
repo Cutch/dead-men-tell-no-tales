@@ -163,7 +163,9 @@ if (!function_exists('addId')) {
         foreach ($rows as $row) {
             $v = [];
             foreach ($row as $value) {
-                if ($value == null) {
+                if ($value === 0) {
+                    array_push($v, '0');
+                } elseif ($value == null) {
                     array_push($v, 'NULL');
                 } else {
                     array_push($v, "'{$value}'");
