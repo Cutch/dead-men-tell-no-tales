@@ -703,12 +703,14 @@ export class Map {
             card: false,
             scale: 1.5,
           });
-        tileElem.querySelector(`.fire-warning`).style.display =
-          exploded != 1 && destroyed != 1 && (parseInt(fire, 10) + 1 == explosion || fire == 5) ? '' : 'none';
 
+        const fireWarningElem = tileElem.querySelector(`.fire-warning`);
         const deckhandElem = tileElem.querySelector(`.deckhands`);
         const charactersElem = tileElem.querySelector(`.characters`);
         const treasuresElem = tileElem.querySelector(`.treasures`);
+        if (fireWarningElem)
+          fireWarningElem.style.display =
+            exploded != 1 && destroyed != 1 && (parseInt(fire, 10) + 1 == explosion || fire == 5) ? '' : 'none';
         if (deckhandElem) this.renderDeckhands(deckhandElem, deckhand);
         if (treasuresElem) characters.forEach((d) => d.tokenItems.forEach((t) => treasuresElem.querySelector(`.id${t.id}`)?.remove()));
         if (this.game.gamedatas.characterPositions && charactersElem)

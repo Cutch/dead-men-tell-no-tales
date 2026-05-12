@@ -636,14 +636,17 @@ EOD;
     {
         $total = 0;
         array_walk($this->cachedMap, function (&$map) use (&$total) {
+            if ($map['destroyed']) {
+                return;
+            }
             if ($map['has_trapdoor']) {
                 $map['deckhand']++;
             }
             $total += $map['deckhand'];
         });
-        $this->game::DbQuery('UPDATE `map` SET deckhand=deckhand+1 WHERE has_trapdoor');
+        $this->game::DbQuery('UPDATE `map` SET deckhand=deckhand+1 WHERE has_trapdoor AND NOT destroyed');
         $this->game->markChanged('map');
-        if ($total > 30) {
+        if ($total > 30 - $this->lostDeckhands()) {
             $this->game->lose('deckhand');
         }
     }
@@ -821,18 +824,30 @@ EOD;
     {
         $total = 0;
         array_walk($this->cachedMap, function ($map) use (&$total) {
-            if ($map['has_trapdoor']) {
+            if ($map['destroyed']) {
+                return;
+            } elseif ($map['has_trapdoor']) {
                 $total += $map['deckhand'] + 1;
             } else {
                 $total += $map['deckhand'];
             }
         });
-        return $total > 30;
+        return $total > 30 - $this->lostDeckhands();
+    }
+    public function lostDeckhands(): int
+    {
+        $total = 0;
+        array_walk($this->cachedMap, function ($map) use (&$total) {
+            if ($map['destroyed']) {
+                $total += $map['deckhand'];
+            }
+        });
+        return $total;
     }
     public function testSpreadDeckhand(): bool
     {
         $this->iterateMap(function ($tile) {
-            if ($tile['has_trapdoor']) {
+            if ($tile['has_trapdoor'] && !$tile['destroyed']) {
                 $currentDeckhand = $tile['deckhand'];
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTileR) {
@@ -847,15 +862,18 @@ EOD;
         });
         $total = 0;
         array_walk($this->cachedMap, function ($map) use (&$total) {
+            if ($map['destroyed']) {
+                return;
+            }
             $total += $map['deckhand'];
         });
         $this->reloadCache();
-        return $total > 30;
+        return $total > 30 - $this->lostDeckhands();
     }
     public function spreadDeckhand(): void
     {
         $this->iterateMap(function ($tile) {
-            if ($tile['has_trapdoor']) {
+            if ($tile['has_trapdoor'] && !$tile['destroyed']) {
                 $currentDeckhand = $tile['deckhand'];
                 $adjacentTiles = $this->getValidAdjacentTiles($tile['x'], $tile['y']);
                 foreach ($adjacentTiles as $aTileR) {
@@ -870,10 +888,13 @@ EOD;
         $this->saveMapChanges();
         $total = 0;
         array_walk($this->cachedMap, function ($map) use (&$total) {
+            if ($map['destroyed']) {
+                return;
+            }
             $total += $map['deckhand'];
         });
         $this->game->markChanged('map');
-        if ($total > 30) {
+        if ($total > 30 - $this->lostDeckhands()) {
             $this->game->lose('deckhand');
         }
     }
@@ -882,7 +903,7 @@ EOD;
         $tile = &$this->getTileByXY($x, $y);
         $tile['deckhand'] = max($tile['deckhand'] - 1, 0);
         $tileId = $tile['id'];
-        $this->game::DbQuery("UPDATE `map` SET deckhand=GREATEST(deckhand-1,0) WHERE id='$tileId'");
+        $this->game::DbQuery("UPDATE `map` SET deckhand=GREATEST(deckhand-1,0) WHERE id='$tileId' AND NOT destroyed");
         $this->game->markChanged('map');
     }
 }

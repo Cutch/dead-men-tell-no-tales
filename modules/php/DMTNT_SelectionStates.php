@@ -36,6 +36,9 @@ class DMTNT_SelectionStates
         $stateData = $this->getState(null);
         $characterId = $stateData['characterId'];
         if ($stateData['id'] === 'gusMovement') {
+            if ($x === null || $y === null) {
+                throw new BgaUserException(clienttranslate('Select a location'));
+            }
         } else {
             $this->game->_actMove('actMoveSelection', $x, $y, $characterId);
         }

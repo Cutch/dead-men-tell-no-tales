@@ -254,6 +254,7 @@ class Game extends \Bga\GameFramework\Table
     {
         if ($this->hasAllTreasure()) {
             $this->lose('untimely');
+            return;
         }
         $this->eventLog(clienttranslate('${character_name} has died'), [
             'character_name' => $this->getCharacterHTML($characterId),
@@ -269,6 +270,7 @@ class Game extends \Bga\GameFramework\Table
             sizeof($this->gameData->get('deadCharacters')) + sizeof($this->character->getAllCharacterIds())
         ) {
             $this->lose('noPirates');
+            return;
         }
 
         $this->gameData->set('deadCharacters', [...$this->gameData->get('deadCharacters'), $character['id']]);
@@ -1591,6 +1593,7 @@ class Game extends \Bga\GameFramework\Table
         }, array_values($this->map->getMap()));
         $result['testSpreadDeckhand'] = $this->map->testSpreadDeckhand();
         $result['testIncreaseDeckhand'] = $this->map->testIncreaseDeckhand();
+        $result['lostDeckhands'] = $this->map->lostDeckhands();
 
         $result['explosions'] = $this->gameData->get('explosions');
         $result['tokenPositions'] = array_map(function ($tokens) {
@@ -2028,10 +2031,25 @@ class Game extends \Bga\GameFramework\Table
         $this->completeAction();
     }
     #[Debug(reload: true)]
-    public function debug_setfire(int $x, int $y, int $fire)
+    public function debug_spawnDeckhand()
+    {
+        $this->map->increaseDeckhand();
+        $this->completeAction();
+    }
+    #[Debug(reload: true)]
+    public function debug_setFire(int $x, int $y, int $fire)
     {
         $tile = &$this->map->getTileByXY($x, $y);
         $tile['fire'] = $fire;
+        unset($tile);
+        $this->map->saveMapChanges();
+        $this->completeAction();
+    }
+    #[Debug(reload: true)]
+    public function debug_destroyTile(int $x, int $y)
+    {
+        $tile = &$this->map->getTileByXY($x, $y);
+        $tile['destroyed'] = true;
         unset($tile);
         $this->map->saveMapChanges();
         $this->completeAction();

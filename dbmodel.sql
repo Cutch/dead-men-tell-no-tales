@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS `undoState` (
     `character_id` varchar(10) NOT NULL,
     `gamelog_move_id` int(10) unsigned NULL,
     `pending` int(1) UNSIGNED DEFAULT 0,
-    `characterTable` text DEFAULT '',
-    `globalsTable` text DEFAULT '',
-    `extraTables` text DEFAULT '',
+    `characterTable` text,
+    `globalsTable` text,
+    `extraTables` text,
     PRIMARY KEY (`undo_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
