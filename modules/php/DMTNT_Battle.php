@@ -446,7 +446,7 @@ class DMTNT_Battle
                 'id' => 'moveCrew',
                 'crew' => $crewToken,
                 'currentPosId' => $xy,
-                'currentState' => $this->game->gamestate->state(true, false, true)['name'],
+                'currentState' => $this->game->gamestate->getCurrentMainState()->name,
                 'backState' => 'postBattle',
             ],
             $battle['characterId'],

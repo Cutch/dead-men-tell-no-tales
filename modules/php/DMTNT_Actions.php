@@ -352,9 +352,9 @@ class DMTNT_Actions
     public function checkRequirements(array $actionObj, ...$args): bool
     {
         return (!array_key_exists('getState', $actionObj) ||
-            in_array($this->game->gamestate->state(true, false, true)['name'], $actionObj['getState']())) &&
+            in_array($this->game->gamestate->getCurrentMainState()->name, $actionObj['getState']())) &&
             (!array_key_exists('state', $actionObj) ||
-                in_array($this->game->gamestate->state(true, false, true)['name'], $actionObj['state'])) &&
+                in_array($this->game->gamestate->getCurrentMainState()->name, $actionObj['state'])) &&
             (!array_key_exists('interruptState', $actionObj) ||
                 ($this->game->actInterrupt->getLatestInterruptState() &&
                     in_array($actionObj['id'], toId($this->game->actInterrupt->getLatestInterruptState()['data']['skills'])))) &&

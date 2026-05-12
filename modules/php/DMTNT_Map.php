@@ -790,7 +790,7 @@ EOD;
                             'id' => 'moveCrew',
                             'crew' => $crewToken,
                             'currentPosId' => $currentPosId,
-                            'currentState' => $this->game->gamestate->state(true, false, true)['name'],
+                            'currentState' => $this->game->gamestate->getCurrentMainState()->name,
                         ],
                         $this->game->character->getTurnCharacterId(),
                         false,

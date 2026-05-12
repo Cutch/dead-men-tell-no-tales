@@ -57,8 +57,8 @@ class DMTNT_Undo
         $this->game->markChanged('map');
         $this->game->markChanged('actions');
         $this->game::DbQuery("DELETE FROM `undoState` where pending OR undo_id = $undoId");
-        $currentState = $this->game->gamestate->state(true, false, true)['name'];
-        if ($this->game->gamestate->state(true, false, true)['name'] != 'playerTurn') {
+        $currentState = $this->game->gamestate->getCurrentMainState()->name;
+        if ($this->game->gamestate->getCurrentMainState()->name != 'playerTurn') {
             $currentState = 'playerTurn';
         }
         $this->game->nextState('undo');
@@ -93,7 +93,7 @@ class DMTNT_Undo
         $extraTables = json_encode($extraTablesData);
         $stateName = '';
         try {
-            $stateName = $this->game->gamestate->state(true, false, true)['name'];
+            $stateName = $this->game->gamestate->getCurrentMainState()->name;
         } catch (Exception $e) {
         }
         $this->initialState = [
@@ -128,7 +128,7 @@ class DMTNT_Undo
             $this->savedMoveId = $moveId;
 
             $pending = 'false';
-            if (!in_array($this->game->gamestate->state(true, false, true)['name'], $this->validStates)) {
+            if (!in_array($this->game->gamestate->getCurrentMainState()->name, $this->validStates)) {
                 $pending = 'true';
             }
             $this->game::DbQuery(
@@ -142,7 +142,7 @@ class DMTNT_Undo
             !in_array($this->initialState['stateName'], $this->validStates) &&
             $char == $this->game->character->getSubmittingCharacterId()
         ) {
-            if (in_array($this->game->gamestate->state(true, false, true)['name'], $this->validStates)) {
+            if (in_array($this->game->gamestate->getCurrentMainState()->name, $this->validStates)) {
                 $this->game::DbQuery('UPDATE `undoState` SET pending=false WHERE pending=true');
             }
         }

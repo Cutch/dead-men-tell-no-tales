@@ -29,7 +29,7 @@ class DMTNT_ActInterrupt
         if (!$existingData) {
             // First time calling
             $data = $startCallback($this->game, ...$args);
-            $currentState = $this->game->gamestate->state(true, false, true)['name'];
+            $currentState = $this->game->gamestate->getCurrentMainState()->name;
             if ($data === null) {
                 return;
             }
@@ -64,7 +64,7 @@ class DMTNT_ActInterrupt
             } else {
                 $this->setState($functionName, $interruptData);
                 // Goto the skill screen
-                if ($this->game->gamestate->state(true, false, true)['name'] === $currentState) {
+                if ($this->game->gamestate->getCurrentMainState()->name === $currentState) {
                     $this->game->nextState('interrupt');
                     $this->game->completeAction(false);
                 }
@@ -81,7 +81,7 @@ class DMTNT_ActInterrupt
             $this->setState($functionName, null);
         } elseif (!array_key_exists('activated', $existingData)) {
             $this->setState($functionName, ['activated' => true, ...$existingData]);
-            $this->game->log('exitHook finalize', $functionName, $this->game->gamestate->state(true, false, true)['name'], $existingData);
+            $this->game->log('exitHook finalize', $functionName, $this->game->gamestate->getCurrentMainState()->name, $existingData);
             // Don't need to re-check for interrupts
             $hook($existingData['data'], ['suffix' => 'Post']);
             // Calling after skill screen
@@ -173,7 +173,7 @@ class DMTNT_ActInterrupt
     private function getDataForState(): ?array
     {
         $state = $this->getEntireState();
-        $stateName = $this->game->gamestate->state(true, false, true)['name'];
+        $stateName = $this->game->gamestate->getCurrentMainState()->name;
         $data = array_keys(
             array_filter($state, function ($v) use ($stateName) {
                 return $v['currentState'] == $stateName;

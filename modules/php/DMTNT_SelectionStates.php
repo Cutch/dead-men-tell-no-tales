@@ -213,7 +213,7 @@ class DMTNT_SelectionStates
     }
     public function stateToStateNameMapping(?string $stateName = null): ?string
     {
-        $stateName = $stateName ?? $this->game->gamestate->state(true, false, true)['name'];
+        $stateName = $stateName ?? $this->game->gamestate->getCurrentMainState()->name;
         if ($stateName == 'cardSelection') {
             return 'cardSelectionState';
         } elseif ($stateName == 'crewMovement') {

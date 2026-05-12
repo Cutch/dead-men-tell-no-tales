@@ -102,7 +102,7 @@ class Game extends \Bga\GameFramework\Table
         $this->undo = new DMTNT_Undo($this);
         // automatically complete notification args when needed
         $this->notify->addDecorator(function (string $message, array $args) {
-            $args['gamestate'] = ['name' => $this->gamestate->state(true, false, true)['name']];
+            $args['gamestate'] = ['name' => $this->gamestate->getCurrentMainState()->name];
             if (!array_key_exists('character_name', $args) && str_contains($message, '${character_name}')) {
                 $args['character_name'] = $this->getCharacterHTML();
             }
@@ -174,7 +174,7 @@ class Game extends \Bga\GameFramework\Table
     public function actAbandonShip()
     {
         $this->death($this->character->getTurnCharacterId());
-        if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+        if ($this->gamestate->getCurrentMainState()->name == 'playerTurn') {
             $this->endTurn();
         }
     }
@@ -325,7 +325,7 @@ class Game extends \Bga\GameFramework\Table
                 ],
                 $this->character->getTurnCharacterId(),
                 false,
-                $this->gamestate->state(true, false, true)['name'] == 'drawRevengeCard' ? 'nextCharacter' : false
+                $this->gamestate->getCurrentMainState()->name == 'drawRevengeCard' ? 'nextCharacter' : false
             );
         }
     }
@@ -864,7 +864,7 @@ class Game extends \Bga\GameFramework\Table
                 }
                 $this->undo->saveState();
                 $this->hooks->onMoveFinalize($data);
-                if ($this->gamestate->state(true, false, true)['name'] === 'playerTurn') {
+                if ($this->gamestate->getCurrentMainState()->name === 'playerTurn') {
                     $this->battle->battleLocation('playerTurn');
                     // Is already player turn so don't need to call nextState
                 }
@@ -1061,7 +1061,7 @@ class Game extends \Bga\GameFramework\Table
     }
     public function actUseSkill(string $skillId, ?string $skillSecondaryId = null): void
     {
-        if ($this->gamestate->state(true, false, true)['name'] == 'playerTurn') {
+        if ($this->gamestate->getCurrentMainState()->name == 'playerTurn') {
         }
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
@@ -1081,7 +1081,7 @@ class Game extends \Bga\GameFramework\Table
                     'skill' => $skill,
                     'character' => $character,
                     'turnCharacter' => $this->character->getTurnCharacter(),
-                    'nextState' => $this->gamestate->state(true, false, true)['name'] == 'dayEvent' ? 'playerTurn' : false,
+                    'nextState' => $this->gamestate->getCurrentMainState()->name == 'dayEvent' ? 'playerTurn' : false,
                 ];
             },
             function (Game $_this, bool $finalizeInterrupt, $data) {
@@ -1101,7 +1101,7 @@ class Game extends \Bga\GameFramework\Table
                     ]);
                     $notificationSent = true;
                 };
-                if ($_this->gamestate->state(true, false, true)['name'] == 'interrupt') {
+                if ($_this->gamestate->getCurrentMainState()->name == 'interrupt') {
                     // Only applies to skills from an interrupt state
                     if (!$notificationSent && (!$data || !array_key_exists('notify', $data) || $data['notify'] != false)) {
                         $skill['sendNotification']();
@@ -1143,7 +1143,7 @@ class Game extends \Bga\GameFramework\Table
     public function actForceSkip(): void
     {
         $this->gamestate->checkPossibleAction('actForceSkip');
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if ($stateName == 'interrupt') {
             if (!$this->actInterrupt->onInterruptCancel(true)) {
                 $this->nextState('playerTurn');
@@ -1158,7 +1158,7 @@ class Game extends \Bga\GameFramework\Table
     public function actUnBack(): void
     {
         $this->gamestate->checkPossibleAction('actUnBack');
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if ($stateName == 'characterSelect') {
             $this->characterSelection->actUnBack();
         }
@@ -1167,7 +1167,7 @@ class Game extends \Bga\GameFramework\Table
     {
         // $this->character->addExtraTime();
         $saveState = true;
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if ($stateName == 'battleSelection') {
             $this->nextState('playerTurn');
         } elseif ($stateName == 'tradePhase') {
@@ -1293,7 +1293,7 @@ class Game extends \Bga\GameFramework\Table
     }
     public function stDrawRevengeCard()
     {
-        $currentState = $this->gamestate->state(true, false, true)['name'];
+        $currentState = $this->gamestate->getCurrentMainState()->name;
         $this->actInterrupt->interruptableFunction(
             __FUNCTION__,
             func_get_args(),
@@ -1354,7 +1354,7 @@ class Game extends \Bga\GameFramework\Table
                 ) {
                     $this->decks->shuffleInDiscard('revenge');
                 }
-                if ($currentState === $this->gamestate->state(true, false, true)['name']) {
+                if ($currentState === $this->gamestate->getCurrentMainState()->name) {
                     $battleState = $this->battle->battleLocation('nextCharacter');
                     if ($battleState === 0) {
                         $this->nextState('nextCharacter');
@@ -1364,7 +1364,7 @@ class Game extends \Bga\GameFramework\Table
                 }
             }
         );
-        $this->log('currentState2', $currentState, $this->gamestate->state(true, false, true)['name']);
+        $this->log('currentState2', $currentState, $this->gamestate->getCurrentMainState()->name);
     }
 
     public function argSelectionCount(): array
@@ -1391,9 +1391,7 @@ class Game extends \Bga\GameFramework\Table
         if ($this->gamestate == null) {
             $this->trace('TRACE [__init] ' . json_encode($args) . PHP_EOL . $stackString);
         } else {
-            $this->trace(
-                'TRACE [' . $this->gamestate->state(true, false, true)['name'] . '] ' . json_encode($args) . PHP_EOL . $stackString
-            );
+            $this->trace('TRACE [' . $this->gamestate->getCurrentMainState()->name . '] ' . json_encode($args) . PHP_EOL . $stackString);
         }
     }
     public function argPlayerState(): array
@@ -1561,7 +1559,7 @@ class Game extends \Bga\GameFramework\Table
     }
     public function getAllPlayers(&$result): void
     {
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if (!($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $xy = $this->getCharacterPos($this->character->getTurnCharacterId());
             $result['currentPosition'] = $this->map->xy(...$xy);
@@ -1669,7 +1667,7 @@ class Game extends \Bga\GameFramework\Table
 
             $this->notify('tokenUsed', '', ['gameData' => $result]);
         }
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if ($this->changed['playerColor'] && $stateName === 'characterSelect') {
             $result = [];
             $this->getAllPlayers($result);
@@ -1704,7 +1702,7 @@ class Game extends \Bga\GameFramework\Table
             $this->getItemData($result);
             $this->notify('updateMap', '', ['gameData' => $result]);
         }
-        if (in_array($this->gamestate->state(true, false, true)['name'], ['playerTurn'])) {
+        if (in_array($this->gamestate->getCurrentMainState()->name, ['playerTurn'])) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
                 'actions' => array_values($this->actions->getValidActions(true)),
@@ -1728,7 +1726,7 @@ class Game extends \Bga\GameFramework\Table
             'tiles' => [],
         ];
 
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         if (!($stateName === 'characterSelect' || $stateName === 'gameSetup')) {
             $character = $this->character->getTurnCharacter(true);
             $result = [
@@ -1769,7 +1767,7 @@ class Game extends \Bga\GameFramework\Table
      */
     public function getAllDatas(): array
     {
-        $stateName = $this->gamestate->state(true, false, true)['name'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
         // Temp fix for stuck in battle
         if ($stateName === 'characterMovement') {
             $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
@@ -1921,8 +1919,8 @@ class Game extends \Bga\GameFramework\Table
         $this->reloadPlayersBasicInfos();
         $this->character->clearCache();
 
-        $stateName = $this->gamestate->state(true, false, true)['name'];
-        $stateType = $this->gamestate->state()['type'];
+        $stateName = $this->gamestate->getCurrentMainState()->name;
+        $stateType = $this->gamestate->getCurrentMainState()->type;
         $this->log($stateName, $stateType, $returningPlayerId, $this->character->getTurnCharacter()['playerId']);
         if ($stateType === 'activeplayer') {
             if ($returningPlayerId == $this->character->getTurnCharacter()['playerId']) {

@@ -60,7 +60,7 @@ class DMTNT_Character
             array_key_exists('becameIncapacitated', $data) &&
             $data['becameIncapacitated'] &&
             $data['isActive'] &&
-            $this->game->gamestate->state(true, false, true)['name'] == 'playerTurn'
+            $this->game->gamestate->getCurrentMainState()->name == 'playerTurn'
         ) {
             $this->game->endTurn();
         }
@@ -204,7 +204,7 @@ class DMTNT_Character
     }
     private function turnOrderFix()
     {
-        $stateName = $this->game->gamestate->state(true, false, true)['name'];
+        $stateName = $this->game->gamestate->getCurrentMainState()->name;
         if ($stateName == 'characterSelect' && !$this->game->gameData->get('turnOrderStart')) {
             $players = $this->game->loadPlayersBasicInfos();
             $characters = array_values(
