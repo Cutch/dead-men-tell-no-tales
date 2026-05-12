@@ -616,17 +616,18 @@ EOD;
     {
         $characters = $this->game->character->getAllCharacterData(false);
         $this->iterateMap(function (&$tile) use ($color, $roll, $characters) {
-            if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll && $tile['escape'] == 0) {
-                $tile['fire'] = min($tile['fire'] + 1, 6);
-                foreach ($characters as $character) {
-                    if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {
-                        $this->game->character->adjustFatigue($character['id'], 1);
-                        $this->game->markChanged('player');
+            if (!$tile['destroyed']) {
+                if (($tile['fire_color'] === $color || $color === 'both') && $tile['fire'] == $roll && $tile['escape'] == 0) {
+                    $tile['fire'] = min($tile['fire'] + 1, 6);
+                    foreach ($characters as $character) {
+                        if ($this->xy(...$character['pos']) === $this->xy($tile['x'], $tile['y'])) {
+                            $this->game->character->adjustFatigue($character['id'], 1);
+                            $this->game->markChanged('player');
+                        }
                     }
+                    $this->checkExplosion($tile);
                 }
-                $this->checkExplosion($tile);
             }
-
             unset($tile);
         });
         $this->saveMapChanges();

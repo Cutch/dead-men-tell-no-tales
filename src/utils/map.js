@@ -697,7 +697,7 @@ export class Map {
           tileElem.style.left = `${tileX}px`;
           tileElem.style.bottom = `${tileY}px`;
         }
-        if (exploded == 1)
+        if (exploded == 1 && tileElem.querySelector(`.barrel-marker`))
           renderImage('explosion-barrel', tileElem.querySelector(`.barrel-marker`), {
             pos: 'replace',
             card: false,
