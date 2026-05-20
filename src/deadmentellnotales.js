@@ -867,12 +867,18 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                       this.confirmationDialog(_('Moving will cause your death. Are you sure you want to continue?'), () =>
                         this.bgaPerformAction('actMove', this.map.getSelectionPosition())
                           ?.then(() => this.map.hideTileSelectionScreen(showId))
-                          ?.catch(console.error),
+                          ?.catch((e) => {
+                            if (e !== true) this.map.hideTileSelectionScreen(showId);
+                            console.error(e);
+                          }),
                       );
                     else
                       this.bgaPerformAction('actMove', this.map.getSelectionPosition())
                         ?.then(() => this.map.hideTileSelectionScreen(showId))
-                        ?.catch(console.error);
+                        ?.catch((e) => {
+                          if (e !== true) this.map.hideTileSelectionScreen(showId);
+                          console.error(e);
+                        });
                   });
                   this.statusBar.addActionButton(
                     _('Cancel'),
@@ -894,13 +900,19 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                     this.statusBar.addActionButton(this.getActionMappings().actFightFire + `${suffix}`, () => {
                       this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
                         ?.then(() => this.map.hideTileSelectionScreen(showId))
-                        ?.catch(console.error);
+                        ?.catch((e) => {
+                          if (e !== true) this.map.hideTileSelectionScreen(showId);
+                          console.error(e);
+                        });
                     });
                     if (this.gamedatas.canUseBlanket)
                       this.statusBar.addActionButton(_('Use Blanket') + `${suffix}`, () => {
                         this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
                           ?.then(() => this.map.hideTileSelectionScreen(showId))
-                          ?.catch(console.error);
+                          ?.catch((e) => {
+                            if (e !== true) this.map.hideTileSelectionScreen(showId);
+                            console.error(e);
+                          });
                       });
 
                     this.statusBar.addActionButton(
@@ -918,7 +930,10 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                   this.statusBar.addActionButton(this.getActionMappings().actEliminateDeckhand + `${suffix}`, () => {
                     this.bgaPerformAction('actEliminateDeckhand', { data: JSON.stringify(this.map.getDeckhandSelection()) })
                       ?.then(() => this.map.hideDeckhandSelection())
-                      ?.catch(console.error);
+                      ?.catch((e) => {
+                        if (e !== true) this.map.hideDeckhandSelection();
+                        console.error(e);
+                      });
                   });
                   this.statusBar.addActionButton(
                     _('Cancel'),
