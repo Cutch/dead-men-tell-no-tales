@@ -1314,11 +1314,11 @@ class Game extends \Bga\GameFramework\Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                        $card['color'] === 'both'
-                            ? clienttranslate('All')
-                            : ($card['color'] === 'red'
-                                ? clienttranslate('Red')
-                                : clienttranslate('Yellow')),
+                    $card['color'] === 'both'
+                        ? clienttranslate('All')
+                        : ($card['color'] === 'red'
+                            ? clienttranslate('Red')
+                            : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
@@ -1894,9 +1894,9 @@ class Game extends \Bga\GameFramework\Table
         $this->gameData->set(
             'characterCount',
             sizeof($players) === 1
-                ? $this->getGameStateValue('soloCount')
+                ? ($this->getGameStateValue('soloCount') || 2)
                 : (sizeof($players) === 2
-                    ? $this->getGameStateValue('doubleCount')
+                    ? ($this->getGameStateValue('doubleCount') || 1)
                     : 1)
         );
         $this->gameData->set('randomSelection', $this->getGameStateValue('random') == 1);

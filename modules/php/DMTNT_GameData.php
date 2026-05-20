@@ -1,4 +1,5 @@
 <?php
+
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
@@ -14,6 +15,7 @@
  *
  * In this PHP file, you are going to defines the rules of the game.
  */
+
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
@@ -53,6 +55,7 @@ class DMTNT_GameData
         'powderKegExplosion' => true,
         'treasures' => 0,
         'battleLocationState' => null,
+        'characterCount' => 1,
     ];
     public function __construct(Game $game)
     {
