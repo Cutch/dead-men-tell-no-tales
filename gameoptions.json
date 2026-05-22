@@ -43,10 +43,12 @@
     "name": "Character Count",
     "values": {
       "1": {
-        "name": "1"
+        "name": "1",
+        "tmdisplay": ""
       },
       "2": {
-        "name": "2"
+        "name": "2",
+        "tmdisplay": "2 Characters"
       }
     },
     "default": 1,
@@ -66,15 +68,18 @@
     "values": {
       "0": {
         "name": "Scurvy Dog",
-        "description": "Normal<br/>2-3 Players: Loot 4 treasures<br/>4-5 Players: Loot 5 treasures"
+        "description": "Normal<br/>2-3 Players: Loot 4 treasures<br/>4-5 Players: Loot 5 treasures",
+        "tmdisplay": "Normal"
       },
       "1": {
         "name": "Buccaneer",
-        "description": "Challenging<br/>2-3 Players: Loot 5 treasures<br/>4-5 Players: Loot 6 treasures"
+        "description": "Challenging<br/>2-3 Players: Loot 5 treasures<br/>4-5 Players: Loot 6 treasures",
+        "tmdisplay": "Challenging"
       },
       "2": {
         "name": "Admiral",
-        "description": "Hard<br/>2-3 Players: Loot 6 treasures<br/>4-5 Players: Loot 6 treasures and defeat all Skeleton Crew"
+        "description": "Hard<br/>2-3 Players: Loot 6 treasures<br/>4-5 Players: Loot 6 treasures and defeat all Skeleton Crew",
+        "tmdisplay": "Hard"
       }
     },
     "default": 0
@@ -98,11 +103,13 @@
     "values": {
       "0": {
         "name": "Yes",
-        "description": "Play with Captain Fromm"
+        "description": "Play with Captain Fromm",
+        "tmdisplay": "Captain Fromm"
       },
       "1": {
         "name": "No",
-        "description": "Play without Captain Fromm"
+        "description": "Play without Captain Fromm",
+        "tmdisplay": ""
       }
     },
     "default": 1
@@ -112,11 +119,13 @@
     "values": {
       "0": {
         "name": "Yes",
-        "description": "Powder kegs count towards the explosion tracker (Normal Rule)"
+        "description": "Powder kegs count towards the explosion tracker (Normal Rule)",
+        "tmdisplay": ""
       },
       "1": {
         "name": "No",
-        "description": "Make the game easier by not counting powder kegs in the explosion tracker"
+        "description": "Make the game easier by not counting powder kegs in the explosion tracker",
+        "tmdisplay": "No Powder Keg"
       }
     },
     "default": 0,
