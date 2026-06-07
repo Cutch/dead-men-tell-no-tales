@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\GameFramework\Actions\Types\JsonParam;
-use BgaUserException;
+use Bga\GameFramework\UserException;
 use Exception;
 
 class DMTNT_SelectionStates
@@ -37,7 +37,7 @@ class DMTNT_SelectionStates
         $characterId = $stateData['characterId'];
         if ($stateData['id'] === 'gusMovement') {
             if ($x === null || $y === null) {
-                throw new BgaUserException(clienttranslate('Select a location'));
+                throw new UserException(clienttranslate('Select a location'));
             }
         } else {
             $this->game->_actMove('actMoveSelection', $x, $y, $characterId);
@@ -55,7 +55,7 @@ class DMTNT_SelectionStates
     public function actMoveCrew(?int $x, ?int $y): void
     {
         if ($x === null || $y === null) {
-            throw new BgaUserException(clienttranslate('Select a location'));
+            throw new UserException(clienttranslate('Select a location'));
         }
 
         $stateData = $this->getState(null);
@@ -104,7 +104,7 @@ class DMTNT_SelectionStates
     public function actSelectItem(?string $itemId = null): void
     {
         if (!$itemId) {
-            throw new BgaUserException(clienttranslate('Select an item'));
+            throw new UserException(clienttranslate('Select an item'));
         }
         $stateData = $this->getState(null);
         $characterId = $stateData['characterId'];
@@ -159,7 +159,7 @@ class DMTNT_SelectionStates
     public function actSelectCard(?string $cardId = null): void
     {
         if (!$cardId) {
-            throw new BgaUserException(clienttranslate('Select a card'));
+            throw new UserException(clienttranslate('Select a card'));
         }
         $stateData = $this->getState(null);
         $characterId = $stateData['characterId'];
@@ -175,7 +175,7 @@ class DMTNT_SelectionStates
     public function actSelectCharacter(?string $characterId = null): void
     {
         if (!$characterId) {
-            throw new BgaUserException(clienttranslate('Select a character'));
+            throw new UserException(clienttranslate('Select a character'));
         }
         $stateData = $this->getState(null);
         $currentCharacter = $stateData['currentCharacter'];
@@ -201,7 +201,7 @@ class DMTNT_SelectionStates
         if ($stateName) {
             $state = $this->game->gameData->get($stateName);
             if (array_key_exists('cancellable', $state) && !$state['cancellable']) {
-                throw new BgaUserException(clienttranslate('This action cannot be cancelled'));
+                throw new UserException(clienttranslate('This action cannot be cancelled'));
             }
             $this->game->gameData->set($stateName, [...$state, 'cancelled' => true]);
         }

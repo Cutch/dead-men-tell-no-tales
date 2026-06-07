@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use BgaUserException;
+use Bga\GameFramework\UserException;
 
 class DMTNT_Map
 {

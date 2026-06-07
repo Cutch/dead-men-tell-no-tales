@@ -20,18 +20,13 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
+use Bga\GameFramework\Actions\Debug;
 use Bga\GameFramework\Actions\CheckAction;
 use Bga\GameFramework\Actions\Types\JsonParam;
 
-use BgaUserException;
-use ErrorException;
+use Bga\GameFramework\UserException;
 use Exception;
 
-set_error_handler(function ($severity, $message, $file, $line) {
-    if (error_reporting() & $severity) {
-        throw new ErrorException($message, 0, $severity, $file, $line);
-    }
-});
 include_once dirname(__DIR__) . '/php/DMTNT_Battle.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Data.php';
 include_once dirname(__DIR__) . '/php/DMTNT_Actions.php';
@@ -459,7 +454,7 @@ class Game extends \Bga\GameFramework\Table
     public function actPlaceTile(?int $x, ?int $y, ?int $rotate): void
     {
         if ($x === null || $y === null) {
-            throw new BgaUserException(clienttranslate('Select a location'));
+            throw new UserException(clienttranslate('Select a location'));
         }
         $newTile = $this->gameData->get('newTile');
         $newTile['x'] = $x;
@@ -472,7 +467,7 @@ class Game extends \Bga\GameFramework\Table
             $tiles = $this->map->getAdjacentTiles($x, $y);
         }
         if (sizeof($tiles) === 0 || $y < 0) {
-            throw new BgaUserException(clienttranslate('Tile can\'t be placed there'));
+            throw new UserException(clienttranslate('Tile can\'t be placed there'));
         }
         $all = true;
         $any = false;
@@ -482,11 +477,11 @@ class Game extends \Bga\GameFramework\Table
             $any = $any || $touches;
         });
         if (!$any) {
-            throw new BgaUserException(clienttranslate('Tile must connect to a door'));
+            throw new UserException(clienttranslate('Tile must connect to a door'));
         }
         if ($newTile['id'] !== 'dinghy') {
             if (!$all) {
-                throw new BgaUserException(clienttranslate('All doors must connect'));
+                throw new UserException(clienttranslate('All doors must connect'));
             }
         }
         $newTileData = $this->data->getTile()[$newTile['id']];
@@ -800,13 +795,13 @@ class Game extends \Bga\GameFramework\Table
             [$this->hooks, 'onMove'],
             function (Game $_this) use ($x, $y, $character, $functionName) {
                 if ($x === null || $y === null) {
-                    throw new BgaUserException(clienttranslate('Select a location'));
+                    throw new UserException(clienttranslate('Select a location'));
                 }
                 $moves = $this->map->calculateMoves(true, $character['id'])['fatigueList'];
                 $tile = $this->map->getTileByXY($x, $y);
                 $fatigue = (int) $moves[$tile['id']];
                 // if ($character['fatigue'] + $fatigue >= $character['maxFatigue']) {
-                //     throw new BgaUserException(clienttranslate('Not enough fatigue'));
+                //     throw new UserException(clienttranslate('Not enough fatigue'));
                 // }
                 return [
                     'x' => $x,
@@ -875,10 +870,10 @@ class Game extends \Bga\GameFramework\Table
     public function actEliminateDeckhand(#[JsonParam] array $data): void
     {
         if (!$data || sizeof($data) == 0) {
-            throw new BgaUserException(clienttranslate('Must select a deckhand'));
+            throw new UserException(clienttranslate('Must select a deckhand'));
         }
         if (sizeof($data) > $this->getDeckhandTargetCount()) {
-            throw new BgaUserException(clienttranslate('Invalid Selection'));
+            throw new UserException(clienttranslate('Invalid Selection'));
         }
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
@@ -927,7 +922,7 @@ class Game extends \Bga\GameFramework\Table
             $this->hooks->onDrinkGrog($hookData);
             $this->completeAction();
         } else {
-            throw new BgaUserException(clienttranslate('Invalid Selection'));
+            throw new UserException(clienttranslate('Invalid Selection'));
         }
     }
 
@@ -973,7 +968,7 @@ class Game extends \Bga\GameFramework\Table
             $this->markChanged('player');
             $this->completeAction();
         } else {
-            throw new BgaUserException(clienttranslate('Invalid Selection'));
+            throw new UserException(clienttranslate('Invalid Selection'));
         }
     }
 
@@ -1007,7 +1002,7 @@ class Game extends \Bga\GameFramework\Table
             $this->markChanged('map');
             $this->markChanged('player');
         } else {
-            throw new BgaUserException(clienttranslate('Invalid Selection'));
+            throw new UserException(clienttranslate('Invalid Selection'));
         }
     }
 
@@ -1035,12 +1030,12 @@ class Game extends \Bga\GameFramework\Table
     public function actFightFire(?int $x, ?int $y, ?int $by = 1): void
     {
         if ($x === null || $y === null) {
-            throw new BgaUserException(clienttranslate('Select a location'));
+            throw new UserException(clienttranslate('Select a location'));
         }
         $tileId = $this->map->getTileByXY($x, $y)['id'];
         $fires = $this->map->calculateFires();
         if (!in_array($tileId, $fires)) {
-            throw new BgaUserException(clienttranslate('Invalid Selection'));
+            throw new UserException(clienttranslate('Invalid Selection'));
         }
         if ($by == 2) {
             usePerTurn('blanket', $this);
@@ -1314,11 +1309,11 @@ class Game extends \Bga\GameFramework\Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                    $card['color'] === 'both'
-                        ? clienttranslate('All')
-                        : ($card['color'] === 'red'
-                            ? clienttranslate('Red')
-                            : clienttranslate('Yellow')),
+                        $card['color'] === 'both'
+                            ? clienttranslate('All')
+                            : ($card['color'] === 'red'
+                                ? clienttranslate('Red')
+                                : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
@@ -1575,7 +1570,9 @@ class Game extends \Bga\GameFramework\Table
             },
             []
         );
-        $result['players'] = $this->getCollectionFromDb('SELECT `player_id` `id`, player_no, `player_name` as `name` FROM `player`');
+        $result['players'] = $this->getCollectionFromDb(
+            'SELECT `player_id` `id`, player_no, `player_name` as `name`, `player_zombie` FROM `player`'
+        );
     }
     public function getDecks(&$result): void
     {
@@ -1874,15 +1871,15 @@ class Game extends \Bga\GameFramework\Table
             )
         );
 
-        $this->initStat('table', 'turn_count', 1);
-        $this->initStat('table', 'explosions', 0);
-        $this->initStat('table', 'rooms_lost', 0);
-        $this->initStat('table', 'treasure_recovered', 0);
-        $this->initStat('player', 'actions_used', 0);
-        $this->initStat('player', 'fatigue_gained', 0);
-        $this->initStat('player', 'deckhands_eliminated', 0);
-        $this->initStat('player', 'treasure_recovered', 0);
-        $this->initStat('player', 'crew_eliminated', 0);
+        $this->bga->tableStats->init('turn_count', 1);
+        $this->bga->tableStats->init('explosions', 0);
+        $this->bga->tableStats->init('rooms_lost', 0);
+        $this->bga->tableStats->init('treasure_recovered', 0);
+        $this->bga->playerStats->init('actions_used', 0);
+        $this->bga->playerStats->init('fatigue_gained', 0);
+        $this->bga->playerStats->init('deckhands_eliminated', 0);
+        $this->bga->playerStats->init('treasure_recovered', 0);
+        $this->bga->playerStats->init('crew_eliminated', 0);
         // $this->reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         $players = $this->loadPlayersBasicInfos();
 
@@ -1894,9 +1891,9 @@ class Game extends \Bga\GameFramework\Table
         $this->gameData->set(
             'characterCount',
             sizeof($players) === 1
-                ? ($this->getGameStateValue('soloCount') || 2)
+                ? $this->getGameStateValue('soloCount') ?? 2
                 : (sizeof($players) === 2
-                    ? ($this->getGameStateValue('doubleCount') || 1)
+                    ? $this->getGameStateValue('doubleCount') ?? 1
                     : 1)
         );
         $this->gameData->set('randomSelection', $this->getGameStateValue('random') == 1);
@@ -1956,8 +1953,26 @@ class Game extends \Bga\GameFramework\Table
     {
         $this->undo->clearUndoHistory();
 
-        $stateName = $state['name'];
         $characters = $this->character->getAllCharacterData(true);
+        $stateName = $state['name'];
+        if ($stateName == 'characterSelect') {
+            $players = $this->loadPlayersBasicInfos();
+            $activePlayers = array_map(
+                function ($p) {
+                    return $p['player_id'];
+                },
+                array_filter($players, function ($p) {
+                    return $p['player_zombie'] == 0;
+                })
+            );
+            $nextState = $this->isValidExpansion('hindrance') ? 'startHindrance' : 'playerTurn';
+            $this->gamestate->setPlayersMultiactive($activePlayers, $nextState, true);
+            $this->notify('zombieChange', '', [
+                'gameData' => $this->getAllDatas(),
+            ]);
+            return;
+        }
+
         $mapping = [];
         $charactersToMove = [];
         array_walk($characters, function ($char) use ($active_player, &$mapping, &$charactersToMove) {

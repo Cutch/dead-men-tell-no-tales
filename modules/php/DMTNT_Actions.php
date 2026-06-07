@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use BgaUserException;
+use Bga\GameFramework\UserException;
 
 class DMTNT_Actions
 {
@@ -396,7 +396,7 @@ class DMTNT_Actions
         $selections = $this->getActionSelectable($actionId, $subActionId, $characterId);
         $selections = array_map($selector, $selections);
         if (!in_array($type, $selections)) {
-            throw new BgaUserException(clienttranslate('The selection is invalid'));
+            throw new UserException(clienttranslate('The selection is invalid'));
         }
     }
     public function validateCanRunAction(string $action, ?string $subAction = null, ...$args)
@@ -408,17 +408,17 @@ class DMTNT_Actions
         $actions = $character['actions'];
         // $fatigue = $character['fatigue'];
         if (array_key_exists('actions', $cost) && $actions < $cost['actions']) {
-            throw new BgaUserException(clienttranslate('Not enough actions'));
+            throw new UserException(clienttranslate('Not enough actions'));
         }
         // if (array_key_exists('fatigue', $cost) && $fatigue < $cost['fatigue']) {
-        //     throw new BgaUserException(clienttranslate('Not enough fatigue'));
+        //     throw new UserException(clienttranslate('Not enough fatigue'));
         // }
         if (!$this->checkRequirements($this->getAction($action, $subAction, ...$args))) {
-            throw new BgaUserException(clienttranslate('Can\'t use this action'));
+            throw new UserException(clienttranslate('Can\'t use this action'));
         }
         $validActions = $this->getValidActions();
         if (!array_key_exists($action, $validActions)) {
-            throw new BgaUserException(clienttranslate('This action can not be used this turn'));
+            throw new UserException(clienttranslate('This action can not be used this turn'));
         }
     }
     public function getValidActions($leaveBlocked = false)

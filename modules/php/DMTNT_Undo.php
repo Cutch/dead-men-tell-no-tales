@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use BgaUserException;
+use Bga\GameFramework\UserException;
 use Error;
 use Exception;
 
@@ -24,7 +24,7 @@ class DMTNT_Undo
     public function actUndo(): void
     {
         if (!$this->canUndo()) {
-            throw new BgaUserException(clienttranslate('Nothing left to undo, dice rolls, and deck pulls clear the undo history'));
+            throw new UserException(clienttranslate('Nothing left to undo, dice rolls, and deck pulls clear the undo history'));
         }
         $char = $this->game->character->getTurnCharacterId();
         $undoState = $this->game->getFromDB(
@@ -32,7 +32,7 @@ class DMTNT_Undo
         );
         $storedCharacterId = $undoState['character_id'];
         if ($char != $storedCharacterId) {
-            throw new BgaUserException(clienttranslate('Can\'t undo another player\'s action'));
+            throw new UserException(clienttranslate('Can\'t undo another player\'s action'));
         }
         $undoId = $undoState['undo_id'];
         $characterTable = json_decode($undoState['characterTable'], true);

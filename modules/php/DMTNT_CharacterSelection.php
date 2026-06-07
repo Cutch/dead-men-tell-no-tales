@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use BgaUserException;
+use Bga\GameFramework\UserException;
 use Exception;
 
 class DMTNT_CharacterSelection
@@ -45,7 +45,7 @@ class DMTNT_CharacterSelection
                 )
             ) > 0
         ) {
-            throw new BgaUserException(clienttranslate('Character Selected By Another Player'));
+            throw new UserException(clienttranslate('Character Selected By Another Player'));
         }
         // Remove player's previous selected
         $this->game::DbQuery("DELETE FROM `character` WHERE player_id = $playerId");
@@ -79,10 +79,10 @@ class DMTNT_CharacterSelection
         // Check how many characters the player can select
         $count = $this->game->gameData->get('characterCount');
         if (sizeof(array_filter($characters)) > $count) {
-            throw new BgaUserException(clienttranslate('Too many characters selected'));
+            throw new UserException(clienttranslate('Too many characters selected'));
         }
         if ($checkIfNotEnough && sizeof(array_filter($characters)) != $count) {
-            throw new BgaUserException(clienttranslate('Not enough characters selected'));
+            throw new UserException(clienttranslate('Not enough characters selected'));
         }
     }
     private function setTurnOrder($playerId, $selectedCharacters)

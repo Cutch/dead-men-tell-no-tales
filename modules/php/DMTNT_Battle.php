@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use BgaUserException;
+use Bga\GameFramework\UserException;
 use Exception;
 
 class DMTNT_Battle
@@ -192,6 +192,7 @@ class DMTNT_Battle
         }
         $data = [
             'attack' => $this->game->rollBattleDie('attack', $battle['characterId']),
+            'characterId' => $battle['characterId'],
         ];
         $this->game->hooks->onGetAttack($data);
         $result = '';
@@ -366,13 +367,31 @@ class DMTNT_Battle
                 $this->game->decks->shuffleInCard('bag', 'captain-4', 'discard', false);
                 $this->game->decks->shuffleInCard('bag', 'captain-8', 'discard', false);
                 $this->game->gameData->set('tokenPositions', $tokenPositions);
+
+                $this->game->eventLog(clienttranslate('${character_name} defeated ${target}'), [
+                    'i18n' => ['target'],
+                    'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+                    'target' => clienttranslate('Captain Fromm'),
+                ]);
             } else {
+                $this->game->eventLog(clienttranslate('${character_name} defeated ${target}'), [
+                    'i18n' => ['target'],
+                    'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+                    'target' => $isGuard ? clienttranslate('Guard') : clienttranslate('Skeleton Crew'),
+                ]);
+                if ($isGuard) {
+                }
                 $tokenPositions[$this->game->map->xy($x, $y)] = array_map(function ($token) use ($battle) {
                     if ($token['id'] == $battle['target']['id']) {
                         $token['isTreasure'] = true;
                     }
                     return $token;
                 }, $tokenPositions[$this->game->map->xy($x, $y)]);
+
+                $this->game->eventLog(clienttranslate('${character_name} gained ${count} fatigue'), [
+                    'count' => $battle['target']['battle'] - $battle['attack'],
+                    'character_name' => $this->game->getCharacterHTML($battle['characterId']),
+                ]);
             }
             $this->game->gameData->set('tokenPositions', $tokenPositions);
             $this->game->markChanged('map');

@@ -2,7 +2,7 @@
 namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\Games\DeadMenTellNoTales\Game;
-use BgaUserException;
+use Bga\GameFramework\UserException;
 
 class DMTNT_RevengeDeckData
 {

@@ -2,7 +2,7 @@
 namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\Games\DeadMenTellNoTales\Game;
-use BgaUserException;
+use Bga\GameFramework\UserException;
 
 if (!function_exists('getUsePerTurn')) {
     function getUsePerTurn(string $itemId, Game $game)
@@ -148,7 +148,7 @@ class DMTNT_ItemsData
                 'name' => clienttranslate('Sword'),
                 'actions' => 0,
                 'onGetAttack' => function (Game $game, $item, &$data) {
-                    if ($item['isActive']) {
+                    if ($data['characterId'] === $item['characterId']) {
                         $data['attack']++;
                     }
                 },
