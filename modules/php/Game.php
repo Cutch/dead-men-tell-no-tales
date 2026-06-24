@@ -1571,7 +1571,7 @@ class Game extends \Bga\GameFramework\Table
             []
         );
         $result['players'] = $this->getCollectionFromDb(
-            'SELECT `player_id` `id`, player_no, `player_name` as `name`, `player_zombie` FROM `player`'
+            'SELECT `player_id` `id`, player_no, `player_name` as `name`, `player_zombie`, `player_color` as `color` FROM `player`'
         );
     }
     public function getDecks(&$result): void
