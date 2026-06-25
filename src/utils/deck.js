@@ -112,7 +112,7 @@ export class Deck {
         elem.insertAdjacentHTML('beforeend', `<div class="token ${name}"></div>`);
         renderImage(name, elem.querySelector(`.token.${name}`), { scale: 2, pos: 'replace' });
       };
-      this.game.gamedatas.decksDiscards[this.deck].forEach((name) => {
+      this.game.gamedatas.decksDiscards[this.deck]?.forEach((name) => {
         renderItem(name, this.game.tooltip.renderByElement());
       });
     };
