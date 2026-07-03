@@ -82,7 +82,9 @@ class DMTNT_CharactersData
                                     $game->selectionStates->initiateState(
                                         'crewMovement',
                                         [
-                                            'movePositions' => $targetTiles,
+                                            'movePositions' => array_filter($targetTiles, function ($value) {
+                                                return str_contains($value, 'tile');
+                                            }),
                                             'id' => 'moveCrew',
                                             'crew' => $crewToken,
                                             'currentPosId' => $game->map->xy($pathTile['x'], $pathTile['y']),

@@ -3,15 +3,14 @@
 declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
-
-use Bga\GameFramework\Actions\Types\JsonParam;
 use Bga\GameFramework\UserException;
-use Exception;
 
 class DMTNT_SelectionStates
 {
     private Game $game;
     private bool $stateChanged = false;
+    private string $stateChangedNextState = '';
+    private string $initialState;
     public function __construct(Game $game)
     {
         $this->game = $game;
@@ -22,14 +21,17 @@ class DMTNT_SelectionStates
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
 
         $pendingStates = $this->getPendingStates();
-        if ((sizeof($pendingStates) == 0 || in_array($data['nextState'], ['nextCharacter', 'playerTurn'])) && $data['nextState']) {
+        if (sizeof($pendingStates) == 0 && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
             $this->game->nextState($data['nextState']);
         }
         if ($isInterrupt) {
             $this->game->actInterrupt->completeInterrupt();
         }
-        $this->initiatePendingState();
+        if (!$this->stateChanged) {
+            $this->initiatePendingState();
+        }
+        $this->game->completeAction();
     }
     public function actMoveSelection(?int $x, ?int $y): void
     {
@@ -58,6 +60,9 @@ class DMTNT_SelectionStates
             throw new UserException(clienttranslate('Select a location'));
         }
 
+        if (!str_contains($this->game->map->getTileByXY($x, $y)['id'], 'tile')) {
+            throw new UserException(clienttranslate('The selection is invalid'));
+        }
         $stateData = $this->getState(null);
         $characterId = $stateData['characterId'];
         $currentPosId = $stateData['currentPosId'];
@@ -186,9 +191,16 @@ class DMTNT_SelectionStates
             } elseif (sizeof($this->game->selectionStates->getPendingStates()) == 0) {
                 $this->game->nextState('startCharacterBattleSelection');
             }
-        } else {
-            $this->game->endTurn();
         }
+        $pendingStates = $this->getPendingStates();
+        if (
+            array_key_exists('initialState', $stateData) &&
+            sizeof($pendingStates) === 0 &&
+            $stateData['initialState'] === 'drawRevengeCard'
+        ) {
+            $this->game->nextState('nextCharacter');
+        }
+
         $data = [
             'characterId' => $characterId,
             'nextState' => false,
@@ -210,6 +222,7 @@ class DMTNT_SelectionStates
             $this->game->nextState('playerTurn');
         }
         $this->initiatePendingState();
+        $this->game->completeAction();
     }
     public function stateToStateNameMapping(?string $stateName = null): ?string
     {
@@ -235,7 +248,7 @@ class DMTNT_SelectionStates
         $state = $this->getState();
         $result = [
             'actions' => [],
-            'selectionState' => $this->game->gameData->get($stateName),
+            'selectionState' => $this->getState(),
             'character_name' => $this->game->getCharacterHTML($state['characterId']),
             'activeTurnPlayerId' => 0,
             'title' => array_key_exists('title', $state) ? $state['title'] : '',
@@ -246,19 +259,13 @@ class DMTNT_SelectionStates
             sizeof($result['selectionState']['selectableCharacters']) > 0 &&
             gettype($result['selectionState']['selectableCharacters'][0]) == 'array'
         ) {
-            $temp = $this->game->gameData->get($stateName);
+            $temp = $this->getState();
             $temp['selectableCharacters'] = toId($temp['selectableCharacters']);
             $this->game->gameData->set($stateName, $temp);
             $result['selectionState'] = $temp;
         }
 
         $this->game->getGameData($result);
-        if ($stateName === 'deckSelectionState') {
-            $this->game->getDecks($result);
-        }
-        if ($stateName === 'eatSelection') {
-            $this->game->getItemData($result);
-        }
         return $result;
     }
     public function actCancel(): void
@@ -268,14 +275,19 @@ class DMTNT_SelectionStates
     }
     public function actBack(): void
     {
-        $stateName = $this->stateToStateNameMapping();
-        $state = $this->game->gameData->get($stateName);
+        $state = $this->getState();
         $this->game->nextState($state['backState']);
     }
     public function getState(?string $stateName = null): array
     {
         $stateNameState = $this->stateToStateNameMapping($stateName);
-        return $this->game->gameData->get($stateNameState);
+        $state = $this->game->gameData->get($stateNameState);
+
+        if ($stateNameState === 'characterSelectionState') {
+            $remainingCharacters = array_values($this->game->getRemainingCharacters());
+            $state['selectableCharacters'] = $remainingCharacters;
+        }
+        return $state;
     }
     public function setState(?string $stateName, ?array $data): void
     {
@@ -290,11 +302,11 @@ class DMTNT_SelectionStates
     {
         $pendingStates = $this->getPendingStates();
         if (sizeof($pendingStates) > 0) {
-            $this->initiateState(...$pendingStates[0]);
-            array_shift($pendingStates);
-            $this->game->gameData->set('pendingStates', $pendingStates);
+            if ($this->initiateState(...$pendingStates[0])) {
+                array_shift($pendingStates);
+                $this->game->gameData->set('pendingStates', $pendingStates);
+            }
         }
-        $this->game->completeAction();
     }
     public function initiateState(
         string $stateName,
@@ -306,21 +318,41 @@ class DMTNT_SelectionStates
         bool $isInterrupt = false,
         bool $isPendingState = false,
         ?bool $setAsNextState = false
-    ): void {
-        if ($this->stateChanged || $this->stateToStateNameMapping() != null) {
-            $pendingStates = $this->getPendingStates();
+    ): bool {
+        $pendingStates = $this->getPendingStates();
+        if ($this->stateChanged) {
             // WARNING: Update if args change
-            $args = [$stateName, $state, $characterId, $cancellable, $nextState, $title, $isInterrupt, true, $setAsNextState];
+            $state['initialState'] =
+                $this->initialState ??
+                (sizeof($pendingStates) > 0 && array_key_exists('initialState', $pendingStates[0][1])
+                    ? $pendingStates[0][1]['initialState']
+                    : null);
+
+            $args = [
+                $stateName,
+                $state,
+                $characterId,
+                $cancellable,
+                ($nextState ? $nextState : $this->stateChangedNextState) || false,
+                $title,
+                $isInterrupt,
+                true,
+                $setAsNextState,
+            ];
             if ($setAsNextState) {
-                array_unshift($pendingStates, $args);
+                $pendingStates = [$args, ...$pendingStates];
             } else {
-                array_push($pendingStates, $args);
+                $pendingStates = [...$pendingStates, $args];
             }
             $this->game->gameData->set('pendingStates', $pendingStates);
+            return false;
         } else {
             $this->stateChanged = true;
+            if (is_string($nextState)) {
+                $this->stateChangedNextState = $nextState;
+            }
             $stateNameState = $this->stateToStateNameMapping($stateName);
-
+            $this->initialState = $this->game->gamestate->getCurrentMainState()->name;
             $playerId = $this->game->getCurrentPlayer();
             $newState = [
                 'cancellable' => $cancellable,
@@ -330,12 +362,14 @@ class DMTNT_SelectionStates
                 'nextState' => $nextState,
                 'isInterrupt' => $isInterrupt,
                 'isPendingState' => $isPendingState,
+                'initialState' => $this->initialState,
                 ...$state,
             ];
             $this->game->gameData->addMultiActiveCharacter($characterId, true);
 
             $this->game->gameData->set($stateNameState, $newState);
             $this->game->nextState($stateName);
+            return true;
         }
     }
 }

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Bga\Games\DeadMenTellNoTales;
 
-use Bga\GameFramework\UserException;
 use Exception;
 
 class DMTNT_Battle
@@ -389,7 +388,7 @@ class DMTNT_Battle
                 }, $tokenPositions[$this->game->map->xy($x, $y)]);
 
                 $this->game->eventLog(clienttranslate('${character_name} gained ${count} fatigue'), [
-                    'count' => $battle['target']['battle'] - $battle['attack'],
+                    'count' => abs($battle['target']['battle'] - $battle['attack']),
                     'character_name' => $this->game->getCharacterHTML($battle['characterId']),
                 ]);
             }
@@ -399,7 +398,7 @@ class DMTNT_Battle
         } elseif ($battle['result'] == 'lose') {
             if (!$battle['includeAdjacent']) {
                 $this->game->eventLog(clienttranslate('${character_name} gained ${count} fatigue'), [
-                    'count' => $battle['target']['battle'] - $battle['attack'],
+                    'count' => abs($battle['target']['battle'] - $battle['attack']),
                     'character_name' => $this->game->getCharacterHTML($battle['characterId']),
                 ]);
                 $this->game->character->adjustFatigue($battle['characterId'], $battle['target']['battle'] - $battle['attack']);
@@ -461,10 +460,12 @@ class DMTNT_Battle
         $this->game->selectionStates->initiateState(
             'crewMovement',
             [
-                'movePositions' => $targetTiles,
+                'movePositions' => array_filter($targetTiles, function ($value) {
+                    return str_contains($value, 'tile');
+                }),
                 'id' => 'moveCrew',
                 'crew' => $crewToken,
-                'currentPosId' => $xy,
+                'currentPosId' => $this->game->map->xy($x, $y),
                 'currentState' => $this->game->gamestate->getCurrentMainState()->name,
                 'backState' => 'postBattle',
             ],

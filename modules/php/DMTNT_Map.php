@@ -787,7 +787,9 @@ EOD;
                     $this->game->selectionStates->initiateState(
                         'crewMovement',
                         [
-                            'movePositions' => toId($targetTiles),
+                            'movePositions' => array_filter(toId($targetTiles), function ($value) {
+                                return str_contains($value, 'tile');
+                            }),
                             'id' => 'moveCrew',
                             'crew' => $crewToken,
                             'currentPosId' => $currentPosId,

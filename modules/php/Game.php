@@ -56,6 +56,7 @@ class Game extends \Bga\GameFramework\Table
     public DMTNT_ActInterrupt $actInterrupt;
     public DMTNT_SelectionStates $selectionStates;
     public DMTNT_Undo $undo;
+    private string $endingTurnCharacter = '';
     public static array $expansionList = ['base', 'kraken'];
     /**
      * Your global variables labels:
@@ -315,15 +316,17 @@ class Game extends \Bga\GameFramework\Table
                 'characterSelection',
                 [
                     'selectableCharacters' => $remainingCharacters,
-                    'currentCharacter' => $character['id'],
+                    'currentCharacter' => $characterId,
                     'id' => 'death',
+                    'currentState' => $this->gamestate->getCurrentMainState()->name,
                 ],
-                $this->character->getTurnCharacterId(),
+                $characterId,
                 false,
-                $this->gamestate->getCurrentMainState()->name == 'drawRevengeCard' ? 'nextCharacter' : false
+                $this->gamestate->getCurrentMainState()->name === 'drawRevengeCard' ? 'nextCharacter' : false
             );
         }
     }
+
     public function cardDrawEvent($card, $deck, $arg = [])
     {
         $gameData = [];
@@ -1427,6 +1430,10 @@ class Game extends \Bga\GameFramework\Table
     }
     public function endTurn()
     {
+        if ($this->endingTurnCharacter && $this->endingTurnCharacter === $this->character->getTurnCharacterId()) {
+            return;
+        }
+        $this->endingTurnCharacter = $this->character->getTurnCharacterId();
         $leftOverActions = $this->character->getTurnCharacter()['actions'];
         $this->character->adjustActiveActions(-20);
         if ($leftOverActions > 0) {
