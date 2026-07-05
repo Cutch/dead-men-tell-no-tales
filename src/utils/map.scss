@@ -107,10 +107,12 @@
       text-shadow: 0 0 5px #000;
       animation: dmtnt_red-color-transition 5s infinite;
     }
-    > .trapdoor {
+    > .trapdoor-spot {
       position: absolute;
       top: 10px;
       left: 10px;
+    }
+    > .trapdoor {
       box-shadow: 1px -1px 7px 4px #000;
     }
     > .deckhands {
@@ -192,6 +194,12 @@
       }
       // .character-token-card-base {
       // }
+    }
+    &.dinghy-base,
+    &.tracker-base {
+      .characters {
+        pointer-events: none;
+      }
     }
   }
   .dinghy-base > .tokens.characters {

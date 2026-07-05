@@ -633,7 +633,7 @@ export class Map {
           tileElem = this.container.querySelector(`.${name}-base`);
           tileElem.insertAdjacentHTML(
             'beforeend',
-            `<div class="trapdoor"></div>
+            `<div class="trapdoor-spot"></div>
             <div class="dice"></div>
             <div class="fire-warning" style="display: none"><i class="fa6 fa6-solid fa6-fire"></i></div>
             <div class="barrel-marker"></div>
@@ -644,7 +644,7 @@ export class Map {
           );
 
           this.game.addHelpTooltip({
-            node: tileElem.querySelector(`.trapdoor`),
+            node: tileElem.querySelector(`.trapdoor-spot`),
             text: _('Trapdoors will fill the room with deckhands'),
             noIcon: true,
           });
@@ -689,7 +689,7 @@ export class Map {
             const die = new Dice(this.game, diceElem, fireColor);
             this.dice[tileKey] = die;
           }
-          const trapdoorElem = tileElem.querySelector(`.trapdoor`);
+          const trapdoorElem = tileElem.querySelector(`.trapdoor-spot`);
           if (hasTrapdoor == 1 && name !== 'tile004') {
             renderImage('trapdoor', trapdoorElem, { scale: 1.5 });
           }
