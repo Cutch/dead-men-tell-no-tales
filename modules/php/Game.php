@@ -169,6 +169,9 @@ class Game extends \Bga\GameFramework\Table
     }
     public function actAbandonShip()
     {
+        $this->eventLog(clienttranslate('${character_name} abandons ship'), [
+            'usedActionId' => 'actAbandonShip',
+        ]);
         $this->death($this->character->getTurnCharacterId());
         if ($this->gamestate->getCurrentMainState()->name == 'playerTurn') {
             $this->endTurn();
