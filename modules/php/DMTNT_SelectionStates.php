@@ -193,12 +193,17 @@ class DMTNT_SelectionStates
             }
         }
         $pendingStates = $this->getPendingStates();
+        // Death during revenge phase
         if (
             array_key_exists('initialState', $stateData) &&
             sizeof($pendingStates) === 0 &&
             $stateData['initialState'] === 'drawRevengeCard'
         ) {
             $this->game->nextState('nextCharacter');
+        }
+        // Abandon Ship
+        if (array_key_exists('initialState', $stateData) && sizeof($pendingStates) === 0 && $stateData['initialState'] === 'playerTurn') {
+            $this->game->endTurn();
         }
 
         $data = [
