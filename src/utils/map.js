@@ -272,6 +272,14 @@ export class Map {
         }),
       );
     });
+    if (Object.entries(selection).length === 1) {
+      const [tileId, count] = Object.entries(selection)[0];
+      const elem = this.container.querySelector(`.${tileId}-base .tile-selector`);
+      const { x, y } = this.getXY(elem.parentNode.getAttribute('data-data'));
+      if (x == this.selectionPosition?.x && y == this.selectionPosition?.y) return;
+      elem.classList.add('tile-selected');
+      this.selectionPosition = { x, y, count: count };
+    }
   }
   getSelectionPosition() {
     return this.selectionPosition;

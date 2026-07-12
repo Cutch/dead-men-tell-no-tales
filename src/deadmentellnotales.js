@@ -868,7 +868,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                         this.bgaPerformAction('actMove', this.map.getSelectionPosition())
                           ?.then(() => this.map.hideTileSelectionScreen(showId))
                           ?.catch((e) => {
-                            if (e !== true) this.map.hideTileSelectionScreen(showId);
+                            if (e !== true && e.toString() != 'Select a location') this.map.hideTileSelectionScreen(showId);
                             console.error(e);
                           }),
                       );
@@ -876,7 +876,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                       this.bgaPerformAction('actMove', this.map.getSelectionPosition())
                         ?.then(() => this.map.hideTileSelectionScreen(showId))
                         ?.catch((e) => {
-                          if (e !== true) this.map.hideTileSelectionScreen(showId);
+                          if (e !== true && e.toString() != 'Select a location') this.map.hideTileSelectionScreen(showId);
                           console.error(e);
                         });
                   });
@@ -901,7 +901,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                       this.bgaPerformAction('actFightFire', this.map.getSelectionPosition())
                         ?.then(() => this.map.hideTileSelectionScreen(showId))
                         ?.catch((e) => {
-                          if (e !== true) this.map.hideTileSelectionScreen(showId);
+                          if (e !== true && e.toString() != 'Select a location') this.map.hideTileSelectionScreen(showId);
                           console.error(e);
                         });
                     });
@@ -910,7 +910,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                         this.bgaPerformAction('actFightFire', { ...this.map.getSelectionPosition(), by: 2 })
                           ?.then(() => this.map.hideTileSelectionScreen(showId))
                           ?.catch((e) => {
-                            if (e !== true) this.map.hideTileSelectionScreen(showId);
+                            if (e !== true && e.toString() != 'Select a location') this.map.hideTileSelectionScreen(showId);
                             console.error(e);
                           });
                       });
