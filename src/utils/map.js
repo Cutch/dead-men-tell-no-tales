@@ -238,6 +238,8 @@ export class Map {
     this.selectionListeners.forEach((d) => d());
     this.selectionListeners = [];
     this.selectionPosition = null;
+    // Todo remove next line with next release
+    if (!Array.isArray(selection) && !isNaN(Object.keys(selection)[0])) selection = Object.values(selection);
     if (Array.isArray(selection)) selection = selection.reduce((acc, d) => ({ ...acc, [d]: d }), {});
     Object.entries(selection).forEach(([tileId, count]) => {
       const elem = this.container.querySelector(`.${tileId}-base .tile-selector`);

@@ -460,9 +460,11 @@ class DMTNT_Battle
         $this->game->selectionStates->initiateState(
             'crewMovement',
             [
-                'movePositions' => array_filter($targetTiles, function ($value) {
-                    return str_contains($value, 'tile');
-                }),
+                'movePositions' => array_values(
+                    array_filter($targetTiles, function ($value) {
+                        return str_contains($value, 'tile');
+                    })
+                ),
                 'id' => 'moveCrew',
                 'crew' => $crewToken,
                 'currentPosId' => $this->game->map->xy($x, $y),

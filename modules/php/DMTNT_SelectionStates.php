@@ -19,11 +19,14 @@ class DMTNT_SelectionStates
     public function completeSelectionState(array $data): void
     {
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
-
         $pendingStates = $this->getPendingStates();
         if (sizeof($pendingStates) == 0 && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
-            $this->game->nextState($data['nextState']);
+            if ($data['nextState'] === true && array_key_exists('initialState', $data) && $data['initialState']) {
+                $this->game->nextState($data['initialState']);
+            } else {
+                $this->game->nextState($data['nextState']);
+            }
         }
         if ($isInterrupt) {
             $this->game->actInterrupt->completeInterrupt();
@@ -48,6 +51,7 @@ class DMTNT_SelectionStates
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
+            'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
             'x' => $x,
             'y' => $y,
         ];
@@ -90,6 +94,7 @@ class DMTNT_SelectionStates
         $data = [
             'characterId' => $characterId,
             'nextState' => $this->game->battle->getBattleState() === 1 ? false : $stateData['nextState'],
+            'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
             'isInterrupt' => $stateData['isInterrupt'],
         ];
         $this->completeSelectionState($data);
