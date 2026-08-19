@@ -207,7 +207,11 @@ class DMTNT_SelectionStates
             $this->game->nextState('nextCharacter');
         }
         // Abandon Ship
-        if (array_key_exists('initialState', $stateData) && sizeof($pendingStates) === 0 && $stateData['initialState'] === 'playerTurn') {
+        elseif (
+            array_key_exists('initialState', $stateData) &&
+            sizeof($pendingStates) === 0 &&
+            $stateData['initialState'] === 'playerTurn'
+        ) {
             $this->game->endTurn();
         }
 

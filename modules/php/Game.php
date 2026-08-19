@@ -251,6 +251,9 @@ class Game extends \Bga\GameFramework\Table
     }
     public function death(string $characterId)
     {
+        if (in_array($characterId, $this->gameData->get('deadCharacters'))) {
+            return;
+        }
         if ($this->hasAllTreasure()) {
             $this->lose('untimely');
             return;
@@ -259,6 +262,7 @@ class Game extends \Bga\GameFramework\Table
             'character_name' => $this->getCharacterHTML($characterId),
         ]);
 
+        [$x, $y] = $this->getCharacterPos($characterId);
         $characterPositions = $this->gameData->get('characterPositions');
         unset($characterPositions[$characterId]);
         $this->gameData->set('characterPositions', $characterPositions);
@@ -279,7 +283,6 @@ class Game extends \Bga\GameFramework\Table
         $treasures = array_filter($character['tokenItems'], function ($d) {
             return $d['treasure'] === 'treasure';
         });
-        [$x, $y] = $this->getCharacterPos($characterId);
         $xyId = $this->map->xy($x, $y);
         $tokenPositions = $this->getTokenPositions();
         if (!array_key_exists($xyId, $tokenPositions)) {
@@ -824,13 +827,18 @@ class Game extends \Bga\GameFramework\Table
                 $y = $data['y'];
                 $character = $data['character'];
                 $tile = $data['tile'];
+                $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
                 $this->character->adjustFatigue($character['id'], $fatigue);
                 if ($functionName === 'actMove') {
                     $this->actions->spendActionCost('actMove');
                 }
                 $this->gameData->set('characterPositions', [...$this->gameData->get('characterPositions'), $character['id'] => [$x, $y]]);
                 $this->markChanged('player');
-                if (array_key_exists('escape', $tile) && $tile['escape'] == 1) {
+                if (
+                    !in_array($character['id'], $this->gameData->get('deadCharacters')) &&
+                    array_key_exists('escape', $tile) &&
+                    $tile['escape'] == 1
+                ) {
                     $this->gameData->set('escaped', true);
                     $count = (int) ceil($this->character->getCharacterData($character['id'])['fatigue'] / 2);
                     $this->character->adjustFatigue($character['id'], -$count);
@@ -1780,6 +1788,33 @@ class Game extends \Bga\GameFramework\Table
             $canMove = sizeof($this->map->calculateMoves(false)['fatigueList']) > 0;
             if (!$canMove) {
                 $this->nextState('postBattle');
+            }
+        }
+
+        if ($stateName == 'characterSelection') {
+            $stateData = $this->selectionStates->getState(null);
+            if (
+                sizeof(array_unique($this->gameData->get('deadCharacters'))) !== sizeof($this->gameData->get('deadCharacters')) &&
+                in_array($stateData['characterId'], $this->gameData->get('deadCharacters'))
+            ) {
+                $this->gameData->set('deadCharacters', array_unique($this->gameData->get('deadCharacters')));
+                $pendingStates = $this->selectionStates->getPendingStates();
+                // Death during revenge phase
+                if (
+                    array_key_exists('initialState', $stateData) &&
+                    sizeof($pendingStates) === 0 &&
+                    $stateData['initialState'] === 'drawRevengeCard'
+                ) {
+                    $this->nextState('nextCharacter');
+                }
+                // Abandon Ship
+                if (
+                    array_key_exists('initialState', $stateData) &&
+                    sizeof($pendingStates) === 0 &&
+                    $stateData['initialState'] === 'playerTurn'
+                ) {
+                    $this->endTurn();
+                }
             }
         }
         // Temp fix for stuck tile placement

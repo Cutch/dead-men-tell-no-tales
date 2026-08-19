@@ -6,6 +6,7 @@ namespace Bga\Games\DeadMenTellNoTales;
 
 use Bga\GameFramework\UserException;
 use Exception;
+use Throwable;
 
 class DMTNT_Character
 {
@@ -243,7 +244,7 @@ class DMTNT_Character
     {
         try {
             return $this->_getCharacterData($name, $_skipHooks);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->game->log($e);
             $this->turnOrderFix();
             return $this->_getCharacterData($name, $_skipHooks);
@@ -406,7 +407,6 @@ class DMTNT_Character
         if ($prev > 0) {
             $this->game->incStat($prev, 'fatigue_gained', $this->getCharacterData($characterId)['playerId']);
         }
-
         if ($data['fatigue'] == $data['maxFatigue']) {
             $data['actions'] = min($data['actions'], 5);
 
