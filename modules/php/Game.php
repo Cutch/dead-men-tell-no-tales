@@ -314,7 +314,7 @@ class Game extends \Bga\GameFramework\Table
                 } elseif (sizeof($this->selectionStates->getPendingStates()) == 0) {
                     $this->nextState('startCharacterBattleSelection');
                 }
-            } else {
+            } elseif ($this->gamestate->getCurrentMainState()->name !== 'drawRevengeCard') {
                 $this->endTurn();
             }
         } else {
@@ -2127,7 +2127,7 @@ class Game extends \Bga\GameFramework\Table
             $char = $this->character->getSubmittingCharacter()['id'];
         }
         $this->character->updateCharacterData($char, function (&$data) {
-            $data['fatigue'] = 13;
+            $data['fatigue'] = 14;
         });
         $this->completeAction();
     }
