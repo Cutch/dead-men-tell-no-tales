@@ -1,10 +1,12 @@
 @use 'sass:meta';
 
 @include meta.load-css('utils/clickable');
+
 html {
   background: url(img/background.png) top left;
   background-size: 100%;
 }
+
 .dmtnt {
   @keyframes dmtnt_red-color-transition {
     0% {
@@ -18,10 +20,12 @@ html {
     40% {
       color: red;
     }
+
     to {
       color: red;
     }
   }
+
   @keyframes dmtnt_warning-transition {
     0% {
       color: #000;
@@ -30,6 +34,7 @@ html {
     30% {
       color: red;
     }
+
     40% {
       color: #000;
     }
@@ -38,6 +43,7 @@ html {
       color: #000;
     }
   }
+
   @include meta.load-css('utils/deck');
   @include meta.load-css('utils/dice');
   @include meta.load-css('utils/images');
@@ -52,28 +58,34 @@ html {
   @include meta.load-css('boards');
   @include meta.load-css('player-card');
   @include meta.load-css('player-side-panel');
+
   .selected:not(#\9):not(#\9):not(#\9) {
     border: 5px solid var(--player-color, #fff);
     margin: 0;
     border-radius: 10px;
   }
+
   .tooltip {
     &.icon {
       position: absolute;
       top: 0;
       left: 0;
       transform: translateX(-0.75rem) translateY(-0.5rem);
+
       .dot {
         position: unset;
       }
+
       .fa-question {
         font-size: 16px;
       }
+
       .fa-fire {
         font-size: 16px;
       }
     }
   }
+
   .tooltip-box {
     font-size: 20px;
     padding: 1rem;
@@ -84,13 +96,16 @@ html {
     min-width: 350px;
     max-width: 525px;
     align-items: flex-start;
+
     .tooltip-text {
       width: unset;
     }
-    > span {
+
+    >span {
       margin-right: 1rem;
     }
   }
+
   .label {
     color: #000;
     margin-left: 6px;
@@ -101,6 +116,7 @@ html {
     // -webkit-text-stroke: 0.5px #000;
     // text-stroke: 0.5px #000;
   }
+
   // .fatigue .label {
   //   color: #ff0000;
   // }
@@ -114,9 +130,11 @@ html {
     position: relative;
     top: 1px;
   }
+
   .fkp-unlocked {
     pointer-events: none;
   }
+
   button {
     background-color: #4871b6;
     border: 1px solid #37578c;
@@ -146,14 +164,17 @@ html {
   color: #00ff16;
   margin-left: 0.25em;
 }
+
 .action-button .dmtnt__dice {
   color: #fff;
   margin-left: 0.25em;
 }
+
 .action-button .dmtnt__sun {
   color: #ffff00;
   margin-left: 0.25em;
 }
+
 .action-button .dmtnt__forever {
   color: #ff8800;
   margin-left: 0.25em;
@@ -164,6 +185,7 @@ html {
   display: flex;
   flex-flow: column;
   align-items: center;
+
   .content {
     display: flex;
     flex-flow: column;
@@ -180,13 +202,19 @@ html {
   cursor: pointer;
   color: #000;
 }
+
 .mobile_version .player-board-game-specific-content.one-player {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  //   display: grid;
-  //   grid-template-columns: 1fr 1fr;
-  //   gap: 0rem 1rem;
 }
+
+@media (max-width: 799px) {
+  .mobile_version .player-board-game-specific-content.one-player {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 // .mobile_version #player_boards {
 //   grid-template-columns: 1fr;
 // }

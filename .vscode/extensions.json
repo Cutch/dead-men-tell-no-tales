@@ -1,3 +1,6 @@
 {
-  "recommendations": ["Natizyskunk.sftp", "bmewburn.vscode-intelephense-client"]
+  "recommendations": [
+    "khoazero123.sftp-extension",
+    "bmewburn.vscode-intelephense-client"
+  ]
 }

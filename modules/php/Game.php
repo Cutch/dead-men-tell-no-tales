@@ -80,7 +80,6 @@ class Game extends \Bga\GameFramework\Table
             'soloCount' => 104,
             'doubleCount' => 105,
             'powderKegExplosion' => 106,
-            'game_version' => 300,
         ]);
         $this->gameData = new DMTNT_GameData($this);
         $this->actions = new DMTNT_Actions($this);
@@ -183,7 +182,7 @@ class Game extends \Bga\GameFramework\Table
     }
     public function getVersion(): int
     {
-        $current_version = $this->bga->tableOptions->get(300);
+        $current_version = $this->bga->tableOptions->getGameVersion();
         return intval($current_version);
     }
     protected function initTable(): void
@@ -1323,11 +1322,11 @@ class Game extends \Bga\GameFramework\Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                        $card['color'] === 'both'
-                            ? clienttranslate('All')
-                            : ($card['color'] === 'red'
-                                ? clienttranslate('Red')
-                                : clienttranslate('Yellow')),
+                    $card['color'] === 'both'
+                        ? clienttranslate('All')
+                        : ($card['color'] === 'red'
+                            ? clienttranslate('Red')
+                            : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {
