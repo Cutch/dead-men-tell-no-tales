@@ -282,7 +282,7 @@ class DMTNT_Character
                     return ['character' => $v, 'skill' => $v['skills'][$skillId]];
                 }
             }
-            if (array_key_exists('item', $v) && array_key_exists('skills', $v['item'])) {
+            if (array_key_exists('item', $v) && $v['item'] && array_key_exists('skills', $v['item'])) {
                 if (array_key_exists($skillId, $v['item']['skills'])) {
                     return ['character' => $v, 'skill' => $v['item']['skills'][$skillId]];
                 }

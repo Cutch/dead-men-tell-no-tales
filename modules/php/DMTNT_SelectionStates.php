@@ -123,7 +123,7 @@ class DMTNT_SelectionStates
         $this->game->character->updateAllCharacterData(function (&$d) use ($characterId, $itemId, &$took, &$tookCharacterId) {
             if ($characterId === $d['id']) {
                 $d['item'] = $itemId;
-            } elseif ($d['item']['id'] === $itemId) {
+            } elseif ($d['item'] && $d['item']['id'] === $itemId) {
                 $tookCharacterId = $d['id'];
                 $d['item'] = null;
                 $took = true;
@@ -141,6 +141,8 @@ class DMTNT_SelectionStates
             $items = array_map(function ($d) {
                 return ['id' => $d];
             }, $this->game->getUnequippedItems());
+            $localVar = $this->stateChanged;
+            $this->stateChanged = true;
             $this->initiateState(
                 'itemSelection',
                 [
@@ -148,8 +150,10 @@ class DMTNT_SelectionStates
                     'id' => $stateData['id'],
                 ],
                 $tookCharacterId,
-                false
+                false,
+                true
             );
+            $this->stateChanged = $localVar;
         } else {
             $this->game->eventLog(clienttranslate('${character_name} picked up ${item}'), [
                 'i18n' => ['item'],
@@ -163,6 +167,7 @@ class DMTNT_SelectionStates
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
+            'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
         ];
         $this->completeSelectionState($data);
     }
@@ -178,6 +183,7 @@ class DMTNT_SelectionStates
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
+            // 'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
         ];
         $this->game->hooks->onCardSelection($data);
         $this->completeSelectionState($data);
@@ -219,6 +225,7 @@ class DMTNT_SelectionStates
             'characterId' => $characterId,
             'nextState' => false,
             'isInterrupt' => $stateData['isInterrupt'],
+            // 'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
         ];
         $this->completeSelectionState($data);
     }
@@ -335,12 +342,14 @@ class DMTNT_SelectionStates
     ): bool {
         $pendingStates = $this->getPendingStates();
         if ($this->stateChanged) {
+            $currentStateData = $this->getState(null);
             // WARNING: Update if args change
             $state['initialState'] =
                 $this->initialState ??
-                (sizeof($pendingStates) > 0 && array_key_exists('initialState', $pendingStates[0][1])
+                ((sizeof($pendingStates) > 0 && array_key_exists('initialState', $pendingStates[0][1])
                     ? $pendingStates[0][1]['initialState']
-                    : null);
+                    : null) ??
+                    (array_key_exists('initialState', $currentStateData) ? $currentStateData['initialState'] : null));
 
             $args = [
                 $stateName,
