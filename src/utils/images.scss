@@ -90,7 +90,7 @@
 }
 
 .tooltip-text {
-  background-color: rgba($color: #fff, $alpha: 0.8);
+  background-color: var(--game-palette-bga-gray-244);
   font-size: 1.15rem;
   padding: 1rem;
   width: 350px;

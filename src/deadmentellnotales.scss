@@ -7,6 +7,25 @@ html {
   background-size: 100%;
 }
 
+html {
+  --lamore: #89357d;
+  --garrett: #282b2d;
+  --flynn: #cd402a;
+  --whitebeard: #8a8a8a;
+  --jade: #4a9746;
+  --titian: #dd8127;
+  --fallen: #008cb9;
+}
+html.dark {
+  --lamore: #f045d8;
+  --garrett: #80898f;
+  --flynn: #e94931;
+  --whitebeard: #ece9e9;
+  --jade: #62e05b;
+  --titian: #dd8127;
+  --fallen: #0cb4ec;
+}
+
 .dmtnt {
   @keyframes dmtnt_red-color-transition {
     0% {
@@ -90,7 +109,7 @@ html {
     font-size: 20px;
     padding: 1rem;
     border-radius: 1rem;
-    background-color: #fff;
+    background-color: var(--game-palette-bga-gray-244);
     display: flex;
     gap: 1rem;
     min-width: 350px;
@@ -101,13 +120,13 @@ html {
       width: unset;
     }
 
-    >span {
+    > span {
       margin-right: 1rem;
     }
   }
 
   .label {
-    color: #000;
+    color: var(--game-bga-player-panel-color);
     margin-left: 6px;
 
     // color: #ff0000;

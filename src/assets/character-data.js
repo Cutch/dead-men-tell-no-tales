@@ -12,7 +12,7 @@ export default {
         options: {
           name: 'Black Gus Garrett',
           type: 'character',
-          color: '#3c464c',
+          color: 'var(--garrett)',
           text: [
             { title: 'Black Gus Garrett' },
             _('When this player is in a room with Skeleton Crew, he may choose to make them flee in the direction of his choice'),
@@ -29,7 +29,7 @@ export default {
         options: {
           name: 'Crimson Flynn',
           type: 'character',
-          color: '#cd402a',
+          color: 'var(--flynn)',
           text: [
             { title: 'Crimson Flynn' },
             _('This player can lower Fire Levels in adjacent rooms in addition to the room that he is in'),
@@ -46,7 +46,7 @@ export default {
         options: {
           name: 'Whitebeard',
           type: 'character',
-          color: '#ece9e8',
+          color: 'var(--whitebeard)',
           text: [{ title: 'Whitebeard' }, _('This player is fatigued by 1 less than normal (except during Battle)')],
         },
       },
@@ -60,7 +60,7 @@ export default {
         options: {
           name: 'Lydia Lamore',
           type: 'character',
-          color: '#89357d',
+          color: 'var(--lamore)',
           text: [{ title: 'Lydia Lamore' }, _('This player has one additional Action to use each turn')],
         },
       },
@@ -74,7 +74,7 @@ export default {
         options: {
           name: 'Jade',
           type: 'character',
-          color: '#4a9746',
+          color: 'var(--jade)',
           text: [{ title: 'Jade' }, _('This player can eliminate 2 Deckhands for each Eliminate Deckhands Action')],
         },
       },
@@ -88,7 +88,7 @@ export default {
         options: {
           name: 'Five-Fingered Titian',
           type: 'character',
-          color: '#dc9d29',
+          color: 'var(--titian)',
           text: [
             { title: 'Five-Fingered Titian' },
             _('When drawing a Revenge Card, this player instead draws 2, choose one and puts the other back on the deck'),
@@ -105,7 +105,7 @@ export default {
         options: {
           name: 'Cobalt Kallen',
           type: 'character',
-          color: '#008cb9',
+          color: 'var(--fallen)',
           text: [{ title: 'Cobalt Kallen' }, _('While looting this player is Fatigued as if he were not looting')],
         },
       },

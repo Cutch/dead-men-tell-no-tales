@@ -137,7 +137,7 @@
 .game-info-notifications {
   margin: 0 0.5rem;
   .notification {
-    background-color: #ebd5bd;
+    background-color: var(--game-bga-player-panel-background);
     border-radius: 8px;
     box-shadow: 0 3px 8px #0000004d;
     padding: 5px 12px;
@@ -151,7 +151,7 @@
   }
 }
 .game-info-panel {
-  background-color: #ebd5bd;
+  background-color: var(--game-bga-player-panel-background);
   border-radius: 8px;
   box-shadow: 0 3px 8px #0000004d;
   padding: 5px 12px;

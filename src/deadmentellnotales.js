@@ -170,7 +170,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           ? `<span class="item-item item-${item.itemId}">${_(item.name)}</span>`
           : _('None');
         if (gameData.gamestate?.name !== 'characterSelect')
-          playerSideContainer.style['background-color'] = character?.isActive ? '#fff' : '';
+          playerSideContainer.style['background-color'] = character?.isActive ? 'var(--game-bga-player-panel-background-enlighted)' : '';
         if (item)
           addClickListener(playerSideContainer.querySelector(`.item-${item.itemId}`), _(item.name), () => {
             this.tooltip.show();
