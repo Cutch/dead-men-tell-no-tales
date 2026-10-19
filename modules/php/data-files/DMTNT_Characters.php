@@ -14,13 +14,13 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '6',
                 'name' => 'Lydia Lamore',
-                'color' => 'var(--lamore)',
+                'color' => '#89357d',
             ],
             'garrett' => [
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Black Gus Garrett',
-                'color' => 'var(--garrett)',
+                'color' => '#80898f',
                 // Garret can run and force deckhands to flee
                 'onMovePre' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
@@ -118,7 +118,7 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Crimson Flynn',
-                'color' => 'var(--flynn)',
+                'color' => '#cd402a',
                 'onCalculateFires' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $data['addAdjacentTiles']($data);
@@ -129,7 +129,7 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Whitebeard',
-                'color' => 'var(--whitebeard)',
+                'color' => '#ece9e9',
                 'onCalculateMoves' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $fatigueList = &$data['fatigueList'];
@@ -143,7 +143,7 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Jade',
-                'color' => 'var(--jade)',
+                'color' => '#4a9746',
                 'onGetDeckhandTargetCount' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $data['count'] = 2;
@@ -154,7 +154,7 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Five-Fingered Titian',
-                'color' => 'var(--titian)',
+                'color' => '#dd8127',
                 'onDrawRevengeCardPre' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $card1 = $data['card'];
@@ -212,7 +212,7 @@ class DMTNT_CharactersData
                 'type' => 'character',
                 'actions' => '5',
                 'name' => 'Cobalt Kallen',
-                'color' => 'var(--fallen)',
+                'color' => '#008cb9',
                 'onCalculateMovesHasTreasure' => function (Game $game, $char, &$data) {
                     if ($char['isActive']) {
                         $data['hasTreasure'] = false;
