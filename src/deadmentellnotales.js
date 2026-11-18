@@ -73,6 +73,7 @@ declare('bgagame.deadmentellnotales', Gamegui, {
       actBattleAgain: _('Battle'),
       actRetreat: _('Retreat'),
       actMakeThemFlee: _('Make Them Flee'),
+      actMakeThemFleeGarrett: _('Make Them Flee'),
       actPlaceTile: _('Place Tile'),
       actUndo: _('Undo'),
       actEndTurn: _('End Turn'),
@@ -785,6 +786,9 @@ declare('bgagame.deadmentellnotales', Gamegui, {
                 } else if (actionId === 'actMakeThemFlee') {
                   if (action.targetId) this.bgaPerformAction('actMakeThemFlee', { targetId: action.targetId });
                   else this.bgaPerformAction('actMakeThemFlee');
+                } else if (actionId === 'actMakeThemFleeGarrett') {
+                  if (action.targetId) this.bgaPerformAction('actMakeThemFleeGarrett', { targetId: action.targetId });
+                  else this.bgaPerformAction('actMakeThemFleeGarrett');
                 } else if (actionId === 'actDontUseStrength') {
                   if (action.willDie) {
                     this.confirmationDialog(
@@ -952,14 +956,6 @@ declare('bgagame.deadmentellnotales', Gamegui, {
           });
       }
       const addSelectionCancelButton = () => {
-        if (isActive && this.gamedatas.selectionState?.backState)
-          this.statusBar.addActionButton(
-            _('Back'),
-            () => {
-              this.bgaPerformAction('actBack')?.then(() => this.selector.hide());
-            },
-            { color: 'secondary' },
-          );
         if (isActive && this.gamedatas.selectionState?.cancellable === true)
           this.statusBar.addActionButton(
             _('Cancel'),

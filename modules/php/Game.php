@@ -42,6 +42,7 @@ require_once dirname(__DIR__) . '/php/data-files/DMTNT_Items.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Tile.php';
 class Game extends \Bga\GameFramework\Table
 {
+    public bool $next_val = false;
     public DMTNT_Character $character;
     public DMTNT_Actions $actions;
     private DMTNT_CharacterSelection $characterSelection;
@@ -327,7 +328,11 @@ class Game extends \Bga\GameFramework\Table
                 ],
                 $characterId,
                 false,
-                $this->gamestate->getCurrentMainState()->name === 'drawRevengeCard' ? 'nextCharacter' : false
+                $this->gamestate->getCurrentMainState()->name === 'drawRevengeCard' ||
+                $this->gameData->get('battleLocationState') === 'stDrawRevengeCard' ||
+                $this->gameData->get('battleLocationState') === 'drawRevengeCard'
+                    ? 'nextCharacter'
+                    : 'endTurn'
             );
         }
     }
@@ -348,7 +353,8 @@ class Game extends \Bga\GameFramework\Table
     public function rollBattleDie(string $type, string $characterName): int
     {
         $this->markRandomness();
-        $value = bga_rand(1, 6);
+        $value = $this->next_val ? 6 : 1; //bga_rand(1, 6);
+        $this->next_val = true;
         $notificationSent = false;
         $data = [
             'value' => $value,
@@ -1259,6 +1265,10 @@ class Game extends \Bga\GameFramework\Table
     {
         $this->battle->actMakeThemFlee($targetId);
     }
+    public function actMakeThemFleeGarrett(?string $targetId = null)
+    {
+        $this->battle->actMakeThemFleeGarrett($targetId);
+    }
     public function actRetreat()
     {
         $this->battle->actRetreat();
@@ -1322,11 +1332,11 @@ class Game extends \Bga\GameFramework\Table
                     ]),
                     'number' => $card['dice'],
                     'color' =>
-                    $card['color'] === 'both'
-                        ? clienttranslate('All')
-                        : ($card['color'] === 'red'
-                            ? clienttranslate('Red')
-                            : clienttranslate('Yellow')),
+                        $card['color'] === 'both'
+                            ? clienttranslate('All')
+                            : ($card['color'] === 'red'
+                                ? clienttranslate('Red')
+                                : clienttranslate('Yellow')),
                 ]);
                 if (array_key_exists('action', $card)) {
                     if ($card['action'] === 'deckhand-spread') {

@@ -20,6 +20,7 @@ class DMTNT_SelectionStates
     {
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
         $pendingStates = $this->getPendingStates();
+        // This can be removed
         if (sizeof($pendingStates) == 0 && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
             if ($data['nextState'] === true && array_key_exists('initialState', $data) && $data['initialState']) {
@@ -151,7 +152,7 @@ class DMTNT_SelectionStates
                 ],
                 $tookCharacterId,
                 false,
-                true
+                'initialState'
             );
             $this->stateChanged = $localVar;
         } else {
@@ -242,6 +243,15 @@ class DMTNT_SelectionStates
         if (!$this->game->actInterrupt->onInterruptCancel()) {
             $this->game->nextState('playerTurn');
         }
+        $pendingStates = $this->getPendingStates();
+        if (sizeof($pendingStates) > 0) {
+            $nextState = $pendingStates[0];
+            // Check if this is the special finalState
+            if (is_array($nextState) && isset($nextState[0]) && $nextState[0] === 'finalState') {
+                array_shift($pendingStates);
+                $this->game->gameData->set('pendingStates', $pendingStates);
+            }
+        }
         $this->initiatePendingState();
         $this->game->completeAction();
     }
@@ -323,6 +333,19 @@ class DMTNT_SelectionStates
     {
         $pendingStates = $this->getPendingStates();
         if (sizeof($pendingStates) > 0) {
+            $nextState = $pendingStates[0];
+            // // Check if this is the special finalState
+            // if (is_array($nextState) && isset($nextState[0]) && $nextState[0] === 'finalState') {
+            //     // Transition to the final state's nextState
+            //     $finalNextState = $nextState[1]['nextState'] ?? 'playerTurn';
+            //     $this->game->nextState($finalNextState);
+            //     // Remove the finalState from pendingStates
+            //     array_shift($pendingStates);
+            //     $this->game->gameData->set('pendingStates', $pendingStates);
+            // } elseif ($this->initiateState(...$nextState)) {
+            //     array_shift($pendingStates);
+            //     $this->game->gameData->set('pendingStates', $pendingStates);
+            // }
             if ($this->initiateState(...$pendingStates[0])) {
                 array_shift($pendingStates);
                 $this->game->gameData->set('pendingStates', $pendingStates);
@@ -334,38 +357,43 @@ class DMTNT_SelectionStates
         array $state,
         string $characterId,
         bool $cancellable = true,
-        string|bool $nextState = 'playerTurn',
+        string $nextState = 'playerTurn',
         ?string $title = null,
         bool $isInterrupt = false,
         bool $isPendingState = false,
         ?bool $setAsNextState = false
     ): bool {
         $pendingStates = $this->getPendingStates();
+        // If this is the special finalState, transition directly to its nextState value
+        if ($stateName === 'finalState') {
+            if ($state['nextState'] === 'endTurn') {
+                $this->game->endTurn();
+            } elseif ($state['nextState'] === 'initialState') {
+                $this->game->nextState($state['initialState']);
+            } else {
+                $this->game->nextState($state['nextState']);
+            }
+            return true;
+        }
         if ($this->stateChanged) {
-            $currentStateData = $this->getState(null);
-            // WARNING: Update if args change
-            $state['initialState'] =
-                $this->initialState ??
-                ((sizeof($pendingStates) > 0 && array_key_exists('initialState', $pendingStates[0][1])
-                    ? $pendingStates[0][1]['initialState']
-                    : null) ??
-                    (array_key_exists('initialState', $currentStateData) ? $currentStateData['initialState'] : null));
-
-            $args = [
-                $stateName,
-                $state,
-                $characterId,
-                $cancellable,
-                ($nextState ? $nextState : $this->stateChangedNextState) || false,
-                $title,
-                $isInterrupt,
-                true,
-                $setAsNextState,
-            ];
+            $args = [$stateName, $state, $characterId, $cancellable, '', $title, $isInterrupt, true, $setAsNextState];
             if ($setAsNextState) {
                 $pendingStates = [$args, ...$pendingStates];
             } else {
-                $pendingStates = [...$pendingStates, $args];
+                // Insert before the finalState so it always stays last
+                $finalIndex = null;
+                foreach ($pendingStates as $i => $pendingEntry) {
+                    if (is_array($pendingEntry) && isset($pendingEntry[0]) && $pendingEntry[0] === 'finalState') {
+                        $finalIndex = $i;
+                        break;
+                    }
+                }
+                // Double-check that the final index actually points to finalState before using it
+                if ($finalIndex !== null && isset($pendingStates[$finalIndex][0]) && $pendingStates[$finalIndex][0] === 'finalState') {
+                    array_splice($pendingStates, $finalIndex, 0, [$args]);
+                } else {
+                    $pendingStates = [...$pendingStates, $args];
+                }
             }
             $this->game->gameData->set('pendingStates', $pendingStates);
             return false;
@@ -376,6 +404,22 @@ class DMTNT_SelectionStates
             }
             $stateNameState = $this->stateToStateNameMapping($stateName);
             $this->initialState = $this->game->gamestate->getCurrentMainState()->name;
+            // If there are no current pending states, add a special finalState that
+            // will be transitioned to last, carrying the final nextState.
+            if (sizeof($pendingStates) === 0) {
+                $pendingStates[] = [
+                    'finalState',
+                    ['nextState' => $nextState, 'initialState' => $this->initialState],
+                    $characterId,
+                    $cancellable,
+                    $nextState,
+                    $title,
+                    $isInterrupt,
+                    true,
+                    false,
+                ];
+                $this->game->gameData->set('pendingStates', $pendingStates);
+            }
             $playerId = $this->game->getCurrentPlayer();
             $newState = [
                 'cancellable' => $cancellable,
