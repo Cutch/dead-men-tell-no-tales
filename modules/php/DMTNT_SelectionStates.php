@@ -373,6 +373,10 @@ class DMTNT_SelectionStates
             } else {
                 $this->game->nextState($state['nextState']);
             }
+            if ($state['nextState'] === 'initialState' ? $state['initialState'] === 'playerTurn' : $state['nextState'] === 'playerTurn') {
+                $this->game->battle->battleLocation('playerTurn');
+                // Is already player turn so don't need to call nextState
+            }
             return true;
         }
         if ($this->stateChanged) {

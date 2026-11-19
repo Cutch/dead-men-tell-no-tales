@@ -492,7 +492,7 @@ class DMTNT_Battle
                 'backState' => 'postBattle',
             ],
             $battle['characterId'],
-            $targetId ? true : false,
+            false,
             'startCharacterBattleSelection',
             null,
             false,
