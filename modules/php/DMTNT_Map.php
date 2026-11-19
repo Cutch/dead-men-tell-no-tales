@@ -505,8 +505,8 @@ EOD;
         if ($tile['destroyed'] == 0 && $tile['fire'] === 6) {
             $tile['destroyed'] = 1;
             $tile['deckhand'] = 0;
-            $this->game->incStat(1, 'rooms_lost');
-            $this->game->incStat(1, 'explosions');
+            $this->game->bga->tableStats->inc('rooms_lost', 1);
+            $this->game->bga->tableStats->inc('explosions', 1);
             $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
             if ($this->game->gameData->get('explosions') == 7) {
                 $this->game->lose('explosion');
@@ -574,7 +574,7 @@ EOD;
         ) {
             $tile['exploded'] = 1;
             if ($this->game->gameData->get('powderKegExplosion')) {
-                $this->game->incStat(1, 'explosions');
+                $this->game->bga->tableStats->inc('explosions', 1);
                 // Advance the tracker
                 $this->game->gameData->set('explosions', $this->game->gameData->get('explosions') + 1);
                 if ($this->game->gameData->get('explosions') == 7) {

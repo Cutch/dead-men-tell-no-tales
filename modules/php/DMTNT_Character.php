@@ -405,7 +405,7 @@ class DMTNT_Character
         $prev = $data['fatigue'] - $prev;
 
         if ($prev > 0) {
-            $this->game->incStat($prev, 'fatigue_gained', $this->getCharacterData($characterId)['playerId']);
+            $this->game->bga->playerStats->inc('fatigue_gained', $prev, $this->getCharacterData($characterId)['playerId']);
         }
         if ($data['fatigue'] == $data['maxFatigue']) {
             $data['actions'] = min($data['actions'], 5);

@@ -862,8 +862,8 @@ class Game extends \Bga\GameFramework\Table
                         );
                         $this->gameData->set('tokenItems', $tokenItems);
                         $this->gameData->set('treasures', $this->gameData->get('treasures') + 1);
-                        $this->incStat(1, 'treasure_recovered');
-                        $this->incStat(1, 'treasure_recovered', $character['playerId']);
+                        $this->bga->tableStats->inc('treasure_recovered', 1);
+                        $this->bga->playerStats->inc('treasure_recovered', 1, $character['playerId']);
 
                         $this->eventLog(clienttranslate('${character_name} looted a treasure'), [
                             'usedActionId' => 'actMove',
@@ -897,7 +897,7 @@ class Game extends \Bga\GameFramework\Table
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
         }
-        $this->incStat(sizeof($data), 'deckhands_eliminated', $this->character->getTurnCharacter()['playerId']);
+        $this->bga->playerStats->inc('deckhands_eliminated', sizeof($data), $this->character->getTurnCharacter()['playerId']);
         $this->actions->spendActionCost('actEliminateDeckhand');
         $this->eventLog(clienttranslate('${character_name} eliminated ${count} deckhand(s)'), [
             'usedActionId' => 'actEliminateDeckhand',
@@ -1492,7 +1492,7 @@ class Game extends \Bga\GameFramework\Table
      */
     public function stNextCharacter(): void
     {
-        $this->incStat(1, 'turn_count');
+        $this->bga->tableStats->inc('turn_count', 1);
         $this->gameData->set('revengePhase', false);
         $this->character->activateNextCharacter();
         $this->gameData->set('escaped', false);

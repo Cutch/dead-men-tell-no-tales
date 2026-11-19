@@ -353,7 +353,11 @@ class DMTNT_Battle
         [$x, $y] = array_key_exists('pos', $battle) ? $battle['pos'] : $this->game->getCharacterPos($battle['characterId']);
         if ($battle['result'] == 'win') {
             $this->game->gameData->set('battle', [...$battle, 'includeAdjacent' => false]);
-            $this->game->incStat(1, 'crew_eliminated', $this->game->character->getCharacterData($battle['characterId'])['playerId']);
+            $this->game->bga->playerStats->inc(
+                'crew_eliminated',
+                1,
+                $this->game->character->getCharacterData($battle['characterId'])['playerId']
+            );
 
             $isCaptain = $battle['target']['type'] == 'captain';
             $tokenPositions = $this->game->getTokenPositions();
