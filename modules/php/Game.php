@@ -42,7 +42,6 @@ require_once dirname(__DIR__) . '/php/data-files/DMTNT_Items.php';
 require_once dirname(__DIR__) . '/php/data-files/DMTNT_Tile.php';
 class Game extends \Bga\GameFramework\Table
 {
-    public bool $next_val = false;
     public DMTNT_Character $character;
     public DMTNT_Actions $actions;
     private DMTNT_CharacterSelection $characterSelection;
@@ -353,8 +352,7 @@ class Game extends \Bga\GameFramework\Table
     public function rollBattleDie(string $type, string $characterName): int
     {
         $this->markRandomness();
-        $value = $this->next_val ? 6 : 1; //bga_rand(1, 6);
-        $this->next_val = true;
+        $value = bga_rand(1, 6);
         $notificationSent = false;
         $data = [
             'value' => $value,
@@ -863,7 +861,7 @@ class Game extends \Bga\GameFramework\Table
                         $this->gameData->set('tokenItems', $tokenItems);
                         $this->gameData->set('treasures', $this->gameData->get('treasures') + 1);
                         $this->bga->tableStats->inc('treasure_recovered', 1);
-                        $this->bga->playerStats->inc('treasure_recovered', 1, $character['playerId']);
+                        $this->bga->playerStats->inc('treasure_recovered', 1, (int) $character['playerId']);
 
                         $this->eventLog(clienttranslate('${character_name} looted a treasure'), [
                             'usedActionId' => 'actMove',
@@ -897,7 +895,7 @@ class Game extends \Bga\GameFramework\Table
         foreach ($data as $deckhandTargets) {
             $this->map->decreaseDeckhand($deckhandTargets['x'], $deckhandTargets['y']);
         }
-        $this->bga->playerStats->inc('deckhands_eliminated', sizeof($data), $this->character->getTurnCharacter()['playerId']);
+        $this->bga->playerStats->inc('deckhands_eliminated', sizeof($data), (int) $this->character->getTurnCharacter()['playerId']);
         $this->actions->spendActionCost('actEliminateDeckhand');
         $this->eventLog(clienttranslate('${character_name} eliminated ${count} deckhand(s)'), [
             'usedActionId' => 'actEliminateDeckhand',

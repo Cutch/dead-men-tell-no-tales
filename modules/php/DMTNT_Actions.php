@@ -369,7 +369,7 @@ class DMTNT_Actions
     {
         $cost = $this->getActionCost($action, $subAction, $characterId);
         $this->spendCost($cost);
-        $this->game->bga->playerStats->inc('actions_used', 1, $this->game->character->getSubmittingCharacter()['playerId']);
+        $this->game->bga->playerStats->inc('actions_used', 1, (int) $this->game->character->getSubmittingCharacter()['playerId']);
         $this->game->gameData->set('actionsTaken', $this->game->gameData->get('actionsTaken') + 1);
     }
     public function spendCost(array $cost)

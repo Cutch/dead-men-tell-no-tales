@@ -356,7 +356,7 @@ class DMTNT_Battle
             $this->game->bga->playerStats->inc(
                 'crew_eliminated',
                 1,
-                $this->game->character->getCharacterData($battle['characterId'])['playerId']
+                (int) $this->game->character->getCharacterData($battle['characterId'])['playerId']
             );
 
             $isCaptain = $battle['target']['type'] == 'captain';
