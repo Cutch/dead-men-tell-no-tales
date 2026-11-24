@@ -20,10 +20,14 @@ class DMTNT_SelectionStates
     {
         $isInterrupt = array_key_exists('isInterrupt', $data) && $data['isInterrupt'];
         $pendingStates = $this->getPendingStates();
-        // This can be removed
+        // Used for interrupt and card selection
         if (sizeof($pendingStates) == 0 && $data['nextState']) {
             $this->game->character->setSubmittingCharacterById(null);
-            if ($data['nextState'] === true && array_key_exists('initialState', $data) && $data['initialState']) {
+            if (
+                ($data['nextState'] === true || $data['nextState'] === 'none') &&
+                array_key_exists('initialState', $data) &&
+                $data['initialState']
+            ) {
                 $this->game->nextState($data['initialState']);
             } else {
                 $this->game->nextState($data['nextState']);
@@ -184,7 +188,7 @@ class DMTNT_SelectionStates
             'characterId' => $characterId,
             'nextState' => $stateData['nextState'],
             'isInterrupt' => $stateData['isInterrupt'],
-            // 'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
+            'initialState' => array_key_exists('initialState', $stateData) ? $stateData['initialState'] : null,
         ];
         $this->game->hooks->onCardSelection($data);
         $this->completeSelectionState($data);
@@ -410,7 +414,7 @@ class DMTNT_SelectionStates
             $this->initialState = $this->game->gamestate->getCurrentMainState()->name;
             // If there are no current pending states, add a special finalState that
             // will be transitioned to last, carrying the final nextState.
-            if (sizeof($pendingStates) === 0) {
+            if (sizeof($pendingStates) === 0 && $nextState !== 'none') {
                 $pendingStates[] = [
                     'finalState',
                     ['nextState' => $nextState, 'initialState' => $this->initialState],

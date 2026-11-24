@@ -181,7 +181,7 @@ class DMTNT_CharactersData
                             ],
                             $game->character->getTurnCharacterId(),
                             false,
-                            'drawRevengeCard',
+                            'none',
                             null,
                             true
                         );
